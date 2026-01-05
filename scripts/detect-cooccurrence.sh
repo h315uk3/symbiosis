@@ -31,7 +31,7 @@ cat "$ARCHIVE_DIR"/*.md 2>/dev/null |
 		fi
 
 		# Convert words to array (compatible with bash 3.2+)
-		word_array=($words)
+		read -r -a word_array <<< "$words"
 		word_count=${#word_array[@]}
 		
 		# Need at least 2 words for a pair
