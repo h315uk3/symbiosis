@@ -91,18 +91,18 @@ echo "$CONTEXTS" | jq -r '.patterns | to_entries | .[] | "\(.key)\t\(.value.cont
 # Add co-occurrences to tracker
 jq ".cooccurrences = $COOCCURRENCES" "$TEMP_FILE" >"$TRACKER_FILE"
 
-# Calculate advanced scoring metrics
+# Calculate advanced scoring metrics (continue on error)
 echo "Calculating TF-IDF scores..."
-"$SCRIPT_DIR/calculate-tfidf.sh"
+"$SCRIPT_DIR/calculate-tfidf.sh" || echo "TF-IDF calculation skipped"
 
 echo "Calculating PMI scores..."
-"$SCRIPT_DIR/calculate-pmi.sh"
+"$SCRIPT_DIR/calculate-pmi.sh" || echo "PMI calculation skipped"
 
 echo "Calculating time decay scores..."
-"$SCRIPT_DIR/calculate-time-decay.sh"
+"$SCRIPT_DIR/calculate-time-decay.sh" || echo "Time decay calculation skipped"
 
 echo "Calculating composite scores..."
-"$SCRIPT_DIR/calculate-composite-score.sh"
+"$SCRIPT_DIR/calculate-composite-score.sh" || echo "Composite score calculation skipped"
 
 rm -f "$TEMP_FILE" "$TEMP_FILE.new"
 

@@ -9,7 +9,13 @@ ARCHIVE_DIR="$CLAUDE_DIR/as-you/session-archive"
 
 # Check if archive directory exists
 if [ ! -d "$ARCHIVE_DIR" ]; then
-	echo "{}"
+	echo "[]"
+	exit 0
+fi
+
+# Check if there are any archives
+if ! ls "$ARCHIVE_DIR"/*.md >/dev/null 2>&1; then
+	echo "[]"
 	exit 0
 fi
 

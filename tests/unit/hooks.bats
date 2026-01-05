@@ -42,7 +42,7 @@ teardown() {
 
     run bash "$HOOKS_DIR/session-start.sh"
 
-    [[ "$output" =~ "As You プラグインが読み込まれました" ]]
+    [[ "$output" =~ "As You plugin loaded" ]]
 }
 
 @test "session-start.sh: should show promotion candidates if they exist" {
@@ -64,7 +64,7 @@ EOF
 
     run bash "$HOOKS_DIR/session-start.sh"
 
-    [[ "$output" =~ "ナレッジベース化の候補が検出されました" ]]
+    [[ "$output" =~ "Knowledge base promotion candidates detected" ]]
 }
 
 # Test: session-end.sh

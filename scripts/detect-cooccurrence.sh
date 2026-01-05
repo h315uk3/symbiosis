@@ -26,7 +26,7 @@ cat "$ARCHIVE_DIR"/*.md 2>/dev/null |
 		words=$(echo "$line" | grep -oE '[a-zA-Z]{3,}' | tr '[:upper:]' '[:lower:]' | sort -u)
 
 		# Generate word pairs from this line
-		mapfile -t word_array <<<"$words"
+		IFS=$'\n' read -r -d '' -a word_array <<<"$words"
 		word_count=${#word_array[@]}
 
 		# Generate all pairs (combinations)

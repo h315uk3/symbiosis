@@ -66,9 +66,16 @@ teardown() {
 @test "cleanup-archive.sh: should remove old archives" {
     cd "$TEST_DIR"
 
-    # Create old archive (8 days ago)
-    OLD_DATE=$(date -d "8 days ago" +%Y-%m-%d)
-    touch -d "8 days ago" "$CLAUDE_DIR/as-you/session-archive/${OLD_DATE}.md"
+    # Create old archive (8 days ago) - macOS/Linux compatible
+    if date --version >/dev/null 2>&1; then
+        # GNU date (Linux)
+        OLD_DATE=$(date -d "8 days ago" +%Y-%m-%d)
+        touch -d "8 days ago" "$CLAUDE_DIR/as-you/session-archive/${OLD_DATE}.md"
+    else
+        # BSD date (macOS)
+        OLD_DATE=$(date -v-8d +%Y-%m-%d)
+        touch -t "$(date -v-8d +%Y%m%d0000)" "$CLAUDE_DIR/as-you/session-archive/${OLD_DATE}.md"
+    fi
 
     run bash "$SCRIPTS_DIR/cleanup-archive.sh"
 

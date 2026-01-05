@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -eo pipefail
 # SessionStart hook: Clean up and notify patterns
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -10,7 +10,7 @@ MEMO_FILE="$CLAUDE_DIR/as-you/session-notes.local.md"
 TRACKER_FILE="$CLAUDE_DIR/as-you/pattern-tracker.json"
 
 # Clean up old archives
-"${REPO_ROOT}/scripts/cleanup-archive.sh" 2>/dev/null
+"${REPO_ROOT}/scripts/cleanup-archive.sh" 2>/dev/null || true
 
 # Clear session notes for new session
 rm -f "$MEMO_FILE"

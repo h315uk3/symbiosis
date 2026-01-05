@@ -93,12 +93,24 @@ EOF
 @test "workflow: old archives are cleaned up automatically" {
     cd "$TEST_DIR"
 
-    # Create archives of different ages
+    # Create archives of different ages - macOS/Linux compatible
     RECENT_DATE=$(date +%Y-%m-%d)
-    OLD_DATE=$(date -d "8 days ago" +%Y-%m-%d)
+    if date --version >/dev/null 2>&1; then
+        # GNU date (Linux)
+        OLD_DATE=$(date -d "8 days ago" +%Y-%m-%d)
+        OLD_TIMESTAMP="8 days ago"
+    else
+        # BSD date (macOS)
+        OLD_DATE=$(date -v-8d +%Y-%m-%d)
+        OLD_TIMESTAMP="$(date -v-8d +%Y%m%d0000)"
+    fi
 
     echo "Recent session" > "$CLAUDE_DIR/as-you/session-archive/${RECENT_DATE}.md"
-    touch -d "8 days ago" "$CLAUDE_DIR/as-you/session-archive/${OLD_DATE}.md"
+    if date --version >/dev/null 2>&1; then
+        touch -d "$OLD_TIMESTAMP" "$CLAUDE_DIR/as-you/session-archive/${OLD_DATE}.md"
+    else
+        touch -t "$OLD_TIMESTAMP" "$CLAUDE_DIR/as-you/session-archive/${OLD_DATE}.md"
+    fi
 
     # Run cleanup
     bash "$SCRIPTS_DIR/cleanup-archive.sh" > /dev/null 2>&1
