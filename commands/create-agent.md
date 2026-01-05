@@ -1,6 +1,6 @@
 ---
 description: "Create a new agent with AI assistance or manual template"
-argument-hint: "<agent-name> [--manual]"
+argument-hint: "agent-name [--manual]"
 allowed-tools: [Skill, Task, Write, Bash]
 ---
 
