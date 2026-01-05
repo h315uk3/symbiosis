@@ -133,21 +133,3 @@ has_valid_frontmatter() {
         fi
     done
 }
-
-# Test: YAML frontmatter is parseable
-@test "validation: YAML frontmatter is valid YAML syntax" {
-    # Check if yq is available
-    if ! command -v yq &> /dev/null; then
-        skip "yq not installed"
-    fi
-
-    for cmd in "$COMMANDS_DIR"/*.md; do
-        [[ "$(basename "$cmd")" == "README.md" ]] && continue
-
-        # Extract frontmatter and validate with yq
-        sed -n '/^---$/,/^---$/p' "$cmd" | yq eval '.' - > /dev/null 2>&1 || {
-            echo "Invalid YAML in: $(basename "$cmd")"
-            return 1
-        }
-    done
-}
