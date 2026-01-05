@@ -1,6 +1,6 @@
 #!/bin/bash
 set -u
-# Calculate TF-IDF scores for patterns
+# Calculate TF-IDF scores for patterns (Unicode-aware)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -31,33 +31,43 @@ fi
 TEMP_FILE=$(mktemp)
 cp "$TRACKER_FILE" "$TEMP_FILE"
 
-# Stopwords list (common words to exclude from high scores)
+# English stopwords list (can be extended for other languages)
 STOPWORDS="and|the|for|with|that|this|from|have|has|had|but|not|are|was|were|been|being|you|your|they|their|what|which|who|when|where|why|how|can|could|would|should|will|shall|may|might|must"
+
+# Common Japanese particles and auxiliaries (optional, can be extended)
+JP_STOPWORDS="です|ます|した|する|される|いる|ある|なる|くる|できる|という|ため|こと|もの|ところ|とき|など"
 
 # Process each pattern
 jq -r '.patterns | keys[]' "$TRACKER_FILE" | while IFS= read -r word; do
 	# Skip if empty
 	[ -z "$word" ] && continue
-	
+
 	# Get word count (TF)
 	TF=$(jq -r ".patterns.\"$word\".count" "$TRACKER_FILE")
-	
-	# Count documents containing this word (case-insensitive)
-	DOC_FREQ=$(grep -il "\b$word\b" "$ARCHIVE_DIR"/*.md 2>/dev/null | wc -l)
-	
+
+	# Count documents containing this pattern (Unicode-aware, case-insensitive)
+	# Use perl for proper Unicode handling
+	DOC_FREQ=$(perl -CS -ne "
+		use utf8;
+		binmode(STDIN, ':utf8');
+		print \"\$ARGV\\n\" if /\Q$word\E/i;
+	" "$ARCHIVE_DIR"/*.md 2>/dev/null | sort -u | wc -l)
+
 	# Calculate IDF: log(N / df)
 	# Add 1 to doc_freq to avoid division by zero
 	IDF=$(echo "scale=6; l($TOTAL_DOCS / ($DOC_FREQ + 1))" | bc -l)
-	
+
 	# Calculate TF-IDF
 	TFIDF=$(echo "scale=6; $TF * $IDF" | bc -l)
-	
-	# Check if word is a stopword
+
+	# Check if word is a stopword (English or Japanese)
 	IS_STOPWORD="false"
 	if echo "$word" | grep -qiE "^($STOPWORDS)$"; then
 		IS_STOPWORD="true"
+	elif echo "$word" | perl -CS -ne "use utf8; exit(1) unless /^($JP_STOPWORDS)\$/i"; then
+		IS_STOPWORD="true"
 	fi
-	
+
 	# Update tracker with TF-IDF score
 	jq ".patterns.\"$word\".tfidf = $TFIDF | \
 	    .patterns.\"$word\".idf = $IDF | \

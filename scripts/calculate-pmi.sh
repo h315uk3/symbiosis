@@ -1,6 +1,6 @@
 #!/bin/bash
 set -u
-# Calculate PMI (Pointwise Mutual Information) scores for word co-occurrences
+# Calculate PMI (Pointwise Mutual Information) scores for word co-occurrences (Unicode-aware)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -20,14 +20,31 @@ if [ ! -d "$ARCHIVE_DIR" ]; then
 	exit 1
 fi
 
-# Count total word occurrences across all archives
+# Count total pattern occurrences across all archives (Unicode-aware)
 TOTAL_WORDS=$(cat "$ARCHIVE_DIR"/*.md 2>/dev/null |
 	sed 's/\[[0-9][0-9]:[0-9][0-9]\]//g' |
-	grep -oE '[a-zA-Z]{3,}' |
-	wc -l)
+	perl -CS -nle '
+		use utf8;
+
+		# Count space-delimited words (3+ chars)
+		my $count = 0;
+		while (/(\p{L}[\p{L}\p{N}]{2,})/g) {
+			$count++;
+		}
+
+		# Count 3-grams from CJK scripts
+		my $text = $_;
+		$text =~ s/\s+//g;
+		while ($text =~ /(?=([\p{Han}\p{Hiragana}\p{Katakana}\p{Hangul}]{3}))/g) {
+			$count++;
+		}
+
+		print $count;
+	' |
+	awk '{sum += $1} END {print sum}')
 
 if [ "$TOTAL_WORDS" -eq 0 ]; then
-	echo "Error: no words found in archives" >&2
+	echo "Error: no patterns found in archives" >&2
 	exit 1
 fi
 
@@ -40,26 +57,26 @@ jq -c '.cooccurrences[]?' "$TRACKER_FILE" 2>/dev/null | while IFS= read -r coocc
 	WORD1=$(echo "$cooccur" | jq -r '.words[0]')
 	WORD2=$(echo "$cooccur" | jq -r '.words[1]')
 	COOCCUR_COUNT=$(echo "$cooccur" | jq -r '.count')
-	
+
 	# Skip if empty
 	[ -z "$WORD1" ] || [ -z "$WORD2" ] && continue
-	
+
 	# Get individual word counts from patterns
 	WORD1_COUNT=$(jq -r ".patterns.\"$WORD1\".count // 0" "$TRACKER_FILE")
 	WORD2_COUNT=$(jq -r ".patterns.\"$WORD2\".count // 0" "$TRACKER_FILE")
-	
+
 	# Skip if either word count is 0
 	[ "$WORD1_COUNT" -eq 0 ] || [ "$WORD2_COUNT" -eq 0 ] && continue
-	
+
 	# Calculate probabilities
 	# P(A,B) = cooccur_count / total_words
 	# P(A) = word1_count / total_words
 	# P(B) = word2_count / total_words
-	
+
 	# PMI = log(P(A,B) / (P(A) * P(B)))
 	#     = log((cooccur_count / total) / ((word1_count / total) * (word2_count / total)))
 	#     = log(cooccur_count * total / (word1_count * word2_count))
-	
+
 	PMI=$(awk -v cc="$COOCCUR_COUNT" -v tw="$TOTAL_WORDS" \
 		-v w1="$WORD1_COUNT" -v w2="$WORD2_COUNT" \
 		'BEGIN {
@@ -77,7 +94,7 @@ jq -c '.cooccurrences[]?' "$TRACKER_FILE" 2>/dev/null | while IFS= read -r coocc
 				}
 			}
 		}')
-	
+
 	# Update cooccurrences array with PMI score
 	jq "(.cooccurrences[] | select(.words[0] == \"$WORD1\" and .words[1] == \"$WORD2\") | .pmi) = $PMI" \
 		"$TEMP_FILE" >"$TEMP_FILE.new"
