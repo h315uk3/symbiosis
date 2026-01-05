@@ -1,7 +1,6 @@
 # As You Plugin - Development Tools
 
 [tools]
-bats = "1.13.0"       # Test framework for Bash
 jq = "1.8.1"          # Command-line JSON processor
 shellcheck = "0.11.0" # Shell script linter
 shfmt = "3.12.0"      # Shell script formatter
@@ -9,19 +8,7 @@ rust = "1.92.0"       # Rust toolchain for MCP development
 
 [tasks.test]
 description = "Run all tests"
-run = "bats tests/unit/*.bats tests/integration/*.bats tests/validation/*.bats"
-
-[tasks."test:unit"]
-description = "Run unit tests"
-run = "bats tests/unit/*.bats"
-
-[tasks."test:integration"]
-description = "Run integration tests"
-run = "bats tests/integration/*.bats"
-
-[tasks."test:validation"]
-description = "Run validation tests"
-run = "bats tests/validation/*.bats"
+run = "bash tests/run-tests.sh"
 
 [tasks."test:watch"]
 description = "Run tests in watch mode"
@@ -29,33 +16,11 @@ run = """
 while true; do
   clear
   echo "Running tests..."
-  bats tests/**/*.bats
+  bash tests/run-tests.sh
   echo ""
   echo "Waiting for changes... (Ctrl+C to exit)"
   sleep 5
 done
-"""
-
-[tasks."test:coverage"]
-description = "Generate test coverage report with kcov (requires kcov installed)"
-run = """
-if ! command -v kcov &> /dev/null; then
-  echo "kcov not found. Install with:"
-  echo "  macOS: brew install kcov"
-  echo "  Ubuntu: sudo apt-get install kcov"
-  exit 1
-fi
-
-rm -rf coverage
-mkdir -p coverage
-
-# Run tests with coverage
-kcov --exclude-pattern=/usr/share,/tmp \
-  coverage \
-  bats tests/unit/*.bats tests/integration/*.bats tests/validation/*.bats
-
-echo ""
-echo "Coverage report generated: coverage/index.html"
 """
 
 [tasks.lint]
@@ -75,8 +40,8 @@ jq '.' .claude-plugin/plugin.json > /dev/null && echo "✓ plugin.json is valid"
 echo "Validating hooks.json..."
 jq '.' hooks/hooks.json > /dev/null && echo "✓ hooks.json is valid"
 
-echo "Validating frontmatter..."
-mise run test:validation
+echo "Running tests..."
+bash tests/run-tests.sh
 """
 
 [tasks."scoring:tfidf"]

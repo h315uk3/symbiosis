@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -u
 # Calculate composite scores combining TF-IDF, time decay, and session spread
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

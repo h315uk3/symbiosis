@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -u
 # Calculate TF-IDF scores for patterns
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

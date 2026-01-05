@@ -1,10 +1,10 @@
 #!/bin/bash
-set -eo pipefail
+set -u
 # Post-edit formatting hook example
 # Triggered after Edit tool use
 
 # This is a simple example hook that logs edit operations
 # In a real scenario, you might run formatters, linters, etc.
 
-echo "File edited: ${CLAUDE_TOOL_INPUT:-$1}" >&2
+echo "File edited: ${CLAUDE_TOOL_INPUT:-${1:-unknown}}" >&2
 echo "Hook executed successfully"

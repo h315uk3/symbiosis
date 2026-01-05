@@ -1,12 +1,12 @@
 #!/bin/bash
-set -euo pipefail
+set -u
 # Track word frequency and update pattern-tracker.json
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 CLAUDE_DIR="${CLAUDE_DIR:-$PROJECT_ROOT/.claude}"
 ARCHIVE_DIR="$CLAUDE_DIR/as-you/session-archive"
-TRACKER_FILE="$PROJECT_ROOT/.claude/as-you/pattern-tracker.json"
+TRACKER_FILE="$CLAUDE_DIR/as-you/pattern-tracker.json"
 
 # Ensure archive directory exists
 mkdir -p "$ARCHIVE_DIR"
@@ -78,18 +78,24 @@ CONTEXTS=$("$SCRIPT_DIR/extract-contexts.sh")
 COOCCURRENCES=$("$SCRIPT_DIR/detect-cooccurrence.sh")
 
 # Merge contexts into tracker
-echo "$CONTEXTS" | jq -r '.patterns | to_entries | .[] | "\(.key)\t\(.value.contexts | @json)"' |
-	while IFS=$'\t' read -r word contexts_json; do
-		[ -z "$word" ] && continue
+if [ -n "$CONTEXTS" ] && echo "$CONTEXTS" | jq -e '.patterns' >/dev/null 2>&1; then
+	echo "$CONTEXTS" | jq -r '.patterns // {} | to_entries | .[] | "\(.key)\t\(.value.contexts | @json)"' |
+		while IFS=$'\t' read -r word contexts_json; do
+			[ -z "$word" ] && continue
 
-		if jq -e ".patterns.\"$word\"" "$TEMP_FILE" >/dev/null 2>&1; then
-			jq ".patterns.\"$word\".contexts = $contexts_json" "$TEMP_FILE" >"$TEMP_FILE.new"
-			mv "$TEMP_FILE.new" "$TEMP_FILE"
-		fi
-	done
+			if jq -e ".patterns.\"$word\"" "$TEMP_FILE" >/dev/null 2>&1; then
+				jq ".patterns.\"$word\".contexts = $contexts_json" "$TEMP_FILE" >"$TEMP_FILE.new"
+				mv "$TEMP_FILE.new" "$TEMP_FILE"
+			fi
+		done
+fi
 
 # Add co-occurrences to tracker
-jq ".cooccurrences = $COOCCURRENCES" "$TEMP_FILE" >"$TRACKER_FILE"
+if [ -n "$COOCCURRENCES" ]; then
+	jq ".cooccurrences = $COOCCURRENCES" "$TEMP_FILE" >"$TRACKER_FILE"
+else
+	jq ".cooccurrences = []" "$TEMP_FILE" >"$TRACKER_FILE"
+fi
 
 # Calculate advanced scoring metrics (continue on error)
 echo "Calculating TF-IDF scores..."

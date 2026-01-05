@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -u
 # Calculate Levenshtein distance between two strings using AWK
 
 # Levenshtein distance implementation in AWK

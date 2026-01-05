@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -u
 # Archive session notes to session-archive
 
 # Load common library

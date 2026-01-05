@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -u
 # Common utility functions for As You plugin scripts
 
 # Initialize standard paths

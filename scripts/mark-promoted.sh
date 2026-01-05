@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -u
 # Mark a pattern as promoted to skill or agent
 
 # Ensure PATH includes mise shims and common bin directories

@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eo pipefail
+set -u
 # SessionEnd hook: Archive session notes, track patterns, and merge similar patterns
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

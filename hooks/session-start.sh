@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eo pipefail
+set -u
 # SessionStart hook: Clean up and notify patterns
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
