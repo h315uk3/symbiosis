@@ -31,7 +31,7 @@ test_result() {
 test_session_start() {
     local test_dir=$(mktemp -d)
     local claude_dir="$test_dir/.claude"
-    mkdir -p "$claude_dir/as-you"
+    mkdir -p "$claude_dir/as_you"
 
     (
         export PROJECT_ROOT="$test_dir"
@@ -47,8 +47,8 @@ test_session_start() {
 test_session_end() {
     local test_dir=$(mktemp -d)
     local claude_dir="$test_dir/.claude"
-    mkdir -p "$claude_dir/as-you/session-archive"
-    echo "test content" > "$claude_dir/as-you/session-notes.local.md"
+    mkdir -p "$claude_dir/as_you/session_archive"
+    echo "test content" > "$claude_dir/as_you/session_notes.local.md"
 
     (
         export PROJECT_ROOT="$test_dir"
@@ -64,8 +64,8 @@ test_session_end() {
 test_track_frequency() {
     local test_dir=$(mktemp -d)
     local claude_dir="$test_dir/.claude"
-    mkdir -p "$claude_dir/as-you/session-archive"
-    echo "test deployment authentication" > "$claude_dir/as-you/session-archive/2025-01-05.md"
+    mkdir -p "$claude_dir/as_you/session_archive"
+    echo "test deployment authentication" > "$claude_dir/as_you/session_archive/2025-01-05.md"
 
     (
         export PROJECT_ROOT="$test_dir"
@@ -74,7 +74,7 @@ test_track_frequency() {
     )
     local result=$?
 
-    [ -f "$claude_dir/as-you/pattern-tracker.json" ] || result=1
+    [ -f "$claude_dir/as_you/pattern_tracker.json" ] || result=1
 
     rm -rf "$test_dir"
     test_result "track-frequency.sh creates tracker" $result
@@ -145,8 +145,8 @@ test_skill_frontmatter() {
 test_pattern_tracker_structure() {
     local test_dir=$(mktemp -d)
     local claude_dir="$test_dir/.claude"
-    mkdir -p "$claude_dir/as-you/session-archive"
-    echo "test deployment authentication" > "$claude_dir/as-you/session-archive/2025-01-05.md"
+    mkdir -p "$claude_dir/as_you/session_archive"
+    echo "test deployment authentication" > "$claude_dir/as_you/session_archive/2025-01-05.md"
 
     (
         export PROJECT_ROOT="$test_dir"
@@ -155,11 +155,11 @@ test_pattern_tracker_structure() {
     )
 
     local result=0
-    if [ ! -f "$claude_dir/as-you/pattern-tracker.json" ]; then
+    if [ ! -f "$claude_dir/as_you/pattern_tracker.json" ]; then
         result=1
-    elif ! jq -e '.patterns' "$claude_dir/as-you/pattern-tracker.json" > /dev/null 2>&1; then
+    elif ! jq -e '.patterns' "$claude_dir/as_you/pattern_tracker.json" > /dev/null 2>&1; then
         result=1
-    elif ! jq -e '.promotion_candidates' "$claude_dir/as-you/pattern-tracker.json" > /dev/null 2>&1; then
+    elif ! jq -e '.promotion_candidates' "$claude_dir/as_you/pattern_tracker.json" > /dev/null 2>&1; then
         result=1
     fi
 
@@ -171,8 +171,8 @@ test_pattern_tracker_structure() {
 test_track_frequency_with_empty_archive() {
     local test_dir=$(mktemp -d)
     local claude_dir="$test_dir/.claude"
-    mkdir -p "$claude_dir/as-you/session-archive"
-    touch "$claude_dir/as-you/session-archive/empty.md"
+    mkdir -p "$claude_dir/as_you/session_archive"
+    touch "$claude_dir/as_you/session_archive/empty.md"
 
     (
         export PROJECT_ROOT="$test_dir"
@@ -207,8 +207,8 @@ test_hooks_reference_existing_scripts() {
 test_note_archiving_workflow() {
     local test_dir=$(mktemp -d)
     local claude_dir="$test_dir/.claude"
-    mkdir -p "$claude_dir/as-you/session-archive"
-    echo "test note content" > "$claude_dir/as-you/session-notes.local.md"
+    mkdir -p "$claude_dir/as_you/session_archive"
+    echo "test note content" > "$claude_dir/as_you/session_notes.local.md"
 
     (
         export PROJECT_ROOT="$test_dir"
@@ -218,7 +218,7 @@ test_note_archiving_workflow() {
 
     local result=0
     local date_str=$(date +%Y-%m-%d)
-    if [ ! -f "$claude_dir/as-you/session-archive/$date_str.md" ]; then
+    if [ ! -f "$claude_dir/as_you/session_archive/$date_str.md" ]; then
         result=1
     fi
 
@@ -230,10 +230,10 @@ test_note_archiving_workflow() {
 test_pattern_detection_workflow() {
     local test_dir=$(mktemp -d)
     local claude_dir="$test_dir/.claude"
-    mkdir -p "$claude_dir/as-you/session-archive"
+    mkdir -p "$claude_dir/as_you/session_archive"
 
     # Create sample archive with repeated patterns
-    cat > "$claude_dir/as-you/session-archive/2025-01-05.md" << 'EOF'
+    cat > "$claude_dir/as_you/session_archive/2025-01-05.md" << 'EOF'
 ## Session Notes
 
 Working on authentication system.
@@ -248,11 +248,11 @@ EOF
     )
 
     local result=0
-    if [ ! -f "$claude_dir/as-you/pattern-tracker.json" ]; then
+    if [ ! -f "$claude_dir/as_you/pattern_tracker.json" ]; then
         result=1
     else
         # Check if "authentication" was tracked
-        if ! jq -e '.patterns.authentication' "$claude_dir/as-you/pattern-tracker.json" > /dev/null 2>&1; then
+        if ! jq -e '.patterns.authentication' "$claude_dir/as_you/pattern_tracker.json" > /dev/null 2>&1; then
             result=1
         fi
     fi
