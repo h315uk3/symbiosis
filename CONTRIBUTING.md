@@ -248,7 +248,7 @@ For implementation details, see:
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) for details.
+GNU AGPL v3 - See [LICENSE](LICENSE) for details.
 
 ## Questions?
 

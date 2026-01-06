@@ -269,7 +269,7 @@ mise run validate  # Validate plugin
 
 ## License
 
-MIT License - [LICENSE](LICENSE)
+GNU AGPL v3 - [LICENSE](LICENSE)
 
 ## Related Resources
 
