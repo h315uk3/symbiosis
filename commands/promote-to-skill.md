@@ -1,5 +1,6 @@
 ---
 description: "Promote frequent pattern to long-term skill"
+argument-hint: "<pattern-name>"
 allowed-tools: [Bash, Read, Task, AskUserQuestion, Write]
 ---
 

@@ -3,6 +3,7 @@ name: pattern-learner
 description: "Analyze code patterns and identify best practices or anti-patterns in the codebase"
 tools: Read, Glob, Grep, Bash
 model: inherit
+color: yellow
 ---
 
 # Pattern Learner Agent

@@ -7,6 +7,6 @@
   },
   "homepage": "https://github.com/h315uk3/as_you",
   "repository": "https://github.com/h315uk3/as_you",
-  "license": "MIT",
+  "license": "AGPL-3.0",
   "hooks": "./hooks/hooks.json"
 }

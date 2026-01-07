@@ -8,6 +8,10 @@ PROJECT_ROOT="${PROJECT_ROOT:-$REPO_ROOT}"
 CLAUDE_DIR="${CLAUDE_DIR:-$PROJECT_ROOT/.claude}"
 MEMO_FILE="$CLAUDE_DIR/as_you/session_notes.local.md"
 TRACKER_FILE="$CLAUDE_DIR/as_you/pattern_tracker.json"
+ERROR_LOG="$CLAUDE_DIR/as_you/errors.log"
+
+# Ensure log directory exists
+mkdir -p "$(dirname "$ERROR_LOG")"
 
 # Clean up old archives (older than 7 days)
 ARCHIVE_DIR="$CLAUDE_DIR/as_you/session_archive"
@@ -21,9 +25,12 @@ rm -f "$MEMO_FILE"
 # Check for promotion candidates (using Python for better testability)
 if [ -f "$TRACKER_FILE" ]; then
 	# Get summary from Python script (single call, space-separated output)
-	read -r TOTAL SKILLS AGENTS TOP_PATTERN TOP_TYPE < <(
-		python3 "${REPO_ROOT}/scripts/promotion_analyzer.py" summary-line 2>/dev/null
-	)
+	if ! read -r TOTAL SKILLS AGENTS TOP_PATTERN TOP_TYPE < <(
+		python3 "${REPO_ROOT}/scripts/promotion_analyzer.py" summary-line 2>>"$ERROR_LOG"
+	); then
+		echo "Warning: Failed to analyze promotion candidates (see $ERROR_LOG)" >&2
+		TOTAL=0
+	fi
 
 	if [ -n "$TOTAL" ] && [ "$TOTAL" -gt 0 ] 2>/dev/null; then
 		echo ""

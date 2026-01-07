@@ -1,5 +1,6 @@
 ---
 description: "Promote frequent task pattern to agent"
+argument-hint: "<pattern-name>"
 allowed-tools: [Bash, Read, Task, AskUserQuestion, Write]
 ---
 
