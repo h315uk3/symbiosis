@@ -34,9 +34,16 @@ If $ARGUMENTS is empty, display help:
 
 If $ARGUMENTS is provided, execute the following:
 
-1. Execute with Bash tool:
+1. Translate $ARGUMENTS to English using your language capabilities:
+   - If already in English, preserve as-is
+   - If in another language (e.g., Japanese, Spanish, French), translate to English
+   - Maintain technical terms and proper nouns correctly
+
+2. Execute with Bash tool, constructing the echo command with the actual translated text:
    ```bash
    mkdir -p .claude/as_you
-   echo "[$(date +%H:%M)] $ARGUMENTS" >> .claude/as_you/session_notes.local.md
+   echo "[$(date +%H:%M)] <insert translated text here>" >> .claude/as_you/session_notes.local.md
    ```
-2. Respond: "Note added"
+   Important: You must replace `<insert translated text here>` with the actual translated content from step 1 when you construct this command. Do not execute this command with the placeholder text.
+
+3. Respond: "Note added (translated to English if needed)"

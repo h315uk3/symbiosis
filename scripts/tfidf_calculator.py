@@ -12,7 +12,8 @@ from pathlib import Path
 
 
 # English stopwords (common words to exclude from high scores)
-ENGLISH_STOPWORDS = {
+# Notes are now translated to English before storage, so only English stopwords needed
+STOPWORDS = {
     "and",
     "the",
     "for",
@@ -52,31 +53,13 @@ ENGLISH_STOPWORDS = {
     "must",
 }
 
-# Common Japanese particles and auxiliaries
-JAPANESE_STOPWORDS = {
-    "です",
-    "ます",
-    "した",
-    "する",
-    "される",
-    "いる",
-    "ある",
-    "なる",
-    "くる",
-    "できる",
-    "という",
-    "ため",
-    "こと",
-    "もの",
-    "ところ",
-    "とき",
-    "など",
-}
-
 
 def is_stopword(word: str) -> bool:
     """
-    Check if word is a stopword (English or Japanese).
+    Check if word is an English stopword.
+
+    All notes are translated to English before storage (commands/note.md),
+    so pattern analysis only needs to handle English stopwords.
 
     Examples:
         >>> is_stopword("the")
@@ -85,13 +68,12 @@ def is_stopword(word: str) -> bool:
         True
         >>> is_stopword("python")
         False
-        >>> is_stopword("です")
-        True
-        >>> is_stopword("プログラミング")
+        >>> is_stopword("debugging")
+        False
+        >>> is_stopword("implementation")
         False
     """
-    word_lower = word.lower()
-    return word_lower in ENGLISH_STOPWORDS or word in JAPANESE_STOPWORDS
+    return word.lower() in STOPWORDS
 
 
 def count_documents_containing_pattern(pattern: str, archive_dir: Path) -> int:

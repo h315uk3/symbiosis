@@ -111,7 +111,8 @@ Maintain high-quality pattern data by:
 ### Noise Detection
 Patterns to flag:
 - Single characters (a, b, 1, @)
-- Common stopwords (the, and, or, of)
+- Common English stopwords (the, and, or, of, with, that)
+  Note: All notes are translated to English before storage, so only English stopwords exist
 - Pure numbers (123, 2024)
 - Special characters only (!@#$%)
 - Very short terms (< 3 characters) with low TF-IDF

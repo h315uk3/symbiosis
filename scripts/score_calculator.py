@@ -3,6 +3,17 @@
 Unified score calculator for pattern_tracker.json.
 Calculates TF-IDF, PMI, time decay, and composite scores in single pass.
 Replaces 4 separate script calls with 1 unified call.
+
+All input notes are translated to English before storage (commands/note.md),
+ensuring consistent pattern analysis across all languages:
+- Japanese: "デバッグ中のバグを調査" → "Investigating bug during debugging"
+- Chinese: "实现用户认证功能" → "Implementing user authentication feature"
+- Korean: "데이터베이스 연결 오류 수정" → "Fixing database connection error"
+- Spanish: "refactorización del código" → "code refactoring"
+- French: "optimisation des performances" → "performance optimization"
+- German: "Fehlerbehandlung implementieren" → "implement error handling"
+- Arabic: "تحسين واجهة المستخدم" → "improving user interface"
+- Russian: "добавление новой функции" → "adding new feature"
 """
 
 import json
