@@ -1,49 +1,38 @@
 ---
 description: "Add note to current session memory with timestamp"
-argument-hint: "<memo-content>"
+argument-hint: "<note-content>"
 allowed-tools: [Bash]
 ---
 
-# Add Session Note
+# Add Note
 
-If $ARGUMENTS is empty, display help:
+Add a timestamped note to the current session.
 
-## Usage
+If $ARGUMENTS is empty, display usage:
+
 ```
-/as-you:note "note content"
-```
+Usage: /as-you:note "note content"
 
-## Examples
-```
-/as-you:note "Investigating User.findById() returning null issue"
-/as-you:note "JWT verification error - secret key not set in environment variables"
-/as-you:note "Implementing Phase 5: Scripts done, next is Hooks"
-```
+Examples:
+  /as-you:note "Investigating authentication bug"
+  /as-you:note "User.findById() returning null"
+  /as-you:note "JWT verification error in middleware"
 
-## Features
-- Recorded with timestamp
-- Automatically archived on session end
-- Frequent patterns suggested for knowledge base creation
-
-## Related Commands
-- `/as-you:note-show` - Display current session notes
-- `/as-you:note-history` - View notes from last 7 days
-- `/as-you:memory-analyze` - Analyze patterns
+To view notes: /as-you:notes
+```
 
 ---
 
-If $ARGUMENTS is provided, execute the following:
+If $ARGUMENTS is provided:
 
-1. Translate $ARGUMENTS to English using your language capabilities:
-   - If already in English, preserve as-is
-   - If in another language (e.g., Japanese, Spanish, French), translate to English
-   - Maintain technical terms and proper nouns correctly
+1. Translate $ARGUMENTS to English if needed:
+   - If already English, preserve as-is
+   - If another language, translate while preserving technical terms
 
-2. Execute with Bash tool, constructing the echo command with the actual translated text:
+2. Execute with Bash tool:
    ```bash
-   mkdir -p .claude/as_you
-   echo "[$(date +%H:%M)] <insert translated text here>" >> .claude/as_you/session_notes.local.md
+   python3 scripts/commands/note_add.py "<translated-text>"
    ```
-   Important: You must replace `<insert translated text here>` with the actual translated content from step 1 when you construct this command. Do not execute this command with the placeholder text.
+   Replace `<translated-text>` with actual content from step 1.
 
-3. Respond: "Note added (translated to English if needed)"
+3. Respond: "Note added"

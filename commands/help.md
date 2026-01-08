@@ -5,138 +5,200 @@ allowed-tools: []
 
 # As You Plugin Help
 
-**External Memory Plugin that Becomes More Personalized the More You Use It**
+**A personal memory plugin that learns from your work patterns**
 
 ---
 
-## Types of Memory
+## Core Commands
 
-### 📝 Session Memos
-Temporary memos valid only during the current session
+### 📝 Note Taking
 
-**Commands**:
-- `/as-you:note "content"` - Add memo (with timestamp)
-- `/as-you:note-show` - Display current memos
-- `/as-you:note-clear` - Clear memos
-- `/as-you:note-history` - Display history for the past 7 days
+**`/as-you:note "text"`**
+- Add timestamped note to current session
+- Auto-translated to English if needed
+- Example: `/as-you:note "Investigating auth bug"`
 
-**Features**:
-- Automatically archived on session end
-- Cleared on next session start
-- Frequent patterns automatically detected
+**`/as-you:notes`**
+- View current session notes (interactive)
+- Options: View history, Clear notes, Exit
+- All notes archived automatically on session end
 
 ---
 
-### 🔄 Workflows
-Save repeatedly executed work procedures
+### 🧠 Memory & Analysis
 
-**Commands**:
-- `/as-you:save-workflow "name"` - Save new workflow
-- `/as-you:update-workflow "name"` - Update existing workflow
-- `/as-you:list-workflows` - List all (sorted by last update)
-- `/as-you:show-workflow "name"` - Show details
-- `/as-you:delete-workflow "name"` - Delete (with confirmation)
-
-**Use Cases**: Deployment procedures, test execution, routine tasks, etc.
-
----
-
-### 🧠 Knowledge Base (Skills & Agents)
-Specialized knowledge automatically generated from frequent patterns
-
-**Analysis & Promotion**:
-- `/as-you:memory-analyze` - Analyze patterns and suggest knowledge base creation
-- `/as-you:promote-to-skill` - Promote frequent pattern to Skill
-- `/as-you:promote-to-agent` - Promote frequent task to Agent
-- `/as-you:show-scores` - Display pattern scores and rankings
-
-**Manual Creation**:
-- `/as-you:create-skill "name"` - Create skill (AI-assisted/manual)
-- `/as-you:create-agent "name"` - Create agent (AI-assisted/manual)
-
-**Pattern Management**:
-- `/as-you:detect-similar-patterns` - Detect and display similar patterns
-- `/as-you:merge-patterns` - Merge similar patterns interactively
-- `/as-you:review-long-term-memory` - Review skill/agent usage and suggest maintenance
-
-**Automation**:
-- Pattern appears in 3+ sessions or 5+ total occurrences
-- TF-IDF, co-occurrence, and time decay scoring
-- Automatic notification via SessionStart hook
+**`/as-you:memory`**
+- Interactive memory dashboard
+- View statistics, patterns, and promotion candidates
+- Options:
+  - View promotion candidates
+  - Analyze patterns (with AI agent)
+  - Detect similar patterns
+  - Review knowledge base
+  - Exit
 
 ---
 
-## Statistics
+### 🚀 Pattern Promotion
 
-- `/as-you:memory-stats` - Display memory usage statistics
+**`/as-you:promote [pattern]`**
+- Promote frequent pattern to knowledge base
+- AI automatically determines: Skill or Agent
+- Interactive selection if pattern not specified
+- Generates component with context
+
+**How it works:**
+1. AI analyzes pattern characteristics
+2. Determines optimal type (Skill/Agent)
+3. Generates appropriate component
+4. User reviews and confirms
 
 ---
 
-## Quick Start
+### 🔄 Workflow Management
 
-### 1. Record Work Memos
+**`/as-you:workflows`**
+- View and manage saved workflows (interactive)
+- Options: View details, Update, Delete, Exit
+- All workflows sorted by last modified
+
+**`/as-you:workflow-save [name]`**
+- Save recent work as reusable workflow
+- Interactive configuration:
+  - Workflow name
+  - Abstraction level (specific/generic)
+  - Scope (last 5/10/20 actions)
+  - Description
+- Security checks for sensitive data
+
+---
+
+## How It Works
+
+### Automatic Pattern Learning
+
 ```
-/as-you:note "Investigating authentication bug"
-/as-you:note "User.findById() returning null"
+You work → Take notes → SessionEnd hook
+           ↓
+     Pattern detection
+           ↓
+     Statistical scoring
+     (TF-IDF, PMI, time decay)
+           ↓
+     Promotion candidates
+           ↓
+     SessionStart notification
+           ↓
+     You promote → Knowledge base
 ```
 
-### 2. Save Workflows
-```
-/as-you:save-workflow "deploy-staging"
-```
+### Pattern Analysis
 
-### 3. Analyze Patterns
-```
-/as-you:memory-analyze
-```
+- **Frequency**: How often pattern appears
+- **Sessions**: Across how many sessions
+- **TF-IDF**: Statistical importance
+- **PMI**: Co-occurrence strength
+- **Time Decay**: Recent vs. old patterns
+
+### Promotion Thresholds
+
+Patterns become candidates when:
+- Appears in 3+ sessions, OR
+- Total count 5+, AND
+- Composite score > 0.3
 
 ---
 
 ## Automatic Features
 
-### SessionStart (On Session Start)
-- Clear session memos
+### SessionStart Hook
+- Clear current session notes
 - Delete archives older than 7 days
-- Notify about frequent patterns
+- Notify about promotion candidates
 
-### SessionEnd (On Session End)
-- Archive session memos (skip if empty)
-- Update pattern frequencies (TF-IDF, co-occurrence, time decay)
+### SessionEnd Hook
+- Archive session notes (if not empty)
+- Update pattern frequencies
+- Calculate scores
+- Merge similar patterns
+- Detect promotion candidates
 
 ---
 
 ## Directory Structure
 
 ```
-.claude/
-└── as_you/
-    ├── session_notes.local.md      # Current session memos
-    ├── pattern_tracker.json         # Pattern tracking (TF-IDF, scores)
-    └── session_archive/             # Archives (7-day retention)
-        ├── 2026-01-05.md
-        └── 2026-01-04.md
+.claude/as_you/
+├── session_notes.local.md     # Current session notes
+├── pattern_tracker.json        # Pattern database (TF-IDF, scores)
+└── session_archive/            # 7-day archive
+    ├── 2026-01-08.md
+    └── 2026-01-07.md
 
 plugins/as_you/
-├── commands/                        # Workflows and commands
-├── skills/                          # Knowledge base (Skills)
-└── agents/                          # Knowledge base (Agents)
+├── commands/                   # User commands (6)
+├── agents/                     # System agents (6)
+├── hooks/                      # Lifecycle hooks (2)
+└── skills/                     # Knowledge base
+```
+
+---
+
+## Quick Start
+
+### 1. Take Notes During Work
+```bash
+/as-you:note "Investigating authentication bug"
+/as-you:note "User.findById() returns null"
+/as-you:note "Fixed: JWT secret not loaded"
+```
+
+### 2. Check Memory Dashboard
+```bash
+/as-you:memory
+# See: 3 notes, 12 patterns, 2 candidates
+```
+
+### 3. Promote Patterns
+```bash
+/as-you:promote
+# AI suggests: "authentication" → Skill
+# Review and confirm
+```
+
+### 4. Save Workflows
+```bash
+# After running tests and build
+/as-you:workflow-save qa-check
+# Save as reusable workflow
 ```
 
 ---
 
 ## Design Philosophy
 
-**Fully Local Operation**: No internet connection required, no external APIs
+**Simplicity First**: 6 commands only, no complex syntax
 
-**Personal Optimization**: Adapts to your development style the more you use it
+**Local-First**: No external services, full privacy
 
-**Progressive Learning**:
-1. Record thoughts in session memos
-2. Automatically detect frequent patterns
-3. Consolidate as knowledge base (Skills/Agents)
+**Explicit Over Implicit**: You control what to record
 
-**Data-Driven**: Uses TF-IDF, co-occurrence analysis, and time decay scoring
+**Statistical Intelligence**: Math-based pattern detection
+
+**Zero Dependencies**: Pure standard library
+
+**Progressive Learning**: Knowledge grows organically
 
 ---
 
-For details, run each command.
+## Tips
+
+- **Take notes liberally**: More data = better patterns
+- **Use natural language**: AI understands context
+- **Check /memory regularly**: See what's being learned
+- **Promote early**: Build knowledge base incrementally
+- **Save workflows**: Automate repetitive tasks
+
+---
+
+For detailed command help, run each command without arguments.

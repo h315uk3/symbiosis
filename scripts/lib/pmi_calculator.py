@@ -8,8 +8,8 @@ import math
 import sys
 from pathlib import Path
 
-from common import AsYouConfig, load_tracker, save_tracker
-from pattern_detector import extract_patterns
+from lib.common import AsYouConfig, load_tracker, save_tracker
+from lib.pattern_detector import extract_patterns
 
 
 def count_total_patterns(archive_dir: Path) -> int:

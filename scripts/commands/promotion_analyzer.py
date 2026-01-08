@@ -9,7 +9,11 @@ import re
 import sys
 from pathlib import Path
 
-from common import AsYouConfig
+# Add scripts/ to Python path
+scripts_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(scripts_dir))
+
+from lib.common import AsYouConfig, load_tracker
 
 
 def determine_type(contexts: list[str]) -> str:
@@ -132,14 +136,13 @@ def analyze_promotions(tracker_file: Path) -> list[dict]:
     Returns:
         List of promotion suggestions with metadata
     """
-    if not tracker_file.exists():
+    try:
+        data = load_tracker(tracker_file)
+        candidates = data.get("promotion_candidates", [])
+        patterns = data.get("patterns", {})
+    except (json.JSONDecodeError, IOError):
+        # Corrupted file - no candidates to show
         return []
-
-    with open(tracker_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    candidates = data.get("promotion_candidates", [])
-    patterns = data.get("patterns", {})
 
     if not candidates:
         return []

@@ -10,7 +10,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from common import AsYouConfig, load_tracker, save_tracker
+from lib.common import AsYouConfig, load_tracker, save_tracker
 
 
 # English stopwords (common words to exclude from high scores)

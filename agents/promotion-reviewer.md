@@ -76,7 +76,7 @@ Validate generated Skill/Agent drafts and verify they meet quality standards.
 ### If Issues Found
 
 ```markdown
-❌ Validation Failed: {Skill/Agent Name}
+Validation Failed: {Skill/Agent Name}
 
 ## Issues
 
@@ -94,7 +94,7 @@ Validate generated Skill/Agent drafts and verify they meet quality standards.
 ### If No Issues
 
 ```markdown
-✅ Validation Successful: {Skill/Agent Name}
+Validation Successful: {Skill/Agent Name}
 
 Meets all quality standards. Approved for creation.
 

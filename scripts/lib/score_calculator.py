@@ -25,9 +25,9 @@ from pathlib import Path
 from typing import Dict
 
 # Import from existing modules
-from common import AsYouConfig
-from tfidf_calculator import is_stopword, calculate_tfidf_single_pass
-from pmi_calculator import count_total_patterns
+from lib.common import AsYouConfig
+from lib.tfidf_calculator import is_stopword, calculate_tfidf_single_pass
+from lib.pmi_calculator import count_total_patterns
 
 
 class UnifiedScoreCalculator:

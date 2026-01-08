@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 from collections import Counter
 
-from common import AsYouConfig
+from lib.common import AsYouConfig
 
 
 def extract_patterns(text: str) -> list[str]:

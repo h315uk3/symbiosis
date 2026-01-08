@@ -8,9 +8,13 @@ import json
 import sys
 from pathlib import Path
 
-from common import AsYouConfig
-from levenshtein import levenshtein_distance
-from bktree import build_bktree_from_patterns
+# Add scripts/ to Python path
+scripts_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(scripts_dir))
+
+from lib.common import AsYouConfig, load_tracker
+from lib.levenshtein import levenshtein_distance
+from lib.bktree import build_bktree_from_patterns
 
 
 def detect_similar_patterns(
@@ -75,14 +79,13 @@ def detect_similar_patterns(
         ...     len(pairs)
         0
     """
-    if not tracker_file.exists():
-        return []
-
     # Load patterns
-    with open(tracker_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    patterns = data.get("patterns", {})
+    try:
+        data = load_tracker(tracker_file)
+        patterns = data.get("patterns", {})
+    except (json.JSONDecodeError, IOError):
+        # Corrupted or inaccessible file - return empty
+        return []
 
     if not patterns:
         return []

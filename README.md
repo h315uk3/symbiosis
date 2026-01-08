@@ -10,6 +10,7 @@ A Claude Code plugin that extracts and accumulates patterns from your session no
 - **Pattern Extraction & Accumulation** - Automatically extract frequently-appearing patterns from manual notes and make them reusable
 - **Statistical Scoring** - TF-IDF, PMI, and time-decay-based importance evaluation
 - **Automatic Pattern Merging** - Automatically merge similar patterns using Levenshtein distance
+- **Interactive Commands** - Simple, dialog-based interface (only 6 commands)
 - **Pure Python Implementation** - Testable, maintainable code using Python standard library (no NLP libraries)
 
 ## How It Works
@@ -23,7 +24,7 @@ A Claude Code plugin that extracts and accumulates patterns from your session no
 
 2. On SessionEnd (Automatic)
    → Archive session_notes.local.md
-   → Save as .claude/as_you/session_archive/2026-01-04.md
+   → Save as .claude/as_you/session_archive/2026-01-08.md
 
 3. Pattern Extraction & Scoring (Automatic)
    → Extract words from archive
@@ -33,11 +34,11 @@ A Claude Code plugin that extracts and accumulates patterns from your session no
 
 4. Promotion Notification (Automatic)
    → Display patterns with composite score > 0.3 as promotion candidates
-   → Viewable with /as-you:show-scores
+   → Viewable with /as-you:memory
 
 5. Knowledge Base Creation (Manual)
-   → /as-you:promote-to-skill to create Skill
-   → /as-you:promote-to-agent to create Agent
+   → /as-you:promote to create Skill or Agent
+   → AI automatically determines optimal type
    → Save to skills/*, agents/*
    → Agents automatically leverage them
 ```
@@ -107,7 +108,8 @@ Optional (for developers):
 
 # Try As You commands
 /as-you:note "Test note"
-/as-you:note-show
+/as-you:notes     # View notes
+/as-you:help      # Show help
 ```
 
 ## Configuration
@@ -137,22 +139,42 @@ export AS_YOU_BACKUP_KEEP=10
 export AS_YOU_BACKUP_KEEP=3
 ```
 
-Manual merge anytime:
-```bash
-/as-you:merge-patterns
-```
-
 ## Usage
+
+### Core Commands (Only 6!)
+
+```bash
+# Note taking
+/as-you:note "text"      # Add timestamped note
+/as-you:notes            # View/manage notes (interactive)
+
+# Memory analysis
+/as-you:memory           # Memory dashboard (interactive)
+
+# Pattern promotion
+/as-you:promote [name]   # Promote to skill/agent (AI-assisted)
+
+# Workflow management
+/as-you:workflows        # Manage workflows (interactive)
+/as-you:workflow-save    # Save new workflow
+
+# Help
+/as-you:help             # Show detailed help
+```
 
 ### Session Notes
 
 Record your work. What you write becomes the raw data for pattern extraction.
 
 ```bash
+# Add notes
 /as-you:note "Investigating authentication feature bug"
 /as-you:note "認証機能のバグ調査中"  # Automatically translated to English
-/as-you:note-show          # View current note
-/as-you:note-history       # View past 7 days
+/as-you:note "Fixed JWT validation logic"
+
+# View and manage notes (interactive)
+/as-you:notes
+# Options: View history, Clear notes, Exit
 ```
 
 **Note**: All notes are automatically translated to English before storage for consistent pattern extraction. You can write notes in any language (Japanese, Spanish, French, etc.), and they will be stored in English.
@@ -187,15 +209,46 @@ Tips:
 - Specify component or feature names
 - Use consistent terminology for repeated work (improves pattern detection)
 
+### Memory Analysis
+
+Interactive dashboard for exploring your memory:
+
+```bash
+/as-you:memory
+
+# Shows:
+# - Current session stats
+# - Pattern analysis
+# - Promotion candidates
+# - Knowledge base status
+
+# Interactive options:
+# [1] View promotion candidates
+# [2] Analyze patterns (with AI agent)
+# [3] Detect similar patterns
+# [4] Review knowledge base
+# [5] Exit
+```
+
 ### Workflows
 
 Save and reuse repeated work as slash commands.
 
 ```bash
-/as-you:save-workflow "deploy-staging"   # Save recent work
-/as-you:list-workflows                    # List all
-/as-you:show-workflow "deploy-staging"    # View details
-/deploy-staging                           # Execute saved workflow
+# Save workflow
+/as-you:workflow-save "deploy-staging"
+# Interactive configuration:
+# - Workflow name
+# - Abstraction level (specific/generic)
+# - Scope (last 5/10/20 actions)
+# - Description
+
+# Manage workflows (interactive)
+/as-you:workflows
+# Options: View details, Update, Delete, Exit
+
+# Execute saved workflow
+/as-you:deploy-staging
 ```
 
 #### How Workflows Work
@@ -205,15 +258,15 @@ Save and reuse repeated work as slash commands.
 
 2. Save workflow
    ```bash
-   /as-you:save-workflow "deploy-staging"
+   /as-you:workflow-save
    ```
-   - Analyze last 10-20 tool use history
+   - Analyze last N tool use history
    - Organize into repeatable steps
-   - Save as `commands/deploy-staging.md`
+   - Save as `commands/{name}.md`
 
 3. Reuse
    ```bash
-   /deploy-staging
+   /as-you:{workflow-name}
    ```
    - Execute saved workflow as a slash command
    - Reproduce same work multiple times
@@ -229,36 +282,69 @@ Use cases:
 Auto-detect frequent patterns and convert them to Skills/Agents.
 
 ```bash
-/as-you:show-scores             # View scoring results
-/as-you:promote-to-skill        # Promote to Skill
-/as-you:promote-to-agent        # Promote to Agent
-/as-you:detect-similar-patterns # Detect similar patterns
+# View candidates and promote
+/as-you:promote
+
+# Or promote specific pattern
+/as-you:promote authentication
+
+# AI automatically determines:
+# - Task-oriented patterns → Agent
+# - Knowledge-oriented patterns → Skill
 ```
 
 #### How Knowledge Base Creation Works
 
-1. Auto-extract patterns (on SessionEnd)
+1. **Auto-extract patterns** (on SessionEnd)
    - Extract words from archived session notes
    - Score with TF-IDF, PMI, time-decay
    - Auto-merge similar patterns
    - Mark patterns with composite score > 0.3 as promotion candidates
 
-2. Review promotion candidates
+2. **Review promotion candidates**
    ```bash
-   /as-you:show-scores
+   /as-you:memory
+   # Select "View promotion candidates"
    ```
    Display scoring ranking in percentage format
 
-3. Convert to Skill/Agent (Manual)
+3. **Convert to Skill/Agent** (AI-assisted)
    ```bash
-   /as-you:promote-to-skill    # Convert knowledge/concepts to Skill
-   /as-you:promote-to-agent    # Convert tasks/processes to Agent
+   /as-you:promote
    ```
-   Select pattern, generate draft, save to `skills/` or `agents/`
+   - AI analyzes pattern characteristics
+   - Determines optimal type (Skill or Agent):
+     - **Agent**: Task-oriented (deploy, test, build)
+     - **Skill**: Knowledge-oriented (authentication, api-design)
+   - Generates appropriate component
+   - User reviews and confirms
 
-4. Automatic leverage by agents
+4. **Automatic leverage by agents**
    - Agents automatically invoke saved Skills/Agents
    - Reuse past knowledge
+
+## Command Reference
+
+### `/as-you:note "text"`
+Add timestamped note to current session. Auto-translated to English.
+
+### `/as-you:notes`
+Interactive note management. View current notes, history, or clear notes.
+
+### `/as-you:memory`
+Interactive memory dashboard. View statistics, patterns, promotion candidates, and knowledge base status.
+
+### `/as-you:promote [pattern]`
+AI-assisted pattern promotion. Automatically determines whether pattern should be Skill or Agent.
+
+### `/as-you:workflows`
+Interactive workflow management. View, update, or delete saved workflows.
+
+### `/as-you:workflow-save [name]`
+Save recent work as reusable workflow. Interactive configuration for abstraction level and scope.
+
+### `/as-you:help`
+Display comprehensive help and usage guide.
 
 ## Development
 
@@ -269,6 +355,20 @@ mise run test      # Run tests
 mise run lint      # Validate code
 mise run validate  # Validate plugin
 ```
+
+## Design Philosophy
+
+**Simplicity First**: Only 6 commands, no complex syntax
+
+**Local-First**: No external services, full privacy
+
+**Explicit Over Implicit**: You control what to record
+
+**Statistical Intelligence**: Math-based pattern detection
+
+**Zero Dependencies**: Pure standard library
+
+**Progressive Learning**: Knowledge grows organically
 
 ## License
 
