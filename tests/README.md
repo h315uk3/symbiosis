@@ -56,8 +56,8 @@ python3 tests/run_doctests.py
 python3 tests/run_doctests.py -v
 
 # Test individual modules
-python3 scripts/frequency_tracker.py --test
-python3 scripts/score_calculator.py --test
+python3 scripts/hooks/pattern_tracker_update.py --test
+python3 scripts/lib/score_calculator.py --test
 ```
 
 ## Test Coverage
