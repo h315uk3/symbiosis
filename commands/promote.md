@@ -14,7 +14,7 @@ Promote a frequent pattern to knowledge base (Skill or Agent).
 
 Execute:
 ```bash
-python3 ./scripts/commands/promotion_analyzer.py
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/promotion_analyzer.py"
 ```
 
 If 0 candidates:
@@ -41,7 +41,7 @@ Analyze selected pattern to determine if it should be Skill or Agent:
 
 **Read pattern context:**
 ```bash
-python3 scripts/commands/pattern_context.py PATTERN_NAME
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/pattern_context.py" PATTERN_NAME
 ```
 
 **Analyze characteristics:**
@@ -107,7 +107,7 @@ Present generated component and ask:
 - Create file (skills/{name}/SKILL.md or agents/{name}.md)
 - Mark as promoted in pattern_tracker.json:
   ```bash
-  python3 scripts/lib/promotion_marker.py "PATTERN_NAME" {skill|agent} "{path}"
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/promotion_marker.py" "PATTERN_NAME" {skill|agent} "{path}"
   ```
 - Respond: "{Skill/Agent} created: {name}\n\nFile: {path}\n\nUse /as-you:memory to view updated stats"
 

@@ -13,7 +13,7 @@ Display memory statistics and analyze patterns.
 
    Execute statistics collection:
    ```bash
-   python3 scripts/commands/memory_stats.py
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/memory_stats.py"
    ```
 
 2. **Display Dashboard**
@@ -53,7 +53,7 @@ Display memory statistics and analyze patterns.
 4. **Execute Based on Selection**
 
    **If "View promotion candidates":**
-   - Execute: `python3 ./scripts/commands/promotion_analyzer.py`
+   - Execute: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/promotion_analyzer.py"`
    - Display candidates with scores
    - Suggest: "Use /as-you:promote to create skill/agent"
 
@@ -66,10 +66,10 @@ Display memory statistics and analyze patterns.
      ```
 
    **If "Detect similar patterns":**
-   - Execute: `python3 scripts/commands/similarity_detector.py`
+   - Execute: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/similarity_detector.py"`
    - Display similar pairs with Levenshtein distance
    - Ask if user wants to merge:
-     - If yes: Execute `python3 scripts/hooks/pattern_merger.py`
+     - If yes: Execute `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pattern_merger.py"`
      - If no: Return to menu
 
    **If "Review knowledge base":**

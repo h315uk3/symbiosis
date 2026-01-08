@@ -13,7 +13,7 @@ View and manage saved workflows.
 
 Execute to find user workflows (exclude built-in commands):
 ```bash
-python3 scripts/commands/workflow_list.py
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/workflow_list.py"
 ```
 
 If no workflows:

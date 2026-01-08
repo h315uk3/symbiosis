@@ -31,7 +31,7 @@ If $ARGUMENTS is provided:
 
 2. Execute with Bash tool:
    ```bash
-   python3 scripts/commands/note_add.py "<translated-text>"
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/note_add.py" "<translated-text>"
    ```
    Replace `<translated-text>` with actual content from step 1.
 
