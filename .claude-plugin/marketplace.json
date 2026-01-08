@@ -1,0 +1,20 @@
+{
+  "name": "as-you",
+  "owner": {
+    "name": "h315uk3"
+  },
+  "metadata": {
+    "description": "Local-first pattern learning and external memory system for Claude Code",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "as-you",
+      "description": "Local-first pattern learning and external memory system. Learns from explicit notes, builds knowledge automatically through statistical analysis, and creates reusable skills from repeated patterns. Privacy-focused with no external dependencies.",
+      "source": "./",
+      "category": "productivity",
+      "strict": false,
+      "homepage": "https://github.com/h315uk3/as_you"
+    }
+  ]
+}
