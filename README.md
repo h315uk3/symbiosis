@@ -6,7 +6,7 @@ A Claude Code plugin that extracts and accumulates patterns from your session no
 
 ## Features
 
-- **NO Auth / NO Backend / NO Connection** - Completely local execution
+- **No auth, no backend, no external APIs** - Completely local execution
 - **Pattern Extraction & Accumulation** - Automatically extract frequently-appearing patterns from manual notes and make them reusable
 - **Statistical Scoring** - TF-IDF, PMI, and time-decay-based importance evaluation
 - **Automatic Pattern Merging** - Automatically merge similar patterns using Levenshtein distance
