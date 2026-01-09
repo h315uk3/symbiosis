@@ -10,7 +10,8 @@ Display and manage session notes.
 ## Execution Steps
 
 1. **Display Current Session Notes**
-   - Read `.claude/as_you/session_notes.local.md`
+   - Get current directory: Execute `pwd` with Bash tool
+   - Read `{pwd}/.claude/as_you/session_notes.local.md` using absolute path
    - If empty or doesn't exist: "No notes in current session"
    - If exists: Display contents with line count
 
@@ -28,7 +29,7 @@ Display and manage session notes.
 3. **Execute Based on Selection**
 
    **If "View history":**
-   - Search `.claude/as_you/session_archive/*.md` using Glob
+   - Use Glob to search `{pwd}/.claude/as_you/session_archive/*.md` (where {pwd} is from step 1)
    - If no archives: "No archived notes found"
    - If archives exist:
      - For each file (sorted by date, newest first):
@@ -48,7 +49,7 @@ Display and manage session notes.
        - Label: "No, cancel"
          Description: "Keep current notes"
    - If confirmed:
-     - Execute: `> .claude/as_you/session_notes.local.md`
+     - Execute Bash: `> {pwd}/.claude/as_you/session_notes.local.md` (using absolute path)
      - Respond: "Session notes cleared"
    - If cancelled:
      - Respond: "Cancelled"

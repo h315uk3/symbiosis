@@ -11,8 +11,9 @@ Display memory statistics and analyze patterns.
 
 1. **Collect Statistics**
 
-   Execute statistics collection:
+   Get current directory and execute statistics collection:
    ```bash
+   pwd
    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/memory_stats.py"
    ```
 
@@ -61,7 +62,7 @@ Display memory statistics and analyze patterns.
    - Launch memory-analyzer agent using Task tool:
      ```
      subagent_type: "as-you:memory-analyzer"
-     prompt: "Analyze pattern_tracker.json and provide detailed promotion recommendations"
+     prompt: "Analyze pattern_tracker.json and provide detailed promotion recommendations. Working directory: {pwd} (use absolute paths)"
      description: "Analyze memory patterns"
      ```
 
@@ -73,7 +74,7 @@ Display memory statistics and analyze patterns.
      - If no: Return to menu
 
    **If "Review knowledge base":**
-   - Read `.claude/as_you/skill-usage-stats.json`
+   - Read `{pwd}/.claude/as_you/skill-usage-stats.json` using absolute path (where {pwd} is from step 1)
    - Identify unused skills/agents (30+ days)
    - Display recommendations
    - Ask about archiving unused items

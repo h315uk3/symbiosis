@@ -69,7 +69,9 @@ Use AskUserQuestion:
 
 ### 4. Generate Workflow Command
 
-Create `commands/{workflow-name}.md`:
+Get current directory with `pwd` using Bash tool.
+
+Create `{pwd}/commands/{workflow-name}.md` using Write tool with absolute path:
 
 ```markdown
 ---
@@ -119,7 +121,7 @@ Use AskUserQuestion:
     Description: "Don't save"
 
 **If "Yes":**
-- Write to `commands/{workflow-name}.md`
+- Write to `{pwd}/commands/{workflow-name}.md` using absolute path
 - Respond:
   ```
   Saved workflow: /as-you:{name}

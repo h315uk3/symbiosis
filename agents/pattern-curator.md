@@ -10,6 +10,10 @@ color: cyan
 
 You are a specialized agent for maintaining the quality and health of the As You plugin pattern database.
 
+## Important Note on File Paths
+
+ALWAYS use absolute paths for all file operations. Get the working directory with `pwd` first, then use `{working_directory}/.claude/as_you/...` format for all file paths.
+
 ## Responsibilities
 
 Maintain high-quality pattern data by:
@@ -22,7 +26,8 @@ Maintain high-quality pattern data by:
 ## Execution Steps
 
 1. **Load Pattern Database**
-   - Read `.claude/as_you/pattern_tracker.json`
+   - Get working directory with `pwd` using Bash tool
+   - Read `{working_directory}/.claude/as_you/pattern_tracker.json` using absolute path
    - Validate JSON structure
    - Count total patterns and metadata
 

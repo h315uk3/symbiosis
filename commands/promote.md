@@ -12,8 +12,9 @@ Promote a frequent pattern to knowledge base (Skill or Agent).
 
 ### 1. Retrieve Promotion Candidates
 
-Execute:
+Get current directory and retrieve candidates:
 ```bash
+pwd
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/promotion_analyzer.py"
 ```
 
@@ -76,7 +77,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/pattern_context.py" PATTERN_NAME
 3. Launch component-generator agent:
    ```
    subagent_type: "as-you:component-generator"
-   prompt: "Create agent '{pattern-name}' with tools: {inferred-tools}. Context: {contexts}"
+   prompt: "Create agent '{pattern-name}' with tools: {inferred-tools}. Context: {contexts}. Working directory: {pwd} (use absolute paths for all file operations)"
    description: "Generate agent component"
    ```
 
@@ -86,7 +87,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/pattern_context.py" PATTERN_NAME
 2. Launch component-generator agent:
    ```
    subagent_type: "as-you:component-generator"
-   prompt: "Create skill '{pattern-name}'. Context: {contexts}"
+   prompt: "Create skill '{pattern-name}'. Context: {contexts}. Working directory: {pwd} (use absolute paths for all file operations)"
    description: "Generate skill component"
    ```
 
@@ -121,9 +122,9 @@ Present generated component and ask:
 
 ### 6. Check for Duplicates
 
-Before creating, search existing:
-- Skills: `skills/*/SKILL.md`
-- Agents: `agents/*.md`
+Before creating, search existing using Glob with absolute paths (where {pwd} is from step 1):
+- Skills: `{pwd}/skills/*/SKILL.md`
+- Agents: `{pwd}/agents/*.md`
 
 If similar name exists, warn and ask for confirmation.
 
