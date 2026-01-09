@@ -71,13 +71,15 @@ Use AskUserQuestion:
 
 Get current directory with `pwd` using Bash tool.
 
-Create `{pwd}/commands/{workflow-name}.md` using Write tool with absolute path:
+Create `{pwd}/.claude/commands/{workflow-name}.md` using Write tool with absolute path:
 
 ```markdown
 ---
 description: "{user-provided-description}"
 allowed-tools: [Bash, Read, Write, Edit, Grep, Glob]
 ---
+
+<!-- as-you:workflow -->
 
 # {Workflow Name}
 
@@ -121,7 +123,7 @@ Use AskUserQuestion:
     Description: "Don't save"
 
 **If "Yes":**
-- Write to `{pwd}/commands/{workflow-name}.md` using absolute path
+- Write to `{pwd}/.claude/commands/{workflow-name}.md` using absolute path
 - Respond:
   ```
   Saved workflow: /as-you:{name}

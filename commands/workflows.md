@@ -11,12 +11,17 @@ View and manage saved workflows.
 
 ### 1. List Workflows
 
-Execute to find user workflows (exclude built-in commands):
+Get current directory and search for As You workflows:
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/workflow_list.py"
+pwd
 ```
 
-If no workflows:
+Use Grep to find workflows with As You marker:
+- Pattern: `as-you:workflow`
+- Path: `{pwd}/.claude/commands` (where {pwd} is from above)
+- Output mode: `files_with_matches`
+
+If no workflows found:
 - Respond: "No saved workflows found"
 - Guide: "Create workflows with /as-you:workflow-save"
 
@@ -54,7 +59,7 @@ Use AskUserQuestion:
 
 **If "View workflow details":**
 - Use AskUserQuestion to select workflow from list
-- Read `commands/{workflow-name}.md`
+- Read `{pwd}/.claude/commands/{workflow-name}.md` using absolute path
 - Display contents
 - Show metadata (file path, last modified)
 - Return to menu or exit
@@ -76,7 +81,7 @@ Use AskUserQuestion:
   - Generate updated workflow
   - Show preview (side-by-side or diff)
   - Confirm with AskUserQuestion
-  - If confirmed: Write to `commands/{name}.md`
+  - If confirmed: Write to `{pwd}/.claude/commands/{name}.md` using absolute path
   - Respond: "Workflow updated: {name}\n\nRestart session (/exit) to use updated workflow"
 
 **If "Delete workflow":**
@@ -90,7 +95,7 @@ Use AskUserQuestion:
     - Label: "No, cancel"
       Description: "Keep the workflow"
 - If confirmed:
-  - Execute: `rm commands/{name}.md`
+  - Execute Bash: `rm "{pwd}/.claude/commands/{name}.md"` using absolute path
   - Respond: "Workflow '{name}' deleted"
 - Return to menu or exit
 
