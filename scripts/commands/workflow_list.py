@@ -25,7 +25,7 @@ def list_workflows(commands_dir: Path | None = None) -> list[dict]:
     List user workflows sorted by modification time.
 
     Args:
-        commands_dir: Path to commands directory (default: ./commands)
+        commands_dir: Path to commands directory (default: .claude/commands)
 
     Returns:
         List of workflow dicts with 'name', 'mtime', and 'mtime_str' keys
@@ -61,7 +61,7 @@ def list_workflows(commands_dir: Path | None = None) -> list[dict]:
         >>> assert len(workflows) == 0
     """
     if commands_dir is None:
-        commands_dir = Path("commands")
+        commands_dir = Path(".claude/commands")
 
     if not commands_dir.exists():
         return []
