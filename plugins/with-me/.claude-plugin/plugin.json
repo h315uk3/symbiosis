@@ -1,0 +1,11 @@
+{
+  "name": "with-me",
+  "version": "0.1.0",
+  "description": "Collaborative development and team workflow assistant for Claude Code - You work with me (Claude)",
+  "author": {
+    "name": "h315uk3"
+  },
+  "homepage": "https://github.com/h315uk3/as_you",
+  "repository": "https://github.com/h315uk3/as_you",
+  "license": "AGPL-3.0"
+}

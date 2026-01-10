@@ -1,18 +1,26 @@
 {
-  "name": "as-you",
+  "name": "as-you-marketplace",
   "owner": {
     "name": "h315uk3"
   },
   "metadata": {
-    "description": "Local-first pattern learning and external memory system for Claude Code",
-    "version": "0.1.0"
+    "description": "Personal productivity and collaboration plugins for Claude Code",
+    "version": "0.2.0"
   },
   "plugins": [
     {
       "name": "as-you",
-      "description": "Local-first pattern learning and external memory system. Learns from explicit notes, builds knowledge automatically through statistical analysis, and creates reusable skills from repeated patterns. Privacy-focused with no external dependencies.",
-      "source": "./",
+      "description": "I (Claude) act as you - Build knowledge base from your notes.",
+      "source": "./plugins/as-you",
       "category": "productivity",
+      "strict": false,
+      "homepage": "https://github.com/h315uk3/as_you"
+    },
+    {
+      "name": "with-me",
+      "description": "You work with me (Claude) - I guide your workflow and suggest next actions.",
+      "source": "./plugins/with-me",
+      "category": "collaboration",
       "strict": false,
       "homepage": "https://github.com/h315uk3/as_you"
     }
