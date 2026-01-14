@@ -1,10 +1,10 @@
 {
-  "name": "as-you-marketplace",
+  "name": "symbiosis",
   "owner": {
     "name": "h315uk3"
   },
   "metadata": {
-    "description": "Personal productivity and collaboration plugins for Claude Code",
+    "description": "Human-AI symbiotic development tools",
     "version": "0.2.0"
   },
   "plugins": [

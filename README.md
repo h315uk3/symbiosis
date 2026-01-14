@@ -1,35 +1,47 @@
-# Claude Code Plugin Marketplace
+# Symbiosis
 
-Personal productivity and collaboration plugins for Claude Code.
+**Human-AI symbiotic development tools**
+
+A Claude Code plugin marketplace exploring the philosophical relationship between developers and AI through complementary capabilities.
+
+## The Philosophy
+
+**Symbiosis** represents the mutual relationship between human developers and AI:
+
+- **As You**: Claude learns your patterns and acts as your extended memory
+- **With Me**: Working with you, Claude elicits requirements and guides your thinking
+
+Together, they form a symbiotic development environment where human creativity and AI capabilities enhance each other.
+
+---
 
 ## Available Plugins
 
-### 🧠 [As You](./plugins/as-you/README.md)
+### [As You](./plugins/as-you/README.md)
 
-**"I (Claude) act as you" - AI learns and mimics your habits.**
+**"I (Claude) act as you"**
 
-Local-first pattern learning and external memory system.
+Claude learns from your work patterns and builds knowledge automatically from your explicit notes.
 
-- Automatically extract patterns from session notes
-- Build personalized knowledge base through statistical analysis
-- Create reusable skills and agents from repeated patterns
-- Privacy-focused with no external dependencies
+**Key Features:**
+- Pattern extraction from session notes through statistical analysis
+- Local-first knowledge base with zero external dependencies
+- Automatic skill and agent generation from repeated patterns
+- Privacy by design - all data stays on your machine
 
-**Category**: Productivity
+### [With Me](./plugins/with-me/README.md)
 
-### 🤝 [With Me](./plugins/with-me/README.md)
+**"You work with me (Claude)"**
 
-**"You work with me (Claude)" - Collaborative AI assistant.**
+Working with you, Claude elicits requirements through entropy-reducing communication and adaptive questioning.
 
-Collaborative development and team workflow assistant.
+**Key Features:**
+- `/good-question` - Information-theoretic requirement elicitation
+- Adaptive questioning based on uncertainty dimensions
+- Structured specification generation via forked context analysis
+- Multi-turn conversation optimization with prompt caching
 
-- Team workflow coordination
-- Code sharing and collaboration tools
-- Project synchronization
-
-**Status**: 🚧 Under Development
-
-**Category**: Collaboration
+---
 
 ## Installation
 
@@ -57,31 +69,7 @@ Or use the interactive UI:
 3. Choose your plugin and press **Enter**
 4. Select installation scope (User/Project/Local)
 
-## Requirements
-
-- **Claude Code CLI**: https://claude.com/claude-code
-- **Python 3.11+** (for As You plugin)
-
-## Repository Structure
-
-```
-as_you/
-├── .claude-plugin/
-│   └── marketplace.json       # Plugin marketplace registry
-├── plugins/
-│   ├── as-you/               # Pattern learning plugin
-│   └── with-me/             # Collaboration plugin
-├── .github/                  # CI/CD configurations
-├── docs/                     # Shared documentation
-└── README.md                 # This file
-```
-
-## Development
-
-See individual plugin documentation for development details:
-
-- [As You Development](./plugins/as-you/README.md#development)
-- [With Me Development](./plugins/with-me/README.md)
+---
 
 ## License
 

@@ -1,76 +1,73 @@
 # With Me
 
-**"You work with me (Claude)" - Collaborative AI assistant.**
+**"You work with me (Claude)" - Collaborative AI assistant**
 
-A Claude Code plugin that helps you work more effectively with Claude by facilitating clear communication and requirement gathering.
+Working with you, Claude elicits requirements through entropy-reducing communication and adaptive questioning.
 
-## Philosophy
-
-Sometimes developers can't articulate what they need. Sometimes requirements are unclear. Sometimes you know what you want but can't express it in words. **With Me** helps bridge that gap through structured dialogue and targeted questioning.
-
-When you use this plugin, you'll find yourself saying "good question" - because the questions surface aspects you hadn't considered and help you clarify what you couldn't express.
-
-## Status
-
-🚧 **Under Development** - Core commands available, more features coming soon.
+---
 
 ## Available Commands
 
-### `/with-me:good-question` - Requirement Clarification
+### `/with-me:good-question` - Entropy-Reducing Requirement Elicitation
 
-**The command that makes you say "good question"**
+When you can't articulate your requirements, this command uses an information-theoretic approach to systematically reduce uncertainty through adaptive questioning.
 
-When you can't articulate your requirements, this command conducts a structured interview to extract all the context Claude needs:
+**How it works:**
 
-- **Reference Materials**: Documentation, APIs, specifications to review
-- **Implementation Context**: Existing code patterns, similar features
-- **Requirements**: Expected behavior, inputs, outputs
-- **Constraints**: Performance, security, compatibility needs
-- **Edge Cases**: Error handling, validation requirements
-- **Quality Attributes**: What matters most for this implementation
+The command tracks uncertainty across five key dimensions:
+1. **Purpose (Why)**: What problem is being solved and for whom
+2. **Data (What)**: Inputs, outputs, transformations
+3. **Behavior (How)**: Step-by-step flow and interactions
+4. **Constraints (Limits)**: Technical requirements and limitations
+5. **Quality (Success)**: Test scenarios and success criteria
+
+At each step, Claude identifies the dimension with highest remaining uncertainty and asks questions that maximize information gain. The interview adapts dynamically based on your answers.
 
 **Usage:**
 ```bash
 /with-me:good-question
 ```
 
-The command will guide you through a multi-stage interview, asking progressively deeper questions based on your responses. By the end, both you and Claude will have a clear, unambiguous understanding of what needs to be built.
+**Process:**
+1. Initial Assessment - Claude gauges your overall clarity
+2. Adaptive Questioning - Questions target the most uncertain aspects
+3. Convergence Detection - Claude recognizes when clarity is sufficient
+4. Validation - Your understanding is summarized and confirmed
+5. Analysis - Structured specification generated via `requirement-analysis` skill
 
-**Note:** This isn't just a series of questions - it's an active investigation. Claude will:
-- Fetch and read documentation you reference
-- Examine code files you mention
-- Ask follow-up questions when answers are vague
-- Validate understanding before proceeding
-- Summarize requirements for your confirmation
+---
 
-## Planned Features
+## Available Skills
 
-- Team workflow coordination
-- Code sharing and collaboration tools
-- Project synchronization
-- Additional communication facilitation commands
+### `requirement-analysis` - Structured Requirement Specification
+
+Transforms raw interview data into formal, actionable requirement specifications.
+
+**Context Isolation:** Uses `context: fork` to run in an isolated sub-agent context, keeping your main conversation clean during analysis.
+
+**What it does:**
+- Organizes scattered information into clear structure
+- Detects ambiguities, contradictions, and gaps
+- Generates implementation recommendations
+- Assesses risks and suggests mitigation strategies
+- Produces acceptance criteria and testing strategy
+
+**Output:**
+A comprehensive specification document including:
+- Purpose & context
+- Functional and non-functional requirements
+- Implementation guidance
+- Risk assessment
+- Open questions requiring clarification
+
+---
 
 ## Installation
 
-### Via Marketplace (Recommended)
+See [marketplace README](../../README.md#installation) for installation instructions.
 
-```bash
-# Add marketplace (first time only)
-/plugin marketplace add h315uk3/as_you
-
-# Install plugin
-/plugin install with-me@h315uk3-as_you
-```
-
-### Requirements
-
-- **Claude Code CLI**: https://claude.com/claude-code
+---
 
 ## License
 
 GNU AGPL v3 - [LICENSE](../../LICENSE)
-
-## Related Resources
-
-- [Claude Code Plugins](https://code.claude.com/docs/en/plugins)
-- [As You Plugin](../as-you/README.md)
