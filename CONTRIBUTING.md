@@ -1,6 +1,6 @@
-# Contributing Guide
+# Contributing to Symbiosis
 
-Thank you for your interest in contributing to the As You plugin!
+Thank you for your interest in contributing to Symbiosis plugins!
 
 ## Philosophy
 
@@ -68,8 +68,8 @@ Thank you for your interest in contributing to the As You plugin!
 
 ```bash
 # Clone and setup
-git clone https://github.com/h315uk3/as_you.git
-cd as_you
+git clone https://github.com/h315uk3/symbiosis.git
+cd symbiosis
 
 # Install mise (if not already installed)
 curl https://mise.run | sh
@@ -349,6 +349,35 @@ Test modified commands using these procedures:
 # - All commands listed with descriptions
 # - Related commands section shown
 # - Format is readable and complete
+```
+
+**`/with-me:good-question` - Requirement Elicitation**
+
+```bash
+# Test:
+/with-me:good-question
+
+# Verify flow:
+# 1. Session starts (question_feedback.json created/updated)
+# 2. Adaptive questions are asked based on uncertainty dimensions
+# 3. Each question-answer pair is recorded with reward scores
+# 4. Session completes with summary displayed
+# 5. Check ~/.claude/with_me/question_feedback.json contains session data
+```
+
+**`/with-me:stats` - Question Effectiveness Dashboard**
+
+```bash
+# Prerequisite: Complete at least one /with-me:good-question session
+
+# Test:
+/with-me:stats
+
+# Verify display:
+# - Overview metrics (total sessions, questions, averages)
+# - Best questions (top 5 with avg reward, times used)
+# - Dimension statistics (avg info gain per dimension)
+# - Recent sessions (last 5 with metrics)
 ```
 
 #### Testing Agents

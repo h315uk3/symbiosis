@@ -3,15 +3,55 @@
 [tools]
 python = "3.13.11"    # Python 3.11+ required (using latest stable)
 ruff = "0.14.10"      # Python linter and formatter
-rust = "1.92.0"       # Rust toolchain for future MCP development
 
 [tasks.test]
 description = "Run all Python doctests"
-run = "python3 tests/run_doctests.py"
+run = """
+cd "$(git rev-parse --show-toplevel)" || exit 1
+failed=0
+total=0
+
+for plugin in plugins/as-you plugins/with-me; do
+  if [ -d "$plugin/scripts" ]; then
+    echo "Testing $plugin..."
+    find "$plugin/scripts" -name "*.py" -type f ! -name "__init__.py" | while read -r file; do
+      total=$((total + 1))
+      if python3 -m doctest "$file" 2>&1; then
+        echo "  ✓ $(basename $file)"
+      else
+        echo "  ✗ $(basename $file)"
+        failed=$((failed + 1))
+      fi
+    done
+  fi
+done
+
+if [ $failed -eq 0 ]; then
+  echo ""
+  echo "✓ All doctests passed"
+  exit 0
+else
+  echo ""
+  echo "✗ $failed test(s) failed"
+  exit 1
+fi
+"""
 
 [tasks."test:verbose"]
 description = "Run Python doctests with verbose output"
-run = "python3 tests/run_doctests.py -v"
+run = """
+cd "$(git rev-parse --show-toplevel)" || exit 1
+for plugin in plugins/as-you plugins/with-me; do
+  if [ -d "$plugin/scripts" ]; then
+    echo "Testing $plugin..."
+    find "$plugin/scripts" -name "*.py" -type f ! -name "__init__.py" | while read -r file; do
+      echo ""
+      echo "=== $(basename $file) ==="
+      python3 -m doctest "$file" -v
+    done
+  fi
+done
+"""
 
 [tasks."test:watch"]
 description = "Run tests in watch mode"
@@ -19,7 +59,7 @@ run = """
 while true; do
   clear
   echo "Running tests..."
-  python3 tests/run_doctests.py
+  mise run test
   echo ""
   echo "Waiting for changes... (Ctrl+C to exit)"
   sleep 5
@@ -28,15 +68,74 @@ done
 
 [tasks.lint]
 description = "Lint Python code with ruff"
-run = "ruff check scripts/*.py"
+run = """
+cd "$(git rev-parse --show-toplevel)" || exit 1
+failed=0
+
+for plugin in plugins/as-you plugins/with-me; do
+  if [ -d "$plugin/scripts" ]; then
+    echo "Linting $plugin..."
+    if ruff check "$plugin/scripts"/*.py; then
+      echo "  ✓ No issues found"
+    else
+      failed=$((failed + 1))
+    fi
+  fi
+done
+
+if [ $failed -eq 0 ]; then
+  echo ""
+  echo "✓ All files passed linting"
+  exit 0
+else
+  echo ""
+  echo "✗ Linting failed in $failed plugin(s)"
+  exit 1
+fi
+"""
 
 [tasks.format]
 description = "Format Python code with ruff"
-run = "ruff format scripts/*.py"
+run = """
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+for plugin in plugins/as-you plugins/with-me; do
+  if [ -d "$plugin/scripts" ]; then
+    echo "Formatting $plugin..."
+    ruff format "$plugin/scripts"/*.py
+  fi
+done
+
+echo "✓ Formatting complete"
+"""
 
 [tasks."format:check"]
 description = "Check Python formatting without writing"
-run = "ruff format --check scripts/*.py"
+run = """
+cd "$(git rev-parse --show-toplevel)" || exit 1
+failed=0
+
+for plugin in plugins/as-you plugins/with-me; do
+  if [ -d "$plugin/scripts" ]; then
+    echo "Checking format for $plugin..."
+    if ruff format --check "$plugin/scripts"/*.py; then
+      echo "  ✓ Formatting is correct"
+    else
+      failed=$((failed + 1))
+    fi
+  fi
+done
+
+if [ $failed -eq 0 ]; then
+  echo ""
+  echo "✓ All files are correctly formatted"
+  exit 0
+else
+  echo ""
+  echo "✗ Format check failed in $failed plugin(s)"
+  exit 1
+fi
+"""
 
 [tasks.validate]
 description = "Validate plugin configuration files"
