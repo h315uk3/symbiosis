@@ -4,6 +4,12 @@
 
 A Claude Code plugin marketplace exploring the philosophical relationship between developers and AI through complementary capabilities.
 
+## Core Principles
+
+**No auth, No backend, No external APIs**
+
+All processing happens locally on your machine. Your data never leaves your computer. No telemetry, no cloud services, no authentication required.
+
 ## The Philosophy
 
 **Symbiosis** represents the mutual relationship between human developers and AI:
@@ -25,9 +31,9 @@ Claude learns from your work patterns and builds knowledge automatically from yo
 
 **Key Features:**
 - Pattern extraction from session notes through statistical analysis
-- Local-first knowledge base with zero external dependencies
 - Automatic skill and agent generation from repeated patterns
-- Privacy by design - all data stays on your machine
+- Statistical scoring (TF-IDF, PMI, time-decay)
+- Pure Python implementation with standard library only
 
 ### [With Me](./plugins/with-me/README.md)
 
