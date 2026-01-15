@@ -36,6 +36,12 @@ Thank you for your interest in contributing to Symbiosis plugins!
 - **Purpose**: CONTRIBUTING.md stays stable; volatile details live in code/docstrings
 - **Responsibility**: Contributors update docstrings, not CONTRIBUTING; maintainers enforce separation
 
+**Volatile Information Forbidden:**
+- **Why**: Directory structures, file paths, version numbers, code examples, and tool commands become outdated quickly
+- **Purpose**: Prevent documentation rot and maintenance burden
+- **Responsibility**: Contributors must document "why" (principles) not "what" (implementation); reviewers reject PRs with volatile information in docs
+- **Rule**: Never document directory structures, file paths, version numbers, concrete code examples, tool syntax, API signatures, configuration details, or step-by-step procedures in CONTRIBUTING.md or .claude/rules/
+
 ### Roles and Responsibilities
 
 **Contributors:**
