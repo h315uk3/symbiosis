@@ -41,7 +41,7 @@ def collect_stats() -> dict:
         data = load_tracker(tracker_file)
         stats["patterns"] = len(data.get("patterns", {}))
         stats["candidates"] = len(data.get("promotion_candidates", []))
-    except (json.JSONDecodeError, IOError):
+    except (OSError, json.JSONDecodeError):
         # Corrupted or inaccessible file - use defaults
         stats["patterns"] = 0
         stats["candidates"] = 0

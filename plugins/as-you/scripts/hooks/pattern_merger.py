@@ -4,6 +4,7 @@ Merge similar patterns with backup management.
 Replaces merge-similar-patterns.sh with testable implementation.
 """
 
+import contextlib
 import json
 import os
 import sys
@@ -14,8 +15,9 @@ from pathlib import Path
 scripts_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(scripts_dir))
 
-from lib.common import AsYouConfig
 from commands.similarity_detector import detect_similar_patterns
+
+from lib.common import AsYouConfig
 from lib.pattern_updater import merge_patterns as update_merge_patterns
 from lib.score_calculator import UnifiedScoreCalculator
 
@@ -81,10 +83,8 @@ def create_backup(tracker_file: Path, keep_count: int = 5) -> Path | None:
 
     # Remove old backups beyond keep_count
     for old_backup in backups[keep_count:]:
-        try:
+        with contextlib.suppress(Exception):
             old_backup.unlink()
-        except Exception:
-            pass
 
     return backup_file
 
@@ -230,7 +230,7 @@ def merge_similar_patterns_batch(
 def _count_patterns(tracker_file: Path) -> int:
     """Count total patterns in tracker file."""
     try:
-        with open(tracker_file, "r", encoding="utf-8") as f:
+        with open(tracker_file, encoding="utf-8") as f:
             data = json.load(f)
         return len(data.get("patterns", {}))
     except Exception:

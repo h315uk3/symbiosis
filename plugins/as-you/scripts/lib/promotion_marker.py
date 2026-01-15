@@ -185,9 +185,7 @@ if __name__ == "__main__":
         print("Running promotion marker doctests:")
         # Remove --test to avoid argparse errors
         sys.argv.remove("--test")
-        results = doctest.testmod(
-            verbose=("--verbose" in sys.argv or "-v" in sys.argv)
-        )
+        results = doctest.testmod(verbose=("--verbose" in sys.argv or "-v" in sys.argv))
         if results.failed == 0:
             print(f"\n✓ All {results.attempted} doctests passed")
         else:

@@ -97,8 +97,8 @@ def can_be_similar(s1: str, s2: str, max_distance: int) -> bool:
 
 
 if __name__ == "__main__":
-    import sys
     import doctest
+    import sys
 
     if len(sys.argv) == 3:
         # CLI usage: python levenshtein.py "string1" "string2"

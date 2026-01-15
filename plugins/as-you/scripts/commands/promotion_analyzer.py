@@ -140,7 +140,7 @@ def analyze_promotions(tracker_file: Path) -> list[dict]:
         data = load_tracker(tracker_file)
         candidates = data.get("promotion_candidates", [])
         patterns = data.get("patterns", {})
-    except (json.JSONDecodeError, IOError):
+    except (OSError, json.JSONDecodeError):
         # Corrupted file - no candidates to show
         return []
 

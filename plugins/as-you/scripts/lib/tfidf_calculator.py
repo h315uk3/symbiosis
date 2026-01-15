@@ -12,7 +12,6 @@ from pathlib import Path
 
 from lib.common import AsYouConfig, load_tracker, save_tracker
 
-
 # English stopwords (common words to exclude from high scores)
 # Notes are now translated to English before storage, so only English stopwords needed
 STOPWORDS = {
@@ -142,7 +141,7 @@ def calculate_tfidf_single_pass(
 
         try:
             text = doc_path.read_text(encoding="utf-8")
-        except (IOError, UnicodeDecodeError) as e:
+        except (OSError, UnicodeDecodeError) as e:
             print(f"Warning: Failed to read {doc_path}: {e}", file=sys.stderr)
             continue
 

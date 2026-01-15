@@ -23,10 +23,7 @@ def main():
 
     # Calculate scores
     try:
-        calculator = UnifiedScoreCalculator(
-            config.tracker_file,
-            config.archive_dir
-        )
+        calculator = UnifiedScoreCalculator(config.tracker_file, config.archive_dir)
 
         # Calculate all scores (TF-IDF, PMI, frequency, etc.)
         data = calculator.calculate_all_scores()

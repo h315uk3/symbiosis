@@ -8,19 +8,18 @@ Split from frequency_tracker.py - score calculation moved to score_calculator_ho
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
 
 # Add scripts/ to Python path
 scripts_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(scripts_dir))
 
 from lib.common import AsYouConfig, load_tracker, save_tracker
-from lib.pattern_detector import detect_patterns_from_archives
 from lib.context_extractor import extract_contexts as extract_contexts_func
 from lib.cooccurrence_detector import detect_cooccurrences
+from lib.pattern_detector import detect_patterns_from_archives
 
 
-def update_pattern(patterns: Dict, word: str, count: int, current_date: str) -> None:
+def update_pattern(patterns: dict, word: str, count: int, current_date: str) -> None:
     """
     Update or create pattern entry.
 
@@ -63,7 +62,7 @@ def update_pattern(patterns: Dict, word: str, count: int, current_date: str) -> 
         }
 
 
-def merge_contexts(patterns: Dict, contexts_data: Dict) -> None:
+def merge_contexts(patterns: dict, contexts_data: dict) -> None:
     """
     Merge context data into patterns.
 
@@ -87,10 +86,10 @@ def merge_contexts(patterns: Dict, contexts_data: Dict) -> None:
 
 def update_frequency(
     tracker_file: Path,
-    patterns_data: List[Dict],
-    contexts_data: Dict = None,
-    cooccurrences: List[Dict] = None,
-) -> Dict:
+    patterns_data: list[dict],
+    contexts_data: dict | None = None,
+    cooccurrences: list[dict] | None = None,
+) -> dict:
     """
     Update pattern tracker with new frequency data.
 
@@ -165,10 +164,7 @@ def main():
 
         # 2. Extract contexts
         contexts_data = extract_contexts_func(
-            config.tracker_file,
-            config.archive_dir,
-            top_n=10,
-            max_contexts=5
+            config.tracker_file, config.archive_dir, top_n=10, max_contexts=5
         )
 
         # 3. Detect co-occurrences
@@ -181,10 +177,7 @@ def main():
     # 4. Update frequency tracker
     try:
         stats = update_frequency(
-            config.tracker_file,
-            patterns_data,
-            contexts_data,
-            cooccurrences
+            config.tracker_file, patterns_data, contexts_data, cooccurrences
         )
     except Exception as e:
         print(f"Error updating tracker: {e}", file=sys.stderr)

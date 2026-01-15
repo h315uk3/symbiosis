@@ -12,9 +12,9 @@ from pathlib import Path
 scripts_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(scripts_dir))
 
+from lib.bktree import build_bktree_from_patterns
 from lib.common import AsYouConfig, load_tracker
 from lib.levenshtein import levenshtein_distance
-from lib.bktree import build_bktree_from_patterns
 
 
 def detect_similar_patterns(
@@ -83,7 +83,7 @@ def detect_similar_patterns(
     try:
         data = load_tracker(tracker_file)
         patterns = data.get("patterns", {})
-    except (json.JSONDecodeError, IOError):
+    except (OSError, json.JSONDecodeError):
         # Corrupted or inaccessible file - return empty
         return []
 
@@ -107,7 +107,7 @@ def detect_similar_patterns(
     # Find all similar pairs
     similar_pairs = []
 
-    for word in patterns.keys():
+    for word in patterns:
         # Search for similar words within threshold
         matches = tree.search(word, threshold)
 

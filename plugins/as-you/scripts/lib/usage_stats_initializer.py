@@ -8,10 +8,9 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict
 
 
-def load_stats(stats_file: Path) -> Dict:
+def load_stats(stats_file: Path) -> dict:
     """
     Load usage stats, initialize if needed.
 
@@ -36,7 +35,7 @@ def load_stats(stats_file: Path) -> Dict:
         return {"skills": {}, "agents": {}, "last_updated": ""}
 
     try:
-        with open(stats_file, "r", encoding="utf-8") as f:
+        with open(stats_file, encoding="utf-8") as f:
             data = json.load(f)
 
         # Ensure required keys exist
@@ -48,11 +47,11 @@ def load_stats(stats_file: Path) -> Dict:
             data["last_updated"] = ""
 
         return data
-    except (json.JSONDecodeError, IOError):
+    except (OSError, json.JSONDecodeError):
         return {"skills": {}, "agents": {}, "last_updated": ""}
 
 
-def scan_skills(skills_dir: Path, stats: Dict, current_date: str) -> int:
+def scan_skills(skills_dir: Path, stats: dict, current_date: str) -> int:
     """
     Scan skills directory and add to stats.
 
@@ -101,7 +100,7 @@ def scan_skills(skills_dir: Path, stats: Dict, current_date: str) -> int:
     return count
 
 
-def scan_agents(agents_dir: Path, stats: Dict, current_date: str) -> int:
+def scan_agents(agents_dir: Path, stats: dict, current_date: str) -> int:
     """
     Scan agents directory and add to stats.
 
@@ -159,7 +158,7 @@ def scan_agents(agents_dir: Path, stats: Dict, current_date: str) -> int:
 
 def init_usage_stats(
     stats_file: Path, skills_dir: Path, agents_dir: Path
-) -> Dict[str, int]:
+) -> dict[str, int]:
     """
     Initialize usage statistics for skills and agents.
 

@@ -95,7 +95,7 @@ def get_pattern_contexts(pattern_name: str, tracker_file: Path) -> list[str]:
         patterns = data.get("patterns", {})
         pattern_data = patterns.get(pattern_name, {})
         return pattern_data.get("contexts", [])
-    except (IOError, KeyError):
+    except (OSError, KeyError):
         return []
 
 
@@ -136,9 +136,9 @@ def extract_contexts_for_pattern(
                 continue
 
             try:
-                with open(md_file, "r", encoding="utf-8") as f:
+                with open(md_file, encoding="utf-8") as f:
                     lines = f.readlines()
-            except (IOError, UnicodeDecodeError):
+            except (OSError, UnicodeDecodeError):
                 continue
 
             # Search for pattern (case-insensitive)
@@ -222,10 +222,13 @@ def main():
     config = AsYouConfig.from_environment()
 
     # Extract contexts
-    result = extract_contexts(config.tracker_file, config.archive_dir, top_n=10, max_contexts=5)
+    result = extract_contexts(
+        config.tracker_file, config.archive_dir, top_n=10, max_contexts=5
+    )
 
     # Output JSON
     import json
+
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
