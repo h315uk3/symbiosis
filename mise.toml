@@ -69,15 +69,74 @@ done
 
 [tasks.lint]
 description = "Lint Python code with ruff"
-run = "ruff check scripts/*.py"
+run = """
+cd "$(git rev-parse --show-toplevel)" || exit 1
+failed=0
+
+for plugin in plugins/as-you plugins/with-me; do
+  if [ -d "$plugin/scripts" ]; then
+    echo "Linting $plugin..."
+    if ruff check "$plugin/scripts"/*.py; then
+      echo "  ✓ No issues found"
+    else
+      failed=$((failed + 1))
+    fi
+  fi
+done
+
+if [ $failed -eq 0 ]; then
+  echo ""
+  echo "✓ All files passed linting"
+  exit 0
+else
+  echo ""
+  echo "✗ Linting failed in $failed plugin(s)"
+  exit 1
+fi
+"""
 
 [tasks.format]
 description = "Format Python code with ruff"
-run = "ruff format scripts/*.py"
+run = """
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+for plugin in plugins/as-you plugins/with-me; do
+  if [ -d "$plugin/scripts" ]; then
+    echo "Formatting $plugin..."
+    ruff format "$plugin/scripts"/*.py
+  fi
+done
+
+echo "✓ Formatting complete"
+"""
 
 [tasks."format:check"]
 description = "Check Python formatting without writing"
-run = "ruff format --check scripts/*.py"
+run = """
+cd "$(git rev-parse --show-toplevel)" || exit 1
+failed=0
+
+for plugin in plugins/as-you plugins/with-me; do
+  if [ -d "$plugin/scripts" ]; then
+    echo "Checking format for $plugin..."
+    if ruff format --check "$plugin/scripts"/*.py; then
+      echo "  ✓ Formatting is correct"
+    else
+      failed=$((failed + 1))
+    fi
+  fi
+done
+
+if [ $failed -eq 0 ]; then
+  echo ""
+  echo "✓ All files are correctly formatted"
+  exit 0
+else
+  echo ""
+  echo "✗ Format check failed in $failed plugin(s)"
+  exit 1
+fi
+"""
 
 [tasks.validate]
 description = "Validate plugin configuration files"

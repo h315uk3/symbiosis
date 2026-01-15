@@ -9,7 +9,6 @@ using information theory principles. Pure Python standard library implementation
 import json
 import math
 import sys
-from pathlib import Path
 from typing import Dict, List, Any
 
 
@@ -95,7 +94,10 @@ def calculate_dimension_uncertainty(dimension_data: Dict[str, Any]) -> float:
         uncertainty += 0.4
 
     # Factor 4: Explicit "not sure" indicators
-    if any(phrase in content.lower() for phrase in ["not sure", "maybe", "unclear", "don't know"]):
+    if any(
+        phrase in content.lower()
+        for phrase in ["not sure", "maybe", "unclear", "don't know"]
+    ):
         uncertainty += 0.2
 
     # Clamp to [0.0, 1.0]
@@ -103,8 +105,7 @@ def calculate_dimension_uncertainty(dimension_data: Dict[str, Any]) -> float:
 
 
 def calculate_information_gain(
-    before: Dict[str, float],
-    after: Dict[str, float]
+    before: Dict[str, float], after: Dict[str, float]
 ) -> float:
     """
     Calculate information gain from before to after state.
@@ -137,8 +138,7 @@ def calculate_information_gain(
 
 
 def should_continue_questioning(
-    uncertainties: Dict[str, float],
-    threshold: float = 0.3
+    uncertainties: Dict[str, float], threshold: float = 0.3
 ) -> bool:
     """
     Determine if more questions are needed based on uncertainty levels.
@@ -163,9 +163,7 @@ def should_continue_questioning(
     return any(u > threshold for u in uncertainties.values())
 
 
-def identify_highest_uncertainty_dimension(
-    uncertainties: Dict[str, float]
-) -> str:
+def identify_highest_uncertainty_dimension(uncertainties: Dict[str, float]) -> str:
     """
     Identify the dimension with highest uncertainty (needs most attention).
 
@@ -206,7 +204,9 @@ def format_uncertainty_report(uncertainties: Dict[str, float]) -> str:
     for dimension, uncertainty in sorted(uncertainties.items()):
         certainty = (1.0 - uncertainty) * 100
         status = "✓" if uncertainty < 0.3 else "⚠" if uncertainty < 0.6 else "✗"
-        lines.append(f"{status} {dimension.capitalize()}: {certainty:.0f}% certain (uncertainty: {uncertainty:.2f})")
+        lines.append(
+            f"{status} {dimension.capitalize()}: {certainty:.0f}% certain (uncertainty: {uncertainty:.2f})"
+        )
 
     avg_uncertainty = sum(uncertainties.values()) / len(uncertainties)
     overall_certainty = (1.0 - avg_uncertainty) * 100
@@ -216,7 +216,9 @@ def format_uncertainty_report(uncertainties: Dict[str, float]) -> str:
         highest = identify_highest_uncertainty_dimension(uncertainties)
         lines.append(f"\nRecommendation: Focus next questions on {highest} dimension")
     else:
-        lines.append(f"\nRecommendation: Sufficient clarity achieved, proceed to validation")
+        lines.append(
+            "\nRecommendation: Sufficient clarity achieved, proceed to validation"
+        )
 
     return "\n".join(lines)
 
@@ -231,7 +233,10 @@ def main():
     if len(sys.argv) != 2:
         print("Usage: uncertainty_calculator.py '<json_data>'", file=sys.stderr)
         print("\nExample:", file=sys.stderr)
-        print('  python uncertainty_calculator.py \'{"purpose": {"answered": true, "content": "Build API"}}\'', file=sys.stderr)
+        print(
+            '  python uncertainty_calculator.py \'{"purpose": {"answered": true, "content": "Build API"}}\'',
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     try:
@@ -254,13 +259,16 @@ def main():
     result = {
         "uncertainties": uncertainties,
         "continue_questioning": should_continue_questioning(uncertainties),
-        "next_focus": identify_highest_uncertainty_dimension(uncertainties) if should_continue_questioning(uncertainties) else None
+        "next_focus": identify_highest_uncertainty_dimension(uncertainties)
+        if should_continue_questioning(uncertainties)
+        else None,
     }
     print("\n" + json.dumps(result, indent=2))
 
 
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
 
     if len(sys.argv) > 1:
