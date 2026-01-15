@@ -68,8 +68,8 @@ Thank you for your interest in contributing to Symbiosis plugins!
 
 ```bash
 # Clone and setup
-git clone https://github.com/h315uk3/as_you.git
-cd as_you
+git clone https://github.com/h315uk3/symbiosis.git
+cd symbiosis
 
 # Install mise (if not already installed)
 curl https://mise.run | sh

@@ -14,7 +14,7 @@
       "source": "./plugins/as-you",
       "category": "productivity",
       "strict": false,
-      "homepage": "https://github.com/h315uk3/as_you"
+      "homepage": "https://github.com/h315uk3/symbiosis"
     },
     {
       "name": "with-me",
@@ -22,7 +22,7 @@
       "source": "./plugins/with-me",
       "category": "collaboration",
       "strict": false,
-      "homepage": "https://github.com/h315uk3/as_you"
+      "homepage": "https://github.com/h315uk3/symbiosis"
     }
   ]
 }

@@ -55,17 +55,17 @@ Working with you, Claude elicits requirements through entropy-reducing communica
 
 ```bash
 # Add this marketplace to Claude Code
-/plugin marketplace add h315uk3/as_you
+/plugin marketplace add h315uk3/symbiosis
 ```
 
 ### Install Plugins
 
 ```bash
 # Install As You plugin
-/plugin install as-you@h315uk3-as_you
+/plugin install as-you@h315uk3-symbiosis
 
 # Install With Me plugin
-/plugin install with-me@h315uk3-as_you
+/plugin install with-me@h315uk3-symbiosis
 ```
 
 Or use the interactive UI:

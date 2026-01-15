@@ -3,7 +3,6 @@
 [tools]
 python = "3.13.11"    # Python 3.11+ required (using latest stable)
 ruff = "0.14.10"      # Python linter and formatter
-rust = "1.92.0"       # Rust toolchain for future MCP development
 
 [tasks.test]
 description = "Run all Python doctests"
