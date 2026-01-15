@@ -11,7 +11,7 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any, Optional, TypedDict
+from typing import Any, TypedDict
 
 
 @dataclass(frozen=True)
@@ -34,7 +34,9 @@ class WithMeConfig:
             'question_feedback.json'
         """
         project_root = Path(os.getenv("PROJECT_ROOT", os.getcwd()))
-        claude_dir = Path(os.getenv("CLAUDE_DIR", os.path.join(project_root, ".claude")))
+        claude_dir = Path(
+            os.getenv("CLAUDE_DIR", os.path.join(project_root, ".claude"))
+        )
         with_me_dir = claude_dir / "with_me"
         feedback_file = with_me_dir / "question_feedback.json"
 
@@ -48,38 +50,42 @@ class WithMeConfig:
 
 class QuestionData(TypedDict):
     """Type definition for a single question"""
+
     question: str
     dimension: str
     timestamp: str
-    context: Dict[str, Any]
-    answer: Dict[str, Any]
-    reward_scores: Dict[str, float]
+    context: dict[str, Any]
+    answer: dict[str, Any]
+    reward_scores: dict[str, float]
 
 
 class SessionSummary(TypedDict):
     """Type definition for session summary"""
+
     total_questions: int
     avg_reward_per_question: float
     total_info_gain: float
     final_clarity_score: float
-    dimensions_resolved: List[str]
+    dimensions_resolved: list[str]
     session_efficiency: float
 
 
 class SessionData(TypedDict):
     """Type definition for a session"""
+
     session_id: str
     started_at: str
-    completed_at: Optional[str]
-    duration_seconds: Optional[int]
-    questions: List[QuestionData]
-    summary: Optional[SessionSummary]
+    completed_at: str | None
+    duration_seconds: int | None
+    questions: list[QuestionData]
+    summary: SessionSummary | None
 
 
 class FeedbackData(TypedDict, total=False):
     """Type definition for feedback file structure"""
-    sessions: List[SessionData]
-    statistics: Dict[str, Any]
+
+    sessions: list[SessionData]
+    statistics: dict[str, Any]
 
 
 def load_feedback(feedback_file: Path) -> FeedbackData:
@@ -112,15 +118,15 @@ def load_feedback(feedback_file: Path) -> FeedbackData:
             "total_questions": 0,
             "avg_questions_per_session": 0.0,
             "best_questions": [],
-            "dimension_stats": {}
-        }
+            "dimension_stats": {},
+        },
     }
 
     if not feedback_file.exists():
         return default_data
 
     try:
-        with open(feedback_file, "r", encoding="utf-8") as f:
+        with open(feedback_file, encoding="utf-8") as f:
             data = json.load(f)
 
         # Ensure all required keys exist
@@ -169,13 +175,13 @@ def save_feedback(feedback_file: Path, data: FeedbackData) -> None:
     except Exception as e:
         if temp_file.exists():
             temp_file.unlink()
-        raise IOError(f"Failed to save feedback: {e}") from e
+        raise OSError(f"Failed to save feedback: {e}") from e
 
 
 class QuestionFeedbackManager:
     """Manage question feedback sessions and statistics"""
 
-    def __init__(self, feedback_file: Optional[Path] = None):
+    def __init__(self, feedback_file: Path | None = None):
         """
         Initialize manager with feedback file path
 
@@ -222,9 +228,9 @@ class QuestionFeedbackManager:
         session_id: str,
         question: str,
         dimension: str,
-        context: Dict[str, Any],
-        answer: Dict[str, Any],
-        reward_scores: Dict[str, float],
+        context: dict[str, Any],
+        answer: dict[str, Any],
+        reward_scores: dict[str, float],
     ) -> None:
         """
         Record a question-answer pair in a session
@@ -254,7 +260,7 @@ class QuestionFeedbackManager:
         save_feedback(self.feedback_file, self.data)
 
     def complete_session(
-        self, session_id: str, final_uncertainties: Dict[str, float]
+        self, session_id: str, final_uncertainties: dict[str, float]
     ) -> SessionSummary:
         """
         Complete a session and generate summary
@@ -288,7 +294,11 @@ class QuestionFeedbackManager:
         total_questions = len(questions)
         total_reward = sum(q["reward_scores"].get("total_reward", 0) for q in questions)
         total_info_gain = sum(q["reward_scores"].get("info_gain", 0) for q in questions)
-        final_clarity = 1.0 - (sum(final_uncertainties.values()) / len(final_uncertainties) if final_uncertainties else 0)
+        final_clarity = 1.0 - (
+            sum(final_uncertainties.values()) / len(final_uncertainties)
+            if final_uncertainties
+            else 0
+        )
 
         dimensions_resolved = [
             dim for dim, unc in final_uncertainties.items() if unc < 0.3
@@ -296,11 +306,15 @@ class QuestionFeedbackManager:
 
         summary: SessionSummary = {
             "total_questions": total_questions,
-            "avg_reward_per_question": total_reward / total_questions if total_questions > 0 else 0,
+            "avg_reward_per_question": total_reward / total_questions
+            if total_questions > 0
+            else 0,
             "total_info_gain": total_info_gain,
             "final_clarity_score": final_clarity,
             "dimensions_resolved": dimensions_resolved,
-            "session_efficiency": total_info_gain / total_questions if total_questions > 0 else 0,
+            "session_efficiency": total_info_gain / total_questions
+            if total_questions > 0
+            else 0,
         }
 
         # Update session
@@ -317,7 +331,7 @@ class QuestionFeedbackManager:
 
         return summary
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """
         Get current statistics
 
@@ -326,7 +340,7 @@ class QuestionFeedbackManager:
         """
         return self.data.get("statistics", {})
 
-    def get_recent_sessions(self, limit: int = 5) -> List[SessionData]:
+    def get_recent_sessions(self, limit: int = 5) -> list[SessionData]:
         """
         Get most recent sessions
 
@@ -339,7 +353,7 @@ class QuestionFeedbackManager:
         sessions = self.data.get("sessions", [])
         return sessions[-limit:]
 
-    def _find_session(self, session_id: str) -> Optional[SessionData]:
+    def _find_session(self, session_id: str) -> SessionData | None:
         """Find session by ID"""
         for session in self.data["sessions"]:
             if session["session_id"] == session_id:
@@ -379,12 +393,14 @@ class QuestionFeedbackManager:
         best_questions = []
         for data in question_rewards.values():
             avg_reward = data["total_reward"] / data["count"]
-            best_questions.append({
-                "question": data["question"],
-                "avg_reward": avg_reward,
-                "times_used": data["count"],
-                "dimension": data["dimension"],
-            })
+            best_questions.append(
+                {
+                    "question": data["question"],
+                    "avg_reward": avg_reward,
+                    "times_used": data["count"],
+                    "dimension": data["dimension"],
+                }
+            )
 
         best_questions.sort(key=lambda x: x["avg_reward"], reverse=True)
 
@@ -393,19 +409,30 @@ class QuestionFeedbackManager:
         for dim in ["purpose", "data", "behavior", "constraints", "quality"]:
             dim_questions = []
             for session in completed_sessions:
-                dim_questions.extend([q for q in session["questions"] if q["dimension"] == dim])
+                dim_questions.extend(
+                    [q for q in session["questions"] if q["dimension"] == dim]
+                )
 
             if dim_questions:
-                avg_info_gain = sum(q["reward_scores"].get("info_gain", 0) for q in dim_questions) / len(dim_questions)
+                avg_info_gain = sum(
+                    q["reward_scores"].get("info_gain", 0) for q in dim_questions
+                ) / len(dim_questions)
 
                 # Average questions to resolve (sessions where this dimension was resolved)
                 resolved_sessions = [
-                    s for s in completed_sessions
-                    if s.get("summary") and dim in s["summary"].get("dimensions_resolved", [])
+                    s
+                    for s in completed_sessions
+                    if s.get("summary")
+                    and dim in s["summary"].get("dimensions_resolved", [])
                 ]
                 avg_questions_to_resolve = (
-                    sum(len([q for q in s["questions"] if q["dimension"] == dim]) for s in resolved_sessions) / len(resolved_sessions)
-                    if resolved_sessions else 0
+                    sum(
+                        len([q for q in s["questions"] if q["dimension"] == dim])
+                        for s in resolved_sessions
+                    )
+                    / len(resolved_sessions)
+                    if resolved_sessions
+                    else 0
                 )
 
                 dimension_stats[dim] = {
@@ -416,7 +443,9 @@ class QuestionFeedbackManager:
         self.data["statistics"] = {
             "total_sessions": total_sessions,
             "total_questions": total_questions,
-            "avg_questions_per_session": total_questions / total_sessions if total_sessions > 0 else 0,
+            "avg_questions_per_session": total_questions / total_sessions
+            if total_sessions > 0
+            else 0,
             "best_questions": best_questions[:10],  # Top 10
             "dimension_stats": dimension_stats,
         }
@@ -429,6 +458,7 @@ def main():
 
     if len(sys.argv) > 1 and sys.argv[1] == "--test":
         import doctest
+
         print("Running doctests...")
         doctest.testmod()
         print("✓ All doctests passed")
@@ -443,9 +473,12 @@ def main():
         session_id,
         "What problem does this solve?",
         "purpose",
-        {"uncertainties_before": {"purpose": 1.0}, "uncertainties_after": {"purpose": 0.3}},
+        {
+            "uncertainties_before": {"purpose": 1.0},
+            "uncertainties_after": {"purpose": 0.3},
+        },
         {"word_count": 45, "has_examples": True},
-        {"info_gain": 0.7, "clarity": 0.9, "total_reward": 0.85}
+        {"info_gain": 0.7, "clarity": 0.9, "total_reward": 0.85},
     )
     print("Recorded question")
 

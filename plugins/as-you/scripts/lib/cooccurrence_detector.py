@@ -11,10 +11,9 @@ import sys
 from collections import Counter
 from itertools import combinations
 from pathlib import Path
-from typing import Dict, List
 
 
-def extract_words(text: str, min_length: int = 3) -> List[str]:
+def extract_words(text: str, min_length: int = 3) -> list[str]:
     """
     Extract words from text (lowercase, min length).
 
@@ -39,7 +38,7 @@ def extract_words(text: str, min_length: int = 3) -> List[str]:
     return sorted(set(words))
 
 
-def generate_word_pairs(words: List[str]) -> List[tuple]:
+def generate_word_pairs(words: list[str]) -> list[tuple]:
     """
     Generate all unique word pairs from a list.
 
@@ -68,7 +67,7 @@ def generate_word_pairs(words: List[str]) -> List[tuple]:
     return [tuple(sorted(pair)) for pair in combinations(words, 2)]
 
 
-def detect_cooccurrences(archive_dir: Path, top_n: int = 20) -> List[Dict]:
+def detect_cooccurrences(archive_dir: Path, top_n: int = 20) -> list[dict]:
     """
     Detect word co-occurrences from archive files.
 
@@ -105,7 +104,7 @@ def detect_cooccurrences(archive_dir: Path, top_n: int = 20) -> List[Dict]:
                 continue
 
             try:
-                with open(md_file, "r", encoding="utf-8") as f:
+                with open(md_file, encoding="utf-8") as f:
                     for line in f:
                         # Remove timestamps [HH:MM]
                         line = re.sub(r"\[\d{2}:\d{2}\]", "", line)
@@ -120,7 +119,7 @@ def detect_cooccurrences(archive_dir: Path, top_n: int = 20) -> List[Dict]:
                         for pair in pairs:
                             pair_counter[pair] += 1
 
-            except (IOError, UnicodeDecodeError):
+            except (OSError, UnicodeDecodeError):
                 continue
 
     except Exception:

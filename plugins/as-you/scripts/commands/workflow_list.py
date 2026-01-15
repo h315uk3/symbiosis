@@ -78,11 +78,13 @@ def list_workflows(commands_dir: Path | None = None) -> list[dict]:
         # Get modification time
         mtime = md_file.stat().st_mtime
 
-        workflows.append({
-            "name": name,
-            "mtime": mtime,
-            "mtime_str": datetime.fromtimestamp(mtime).strftime("%b %d %H:%M"),
-        })
+        workflows.append(
+            {
+                "name": name,
+                "mtime": mtime,
+                "mtime_str": datetime.fromtimestamp(mtime).strftime("%b %d %H:%M"),
+            }
+        )
 
     # Sort by modification time (newest first)
     workflows.sort(key=lambda w: w["mtime"], reverse=True)

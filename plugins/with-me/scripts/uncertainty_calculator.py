@@ -9,10 +9,10 @@ using information theory principles. Pure Python standard library implementation
 import json
 import math
 import sys
-from typing import Dict, List, Any
+from typing import Any
 
 
-def calculate_entropy(probabilities: List[float]) -> float:
+def calculate_entropy(probabilities: list[float]) -> float:
     """
     Calculate Shannon entropy for a probability distribution.
 
@@ -34,7 +34,7 @@ def calculate_entropy(probabilities: List[float]) -> float:
     return abs(result) if abs(result) < 1e-10 else result  # Handle -0.0
 
 
-def calculate_dimension_uncertainty(dimension_data: Dict[str, Any]) -> float:
+def calculate_dimension_uncertainty(dimension_data: dict[str, Any]) -> float:
     """
     Calculate uncertainty score for a single dimension (0.0-1.0).
 
@@ -105,7 +105,7 @@ def calculate_dimension_uncertainty(dimension_data: Dict[str, Any]) -> float:
 
 
 def calculate_information_gain(
-    before: Dict[str, float], after: Dict[str, float]
+    before: dict[str, float], after: dict[str, float]
 ) -> float:
     """
     Calculate information gain from before to after state.
@@ -138,7 +138,7 @@ def calculate_information_gain(
 
 
 def should_continue_questioning(
-    uncertainties: Dict[str, float], threshold: float = 0.3
+    uncertainties: dict[str, float], threshold: float = 0.3
 ) -> bool:
     """
     Determine if more questions are needed based on uncertainty levels.
@@ -163,7 +163,7 @@ def should_continue_questioning(
     return any(u > threshold for u in uncertainties.values())
 
 
-def identify_highest_uncertainty_dimension(uncertainties: Dict[str, float]) -> str:
+def identify_highest_uncertainty_dimension(uncertainties: dict[str, float]) -> str:
     """
     Identify the dimension with highest uncertainty (needs most attention).
 
@@ -182,7 +182,7 @@ def identify_highest_uncertainty_dimension(uncertainties: Dict[str, float]) -> s
     return max(uncertainties.items(), key=lambda x: x[1])[0]
 
 
-def format_uncertainty_report(uncertainties: Dict[str, float]) -> str:
+def format_uncertainty_report(uncertainties: dict[str, float]) -> str:
     """
     Format uncertainty scores as human-readable report.
 

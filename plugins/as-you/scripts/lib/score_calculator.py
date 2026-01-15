@@ -22,12 +22,11 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict
 
 # Import from existing modules
 from lib.common import AsYouConfig
-from lib.tfidf_calculator import is_stopword, calculate_tfidf_single_pass
 from lib.pmi_calculator import count_total_patterns
+from lib.tfidf_calculator import calculate_tfidf_single_pass, is_stopword
 
 
 class UnifiedScoreCalculator:
@@ -84,13 +83,13 @@ class UnifiedScoreCalculator:
         self.total_docs = 0
 
         # Load tracker data
-        with open(tracker_file, "r", encoding="utf-8") as f:
+        with open(tracker_file, encoding="utf-8") as f:
             self.data = json.load(f)
 
         self.patterns = self.data.get("patterns", {})
         self.cooccurrences = self.data.get("cooccurrences", [])
 
-    def calculate_all_scores(self) -> Dict:
+    def calculate_all_scores(self) -> dict:
         """Calculate all scores in single pass."""
         if not self.patterns:
             return self.data

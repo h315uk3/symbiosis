@@ -4,11 +4,11 @@ Unicode-aware pattern detection for session archives.
 Extracts patterns from text using language-agnostic tokenization.
 """
 
-import re
 import json
+import re
 import sys
-from pathlib import Path
 from collections import Counter
+from pathlib import Path
 
 from lib.common import AsYouConfig
 
