@@ -10,6 +10,51 @@ Working with you, Claude elicits requirements through entropy-reducing communica
 
 ### `/with-me:good-question` - Entropy-Reducing Requirement Elicitation
 
+**Note**: This command now includes automatic question effectiveness tracking. Each question's reward score (information gain, clarity, specificity, etc.) is recorded for continuous improvement.
+
+### `/with-me:stats` - Question Effectiveness Dashboard
+
+View statistics about question effectiveness from past sessions.
+
+**What it shows:**
+- Total sessions and questions asked
+- Best performing question patterns (highest reward scores)
+- Dimension-specific statistics (avg information gain per dimension)
+- Recent session summaries
+
+**Usage:**
+```bash
+/with-me:stats
+```
+
+**Data Storage**: All statistics are stored locally in `~/.claude/with_me/question_feedback.json`
+
+---
+
+## Question Effectiveness System
+
+The with-me plugin includes an AI reward function-based question evaluation system:
+
+**Composite Reward Function:**
+```
+r = 0.40*info_gain + 0.20*clarity + 0.15*specificity +
+    0.15*actionability + 0.10*relevance - 0.02*kl_divergence
+```
+
+**Evaluation Dimensions:**
+1. **Information Gain** (40%): How much uncertainty is reduced
+2. **Clarity** (20%): Question understandability
+3. **Specificity** (15%): Explicit dimension targeting
+4. **Actionability** (15%): User's ability to answer
+5. **Context Relevance** (10%): Focus on highest uncertainty
+6. **KL Divergence Penalty**: Redundancy detection
+
+This system helps identify which questions are most effective at eliciting requirements, enabling continuous improvement of the interview process.
+
+---
+
+### `/with-me:good-question` - Entropy-Reducing Requirement Elicitation
+
 When you can't articulate your requirements, this command uses an information-theoretic approach to systematically reduce uncertainty through adaptive questioning.
 
 **How it works:**
