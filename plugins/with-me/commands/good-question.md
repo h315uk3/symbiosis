@@ -58,6 +58,103 @@ Track implicit uncertainty across five key dimensions:
 
 ---
 
+## Dimension Dependencies (DAG Structure)
+
+**CRITICAL: Dimensions have prerequisite relationships. Always check dependencies before selecting the next dimension.**
+
+```mermaid
+graph TD
+    Purpose["Purpose (Why)<br/>Foundation - No prerequisites"]
+    Data["Data (What)<br/>Requires: Purpose clear"]
+    Behavior["Behavior (How)<br/>Requires: Purpose clear"]
+    Constraints["Constraints (Limits)<br/>Requires: Behavior clear"]
+    Quality["Quality (Success)<br/>Requires: Behavior + Data clear"]
+
+    Purpose --> Data
+    Purpose --> Behavior
+    Behavior --> Constraints
+    Behavior --> Quality
+    Data --> Quality
+
+    style Purpose fill:#e1f5e1
+    style Data fill:#fff3cd
+    style Behavior fill:#fff3cd
+    style Constraints fill:#f8d7da
+    style Quality fill:#f8d7da
+```
+
+**Dependency Rules:**
+
+1. **Purpose** (Foundation)
+   - No prerequisites
+   - Must be addressed first if unclear
+   - Gates: Data, Behavior
+
+2. **Data**
+   - Prerequisite: Purpose < 0.4 (sufficiently clear)
+   - Rationale: Cannot define data requirements without understanding the problem
+
+3. **Behavior**
+   - Prerequisite: Purpose < 0.4 (sufficiently clear)
+   - Rationale: Cannot define workflow without understanding the goal
+   - Gates: Constraints, Quality
+
+4. **Constraints**
+   - Prerequisite: Behavior < 0.4 (sufficiently clear)
+   - Rationale: Performance/compatibility constraints depend on what the system does
+
+5. **Quality**
+   - Prerequisites: Behavior < 0.4 AND Data < 0.4 (both clear)
+   - Rationale: Test criteria require understanding both what data flows and how it's processed
+
+**Dimension Selection Algorithm:**
+
+```python
+# 1. Filter dimensions by prerequisites
+def can_ask_dimension(dim, uncertainties):
+    prerequisites = {
+        "purpose": [],
+        "data": ["purpose"],
+        "behavior": ["purpose"],
+        "constraints": ["behavior"],
+        "quality": ["behavior", "data"]
+    }
+
+    for prereq in prerequisites[dim]:
+        if uncertainties[prereq] > 0.4:  # Threshold: >0.4 = unclear
+            return False
+    return True
+
+# 2. Select highest uncertainty among askable dimensions
+askable_dims = {
+    dim: unc
+    for dim, unc in uncertainties.items()
+    if can_ask_dimension(dim, uncertainties)
+}
+
+next_dimension = max(askable_dims, key=askable_dims.get)
+```
+
+**Example Scenarios:**
+
+```
+Scenario 1: Purpose unclear, Behavior has highest uncertainty
+uncertainties = {"purpose": 0.7, "data": 0.5, "behavior": 0.8, "constraints": 0.6}
+
+Without DAG: Select "behavior" (highest = 0.8)
+With DAG: Select "purpose" (behavior blocked by purpose prerequisite)
+```
+
+```
+Scenario 2: Purpose clear, Behavior unclear
+uncertainties = {"purpose": 0.2, "data": 0.5, "behavior": 0.8, "constraints": 0.6}
+
+Without DAG: Select "behavior" (highest = 0.8)
+With DAG: Select "behavior" (prerequisite satisfied ✓)
+```
+
+---
+
 ## Interview Protocol
 
 ### Phase 0: Reference Collection (Optional)
@@ -121,7 +218,15 @@ Begin with an open question to gauge overall clarity:
 
 ### Phase 2: Adaptive Questioning
 
-At each step, identify the dimension with **highest remaining uncertainty** and ask targeted questions.
+**CRITICAL: Use DAG-aware dimension selection (see "Dimension Dependencies" section above).**
+
+At each step:
+1. Calculate uncertainty scores for all dimensions
+2. **Filter dimensions by prerequisites** (check DAG dependencies)
+3. Identify the dimension with **highest remaining uncertainty among askable dimensions**
+4. Ask targeted questions for that dimension
+
+The question templates below are organized by dimension. Always verify prerequisites before using a template.
 
 #### If Purpose has highest uncertainty:
 
@@ -322,16 +427,49 @@ Example:
    - `CONTEXT_JSON`: `{"dimension": "...", "uncertainties_before": {...}, "uncertainties_after": {...}}`
    - `ANSWER_JSON`: `{"text": "...", "word_count": N, "has_examples": true/false}`
 
-3. **Assess progress using uncertainty scores:**
+3. **Assess progress using uncertainty scores and DAG dependencies:**
 
-   **Identify the next focus dimension:**
+   **Identify the next focus dimension (DAG-aware):**
    ```python
    # From UNCERTAINTIES output
    uncertainties = {...}  # e.g., {"purpose": 0.25, "data": 0.65, "behavior": 0.70}
 
-   next_dimension = max(uncertainties, key=uncertainties.get)
+   # Step 1: Filter by prerequisites (see DAG structure above)
+   prerequisites = {
+       "purpose": [],
+       "data": ["purpose"],
+       "behavior": ["purpose"],
+       "constraints": ["behavior"],
+       "quality": ["behavior", "data"]
+   }
+
+   def can_ask_dimension(dim):
+       for prereq in prerequisites[dim]:
+           if uncertainties[prereq] > 0.4:  # Prerequisite not satisfied
+               return False
+       return True
+
+   # Step 2: Select highest uncertainty among askable dimensions
+   askable = {
+       dim: unc
+       for dim, unc in uncertainties.items()
+       if can_ask_dimension(dim)
+   }
+
+   if not askable:
+       # All dimensions blocked by prerequisites
+       # → Return to foundation (purpose)
+       next_dimension = "purpose"
+   else:
+       next_dimension = max(askable, key=askable.get)
+
    next_uncertainty = uncertainties[next_dimension]
    ```
+
+   **Why DAG matters:**
+   - Prevents asking "How does it work?" when "Why is it needed?" is unclear
+   - Ensures logical questioning order
+   - Maximizes information gain by building on foundation
 
    **Determine questioning strategy based on uncertainty level:**
 
