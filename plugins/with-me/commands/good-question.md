@@ -206,6 +206,61 @@ Follow up with:
 
 ---
 
+### Phase 2.5: Question Quality Evaluation (Optional but Recommended)
+
+**Before asking a question, evaluate its expected effectiveness:**
+
+```bash
+REWARD=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/question_reward_calculator.py" \
+  "$QUESTION_TEXT" \
+  "$CONTEXT_JSON")
+```
+
+Where `CONTEXT_JSON` contains:
+```json
+{
+  "uncertainties": {"purpose": 0.9, "data": 0.7, ...},
+  "answered_dimensions": ["purpose"],
+  "question_history": ["What problem does this solve?", ...]
+}
+```
+
+**Interpret reward score:**
+
+```json
+{
+  "total_reward": 0.75,
+  "components": {
+    "info_gain": 0.80,
+    "clarity": 0.85,
+    "specificity": 0.60,
+    "actionability": 0.75,
+    "relevance": 0.90
+  },
+  "kl_divergence": 0.15
+}
+```
+
+**Quality thresholds:**
+- `total_reward > 0.7`: High-quality question, proceed
+- `0.5 < total_reward ≤ 0.7`: Acceptable, but consider refinement
+- `total_reward ≤ 0.5`: Low quality, rephrase for better effectiveness
+
+**Component interpretation:**
+- **Low info_gain** (<0.5): Target dimension already well-understood, choose different dimension
+- **Low clarity** (<0.6): Question is too complex or compound, simplify
+- **Low specificity** (<0.5): Question is too vague, add concrete examples or constraints
+- **Low actionability** (<0.5): Question may be too technical or premature, adjust level
+- **Low relevance** (<0.5): Question doesn't address high-uncertainty areas, refocus
+
+**If total_reward is low, refine the question:**
+1. Identify the weakest component
+2. Adjust question to improve that aspect
+3. Re-evaluate reward score
+4. Proceed when total_reward > 0.7 or after 2 refinement attempts
+
+---
+
 ### Phase 3: Convergence Detection
 
 After each answer, assess:
@@ -267,24 +322,79 @@ Example:
    - `CONTEXT_JSON`: `{"dimension": "...", "uncertainties_before": {...}, "uncertainties_after": {...}}`
    - `ANSWER_JSON`: `{"text": "...", "word_count": N, "has_examples": true/false}`
 
-3. **Assess progress:**
-   - Did this reduce uncertainty significantly?
-     - Yes → Continue on this dimension with deeper questions
-     - No → Move to next highest-uncertainty dimension
+3. **Assess progress using uncertainty scores:**
 
-   - Is this dimension now sufficiently clear?
-     - Yes → Mark dimension as resolved, move to next
-     - No → Continue questioning this dimension
+   **Identify the next focus dimension:**
+   ```python
+   # From UNCERTAINTIES output
+   uncertainties = {...}  # e.g., {"purpose": 0.25, "data": 0.65, "behavior": 0.70}
 
-   - Are all dimensions sufficiently clear?
-     - Yes → Proceed to validation phase
-     - No → Continue adaptive questioning
+   next_dimension = max(uncertainties, key=uncertainties.get)
+   next_uncertainty = uncertainties[next_dimension]
+   ```
+
+   **Determine questioning strategy based on uncertainty level:**
+
+   - **High uncertainty (> 0.6)**: Ask broad exploratory questions
+     - Example: "What problem does this solve?" (Purpose)
+     - Goal: Gather foundational understanding
+
+   - **Medium uncertainty (0.3 - 0.6)**: Ask specific clarification questions
+     - Example: "What are the specific data inputs required?" (Data)
+     - Goal: Fill remaining gaps with targeted questions
+
+   - **Low uncertainty (< 0.3)**: Validate understanding or move to next dimension
+     - Example: "To confirm, the data flow is X→Y→Z, correct?" (Validation)
+     - Goal: Confirm completeness before proceeding
+
+   **Decision flow:**
+   1. If next_uncertainty > 0.3 → Continue questioning on that dimension
+   2. If all uncertainties < 0.3 → Proceed to validation phase
+   3. If stuck (no uncertainty reduction after 2 questions) → Rephrase or change approach
 
 ---
 
 ### Phase 4: Validation & Gap Analysis
 
-When most dimensions have low uncertainty:
+**Check readiness for validation phase:**
+
+Verify that all dimensions meet the uncertainty threshold:
+
+```python
+# Example uncertainty scores
+uncertainties = {
+  "purpose": 0.18,
+  "data": 0.22,
+  "behavior": 0.19,
+  "constraints": 0.15,
+  "quality": 0.28
+}
+
+# Check if all dimensions are sufficiently clear
+max_uncertainty = max(uncertainties.values())
+avg_uncertainty = sum(uncertainties.values()) / len(uncertainties)
+
+print(f"Max uncertainty: {max_uncertainty:.2f}")
+print(f"Avg uncertainty: {avg_uncertainty:.2f}")
+```
+
+**Proceed to validation if:**
+- All dimensions < 0.30 (sufficiently clear)
+- Average uncertainty < 0.25 (overall clarity achieved)
+
+**Continue questioning if:**
+- Any dimension ≥ 0.30 (needs more clarification)
+- Average uncertainty ≥ 0.25 (more work needed)
+
+**Edge case - stuck dimension:**
+If a dimension remains > 0.30 after 3+ questions:
+- User may genuinely not know the answer
+- Acknowledge the uncertainty in the specification
+- Proceed to validation with documented assumptions
+
+---
+
+When ready for validation:
 
 **Summarize your understanding:**
 ```markdown
@@ -386,11 +496,42 @@ Choose questions that maximize expected information gain:
 - Confirmations: "Is this correct?"
 - Already-implied information
 
+### Numerical Guidance Integration
+
+**Use uncertainty scores and reward metrics to guide decisions:**
+
+**Uncertainty-driven selection:**
+```python
+# Always target the dimension with highest uncertainty
+next_dim = max(uncertainties, key=uncertainties.get)
+```
+
+**Reward-driven refinement:**
+- Generate initial question
+- Calculate reward score
+- If total_reward < 0.7: Refine based on weakest component
+- Repeat until total_reward ≥ 0.7 or 2 attempts made
+
+**Progress tracking:**
+```python
+# Track uncertainty reduction
+info_gain = uncertainty_before - uncertainty_after
+
+# If info_gain < 0.1 after 2 questions on same dimension:
+#   → Question approach not working, try different angle
+#   → Or dimension may be inherently unclear to user
+```
+
+**Statistical learning:**
+- Consult `/with-me:stats` for best-performing question patterns
+- Use historical avg_questions_per_dimension to estimate remaining effort
+- Avoid question patterns with low historical reward
+
 ### Adaptive Depth
 
-- High uncertainty → Broad exploratory questions
-- Medium uncertainty → Targeted clarification questions
-- Low uncertainty → Validation questions
+- **High uncertainty (> 0.6)** → Broad exploratory questions
+- **Medium uncertainty (0.3 - 0.6)** → Targeted clarification questions
+- **Low uncertainty (< 0.3)** → Validation questions
 
 ### Branching Logic
 
