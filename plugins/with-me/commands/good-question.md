@@ -94,7 +94,7 @@ Before beginning the interview, check if the developer has reference materials t
 **Start tracking this question session:**
 
 ```bash
-SESSION_ID=$(bash "${CLAUDE_PLUGIN_ROOT}/commands/good-question-impl.sh" start | jq -r '.session_id')
+SESSION_ID=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/commands/good-question-impl.sh" start | jq -r '.session_id')
 ```
 
 Store `SESSION_ID` in a variable for use throughout this session.
@@ -256,7 +256,7 @@ Example:
 
 2. **Record this question-answer pair:**
    ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/commands/good-question-impl.sh" record \
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/commands/good-question-impl.sh" record \
      "$SESSION_ID" \
      "$QUESTION_TEXT" \
      "$CONTEXT_JSON" \
@@ -326,7 +326,7 @@ Once all dimensions are sufficiently clear and validated:
 **Complete the question session tracking:**
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/commands/good-question-impl.sh" complete \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/commands/good-question-impl.sh" complete \
   "$SESSION_ID" \
   "$FINAL_UNCERTAINTIES_JSON"
 ```
