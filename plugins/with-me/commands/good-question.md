@@ -91,6 +91,16 @@ Before beginning the interview, check if the developer has reference materials t
 
 ### Phase 1: Initial Assessment
 
+**Start tracking this question session:**
+
+```bash
+SESSION_ID=$(bash "${CLAUDE_PLUGIN_ROOT}/commands/good-question-impl.sh" start | jq -r '.session_id')
+```
+
+Store `SESSION_ID` in a variable for use throughout this session.
+
+---
+
 Begin with an open question to gauge overall clarity:
 
 **Ask using AskUserQuestion:**
@@ -200,17 +210,75 @@ Follow up with:
 
 After each answer, assess:
 
-1. **Did this reduce uncertainty significantly?**
-   - Yes → Continue on this dimension with deeper questions
-   - No → Move to next highest-uncertainty dimension
+**CRITICAL: Before calculating uncertainty, translate content to English**
 
-2. **Is this dimension now sufficiently clear?**
-   - Yes → Mark dimension as resolved, move to next
-   - No → Continue questioning this dimension
+The uncertainty calculator uses word count analysis, which only works correctly with English text. Before calling `uncertainty_calculator.py`:
 
-3. **Are all dimensions sufficiently clear?**
-   - Yes → Proceed to validation phase
-   - No → Continue adaptive questioning
+1. **Translate all `content` fields to English**
+   - Detect if content is non-English (Japanese, etc.)
+   - If non-English: Translate to English while preserving technical terms
+   - If already English: Use as-is
+   - This ensures consistent word count calculation across languages
+
+Example:
+```python
+# Before (Japanese content - word count = 1)
+"content": "機微情報漏洩防止、配信者一般向け、リスクと価値提案が明確"
+
+# After translation (English content - word count = 12)
+"content": "Prevent sensitive information leakage, for general streamers, risks and value proposition are clear"
+```
+
+**Then perform uncertainty assessment and record the question:**
+
+1. **Calculate uncertainty scores** (with translated English content):
+   ```bash
+   UNCERTAINTIES=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/uncertainty_calculator.py" "$DIMENSION_DATA_JSON")
+   ```
+
+   Where `DIMENSION_DATA_JSON` contains all dimension data with translated English content:
+   ```json
+   {
+     "purpose": {"answered": true, "content": "Translated English text...", "examples": 2, "contradictions": false},
+     "data": {"answered": true, "content": "Translated English text...", "examples": 1, "contradictions": false},
+     ...
+   }
+   ```
+
+   The script outputs uncertainty scores and recommendations:
+   ```json
+   {
+     "uncertainties": {"purpose": 0.2, "data": 0.5, ...},
+     "continue_questioning": true,
+     "next_focus": "data"
+   }
+   ```
+
+2. **Record this question-answer pair:**
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/commands/good-question-impl.sh" record \
+     "$SESSION_ID" \
+     "$QUESTION_TEXT" \
+     "$CONTEXT_JSON" \
+     "$ANSWER_JSON"
+   ```
+
+   Where:
+   - `CONTEXT_JSON`: `{"dimension": "...", "uncertainties_before": {...}, "uncertainties_after": {...}}`
+   - `ANSWER_JSON`: `{"text": "...", "word_count": N, "has_examples": true/false}`
+
+3. **Assess progress:**
+   - Did this reduce uncertainty significantly?
+     - Yes → Continue on this dimension with deeper questions
+     - No → Move to next highest-uncertainty dimension
+
+   - Is this dimension now sufficiently clear?
+     - Yes → Mark dimension as resolved, move to next
+     - No → Continue questioning this dimension
+
+   - Are all dimensions sufficiently clear?
+     - Yes → Proceed to validation phase
+     - No → Continue adaptive questioning
 
 ---
 
@@ -254,6 +322,23 @@ If refinement needed, identify remaining gaps and ask targeted follow-ups.
 ### Phase 5: Analysis (Forked Context)
 
 Once all dimensions are sufficiently clear and validated:
+
+**Complete the question session tracking:**
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/commands/good-question-impl.sh" complete \
+  "$SESSION_ID" \
+  "$FINAL_UNCERTAINTIES_JSON"
+```
+
+Where `FINAL_UNCERTAINTIES_JSON` contains the final uncertainty scores for all dimensions:
+```json
+{"purpose": 0.2, "data": 0.3, "behavior": 0.25, "constraints": 0.15, "quality": 0.28}
+```
+
+This generates session statistics for the `/with-me:stats` command.
+
+---
 
 **Invoke the requirement-analysis skill:**
 
