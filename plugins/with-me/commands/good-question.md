@@ -193,7 +193,7 @@ Before beginning the interview, check if the developer has reference materials t
 **Start tracking this question session:**
 
 ```bash
-SESSION_ID=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/commands/good-question-impl.sh" start | jq -r '.session_id')
+SESSION_ID=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/good-question-impl.sh" start | jq -r '.session_id')
 ```
 
 Store `SESSION_ID` in a variable for use throughout this session.
@@ -369,111 +369,18 @@ Follow up with:
 
 **Cross-Dimension Contradiction Detection:**
 
-After each answer in Phase 2-2, check for contradictions with prerequisite dimensions:
+After each answer in Phase 2-2, review prerequisite dimensions for semantic contradictions.
 
-```python
-def detect_contradictions(current_dim, current_answer, dimension_data):
-    """
-    Detect semantic contradictions between current answer and prerequisites.
+**Common contradiction types:**
+- Purpose-Data: Target users don't match data scale (e.g., "individual streamers" + "enterprise database")
+- Purpose-Behavior: Complexity mismatch (e.g., "simple tool" + "complex multi-stage workflow")
+- Behavior-Constraints: Processing type conflict (e.g., "real-time" + "batch processing")
+- Data-Constraints: Format incompatibility (e.g., "video files" + "text-only environment")
 
-    Examples of contradictions:
-    - Purpose: "for streamers" + Data: "enterprise customer database"
-    - Behavior: "real-time processing" + Constraints: "batch processing acceptable"
-    - Data: "video files" + Constraints: "must work in text-only terminals"
-    """
-    contradictions = []
-
-    if current_dim == "data":
-        purpose_content = dimension_data.get("purpose", {}).get("content", "").lower()
-        current_lower = current_answer.lower()
-
-        # Check for user-type mismatches
-        if any(word in purpose_content for word in ["streamer", "individual", "creator"]):
-            if any(word in current_lower for word in ["enterprise", "corporate", "organization"]):
-                contradictions.append({
-                    "type": "purpose-data mismatch",
-                    "prereq_dim": "purpose",
-                    "reason": "Target users (individuals) don't typically use enterprise-scale data"
-                })
-
-    if current_dim == "behavior":
-        purpose_content = dimension_data.get("purpose", {}).get("content", "").lower()
-        current_lower = current_answer.lower()
-
-        # Check for complexity mismatches
-        if "simple" in purpose_content or "basic" in purpose_content:
-            if any(word in current_lower for word in ["complex workflow", "multi-stage", "orchestration"]):
-                contradictions.append({
-                    "type": "purpose-behavior mismatch",
-                    "prereq_dim": "purpose",
-                    "reason": "Purpose mentions simplicity, but behavior describes complex processes"
-                })
-
-    if current_dim == "constraints":
-        behavior_content = dimension_data.get("behavior", {}).get("content", "").lower()
-        data_content = dimension_data.get("data", {}).get("content", "").lower()
-        current_lower = current_answer.lower()
-
-        # Check for processing-type conflicts
-        if "real-time" in behavior_content or "streaming" in behavior_content:
-            if "batch" in current_lower:
-                contradictions.append({
-                    "type": "behavior-constraints conflict",
-                    "prereq_dim": "behavior",
-                    "reason": "Behavior describes real-time processing, but constraint allows batch"
-                })
-
-        # Check for data-format conflicts
-        if "video" in data_content or "image" in data_content:
-            if "text-only" in current_lower or "cli" in current_lower:
-                contradictions.append({
-                    "type": "data-constraints conflict",
-                    "prereq_dim": "data",
-                    "reason": "Data includes media files, but constraints limit to text-only environment"
-                })
-
-    return contradictions
-```
-
-**When contradictions are detected:**
-
-1. **Immediately notify user:**
-   ```
-   ⚠️ Potential contradiction detected:
-
-   [Dimension 1]: "user statement"
-   [Dimension 2]: "conflicting statement"
-
-   Reason: [explanation]
-   ```
-
-2. **Ask user to clarify** using AskUserQuestion:
-   - Question: "I noticed a potential contradiction. Which is correct?"
-   - Header: "Clarification"
-   - Options:
-     - Label: "[Dimension 1] is correct", Description: "Update [Dimension 2] to align"
-     - Label: "[Dimension 2] is correct", Description: "Update [Dimension 1] to align"
-     - Label: "Both are correct", Description: "Let me explain the nuance"
-
-3. **Update dimension data** based on user's choice
-4. **Recalculate uncertainties** for affected dimensions
-5. **Continue deep dive** with updated context
-
-**Store contradictions for Phase 2-3:**
-```json
-{
-  "detected_contradictions": [
-    {
-      "round": 8,
-      "dimension": "constraints",
-      "conflicting_with": "behavior",
-      "type": "processing-type conflict",
-      "resolved": true,
-      "resolution": "Updated constraints to allow real-time processing"
-    }
-  ]
-}
-```
+**When contradictions detected:**
+1. Notify user with specific conflicting statements
+2. Ask user to clarify using AskUserQuestion with options: which is correct, both need update, or nuance explanation
+3. Update affected dimension data and recalculate uncertainties
 
 ---
 
@@ -536,23 +443,7 @@ Where `CONTEXT_JSON` contains:
 
 **Goal:** Resolve any unresolved contradictions before proceeding to validation.
 
-**Check for unresolved contradictions:**
-
-```python
-unresolved = [
-    c for c in detected_contradictions
-    if not c.get("resolved", False)
-]
-
-if unresolved:
-    # Need to resolve before proceeding
-    for contradiction in unresolved:
-        # Present to user for resolution
-        # Update affected dimensions
-        # Mark as resolved
-```
-
-**If contradictions remain:**
+**If contradictions remain unresolved:**
 
 1. **List all unresolved contradictions** to user
 2. **For each contradiction**, ask user to choose:
@@ -569,26 +460,9 @@ if unresolved:
 **Phase 2-2 Exit Criteria:**
 
 Proceed to Phase 2-3 (or Phase 3 if no contradictions) when:
-
-```python
-# Check 1: All dimensions have been questioned at least once (from Phase 2-1)
-all_answered = all(
-    dim_data.get("answered", False)
-    for dim_data in dimension_data.values()
-)
-
-# Check 2: All dimensions are below threshold
-all_clear = all(unc < 0.3 for unc in uncertainties.values())
-
-# Check 3: OR stuck dimension (same uncertainty after 3+ questions)
-stuck_dimensions = [
-    dim for dim, history in uncertainty_history.items()
-    if len(history) >= 3 and history[-1] == history[-3]
-]
-
-if all_answered and (all_clear or stuck_dimensions):
-    # Proceed to Phase 2-3 or Phase 3
-```
+- All dimensions `answered: true` (guaranteed by Phase 2-1)
+- AND all dimensions < 0.3 threshold
+- OR stuck dimension detected (same uncertainty after 3+ questions)
 
 ---
 
@@ -642,7 +516,7 @@ Example:
 
 2. **Record this question-answer pair:**
    ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/scripts/commands/good-question-impl.sh" record \
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/good-question-impl.sh" record \
      "$SESSION_ID" \
      "$QUESTION_TEXT" \
      "$CONTEXT_JSON" \
@@ -655,47 +529,7 @@ Example:
 
 3. **Assess progress using uncertainty scores and DAG dependencies:**
 
-   **Identify the next focus dimension (DAG-aware):**
-   ```python
-   # From UNCERTAINTIES output
-   uncertainties = {...}  # e.g., {"purpose": 0.25, "data": 0.65, "behavior": 0.70}
-
-   # Step 1: Filter by prerequisites (see DAG structure above)
-   prerequisites = {
-       "purpose": [],
-       "data": ["purpose"],
-       "behavior": ["purpose"],
-       "constraints": ["behavior", "data"],  # Requires both Behavior and Data
-       "quality": ["behavior"]  # Requires only Behavior
-   }
-
-   def can_ask_dimension(dim):
-       for prereq in prerequisites[dim]:
-           if uncertainties[prereq] > 0.4:  # Prerequisite not satisfied
-               return False
-       return True
-
-   # Step 2: Select highest uncertainty among askable dimensions
-   askable = {
-       dim: unc
-       for dim, unc in uncertainties.items()
-       if can_ask_dimension(dim)
-   }
-
-   if not askable:
-       # All dimensions blocked by prerequisites
-       # → Return to foundation (purpose)
-       next_dimension = "purpose"
-   else:
-       next_dimension = max(askable, key=askable.get)
-
-   next_uncertainty = uncertainties[next_dimension]
-   ```
-
-   **Why DAG matters:**
-   - Prevents asking "How does it work?" when "Why is it needed?" is unclear
-   - Ensures logical questioning order
-   - Maximizes information gain by building on foundation
+   Use the DAG-aware dimension selection algorithm (see "Dimension Dependencies" section above) to identify the next focus dimension.
 
    **Determine questioning strategy based on uncertainty level:**
 
@@ -720,40 +554,7 @@ Example:
 
 ### Phase 4: Validation & Gap Analysis
 
-**Check readiness for validation phase:**
-
-Verify that all dimensions meet BOTH conditions:
-
-```python
-# Example uncertainty scores
-uncertainties = {
-  "purpose": 0.18,
-  "data": 0.22,
-  "behavior": 0.19,
-  "constraints": 0.15,
-  "quality": 0.28
-}
-
-# Condition 1: All dimensions have been questioned (completeness guarantee)
-all_answered = all(
-    dim_data.get("answered", False)
-    for dim_data in dimension_data.values()
-)
-
-# Condition 2: All dimensions are below threshold (clarity achieved)
-all_clear = all(unc < 0.3 for unc in uncertainties.values())
-
-# Additional metrics
-max_uncertainty = max(uncertainties.values())
-avg_uncertainty = sum(uncertainties.values()) / len(uncertainties)
-
-print(f"All answered: {all_answered}")
-print(f"All clear (< 0.3): {all_clear}")
-print(f"Max uncertainty: {max_uncertainty:.2f}")
-print(f"Avg uncertainty: {avg_uncertainty:.2f}")
-```
-
-**Proceed to validation if:**
+**Validation Readiness Criteria:**
 - All dimensions have `answered: true` (from Phase 2-1)
 - AND all dimensions < 0.30 (from Phase 2-2)
 - Average uncertainty < 0.25 (overall clarity achieved)
@@ -813,7 +614,7 @@ Once all dimensions are sufficiently clear and validated:
 **Complete the question session tracking:**
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/commands/good-question-impl.sh" complete \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/good-question-impl.sh" complete \
   "$SESSION_ID" \
   "$FINAL_UNCERTAINTIES_JSON"
 ```
