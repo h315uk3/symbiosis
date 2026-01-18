@@ -111,7 +111,7 @@ def main() -> None:
     if "--plain-output" in args:
         plain_output = True
         args.remove("--plain-output")
-        sys.argv = [sys.argv[0]] + args  # Rebuild argv without flag
+        sys.argv = [sys.argv[0], *args]  # Rebuild argv without flag
 
     if len(args) < 1:
         usage()
