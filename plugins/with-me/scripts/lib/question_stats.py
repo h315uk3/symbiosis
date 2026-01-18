@@ -7,7 +7,7 @@ Collects and outputs JSON statistics about question effectiveness.
 import json
 import sys
 
-from lib.question_feedback_manager import QuestionFeedbackManager, WithMeConfig
+from .question_feedback_manager import QuestionFeedbackManager, WithMeConfig
 
 
 def collect_stats() -> dict:

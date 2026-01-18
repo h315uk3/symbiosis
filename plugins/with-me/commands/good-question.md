@@ -193,7 +193,8 @@ Before beginning the interview, check if the developer has reference materials t
 **Start tracking this question session:**
 
 ```bash
-SESSION_ID=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/good-question-impl.sh" start | jq -r '.session_id')
+cd "${CLAUDE_PLUGIN_ROOT}/scripts"
+SESSION_ID=$(python3 -m lib.question_feedback_cli start | jq -r '.session_id')
 ```
 
 Store `SESSION_ID` in a variable for use throughout this session.
@@ -247,11 +248,51 @@ Ask **one lightweight question** for each dimension in this fixed order:
 - Even if user says "not sure", mark dimension as `answered: true` with high uncertainty
 - Goal: All dimensions reach `answered: true`, uncertainties typically 0.5-0.8
 
+**CRITICAL: Record each question immediately after receiving the answer**
+
+After asking each dimension question:
+
+1. **Capture the answer** from AskUserQuestion or direct user input
+2. **Prepare answer data**:
+   ```bash
+   ANSWER_JSON=$(cat <<EOF
+   {
+     "text": "$ANSWER",
+     "word_count": $(echo "$ANSWER" | wc -w),
+     "has_examples": false
+   }
+   EOF
+   )
+   ```
+
+3. **Prepare context** (uncertainties before and after this question):
+   ```bash
+   CONTEXT_JSON=$(cat <<EOF
+   {
+     "dimension": "purpose",
+     "uncertainties_before": {"purpose": 1.0, ...},
+     "uncertainties_after": {"purpose": 0.6, ...}
+   }
+   EOF
+   )
+   ```
+
+4. **Record the question**:
+   ```bash
+   cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 -m lib.question_feedback_cli record \
+     "$SESSION_ID" \
+     "$QUESTION_TEXT" \
+     "$CONTEXT_JSON" \
+     "$ANSWER_JSON"
+   ```
+
+**Repeat for all 5 dimensions in Phase 2-1.**
+
 **After Initial Survey:**
 ```bash
 # All dimensions now have answered: true
 # Calculate uncertainties (will be 0.5-0.8 range typically)
-UNCERTAINTIES=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/uncertainty_calculator.py" "$DIMENSION_DATA_JSON")
+UNCERTAINTIES=$(cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 -m lib.uncertainty_calculator "$DIMENSION_DATA_JSON")
 ```
 
 Expected result:
@@ -280,7 +321,54 @@ At each iteration:
 2. **Apply DAG filter** to identify askable dimensions
 3. **Select highest uncertainty** among askable dimensions
 4. **Ask detailed, targeted questions** for that dimension
-5. **Detect cross-dimension contradictions** (see below)
+5. **IMMEDIATELY record the question** (see recording template below)
+6. **Detect cross-dimension contradictions** (see below)
+
+**CRITICAL: Recording Template for Every Question**
+
+After asking ANY question in Phase 2-2, immediately record it:
+
+```bash
+# 1. Capture answer from AskUserQuestion or direct input
+ANSWER="[User's answer]"
+
+# 2. Calculate word count and detect examples
+WORD_COUNT=$(echo "$ANSWER" | wc -w)
+HAS_EXAMPLES=false  # Set to true if answer contains concrete examples
+
+# 3. Prepare answer JSON
+ANSWER_JSON=$(cat <<EOF
+{
+  "text": "$ANSWER",
+  "word_count": $WORD_COUNT,
+  "has_examples": $HAS_EXAMPLES
+}
+EOF
+)
+
+# 4. Prepare context with before/after uncertainties
+CONTEXT_JSON=$(cat <<EOF
+{
+  "dimension": "$DIMENSION",
+  "uncertainties_before": $UNCERTAINTIES_BEFORE,
+  "uncertainties_after": $UNCERTAINTIES_AFTER
+}
+EOF
+)
+
+# 5. Record the question
+cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 -m lib.question_feedback_cli record \
+  "$SESSION_ID" \
+  "$QUESTION_TEXT" \
+  "$CONTEXT_JSON" \
+  "$ANSWER_JSON"
+```
+
+**This recording step is MANDATORY for every question, including:**
+- AskUserQuestion selections
+- Direct text input questions
+- Follow-up clarifications
+- Validation questions
 
 **Question templates below are organized by dimension. Use these for deep-dive questions.**
 
@@ -466,13 +554,44 @@ Proceed to Phase 2-3 (or Phase 3 if no contradictions) when:
 
 ---
 
+### Recording Checklist (Quality Assurance)
+
+**Before proceeding to Phase 3, verify that ALL questions were recorded:**
+
+- [ ] Counted total questions asked (AskUserQuestion + direct input)
+- [ ] Verified each question was followed by `record` command
+- [ ] Checked `question_feedback.json` has matching number of entries
+- [ ] All recorded questions have `reward_scores` calculated
+- [ ] All recorded questions have `uncertainties_before` and `uncertainties_after`
+
+**If recording was missed:**
+
+Questions without proper recording will NOT contribute to:
+- Question quality improvement
+- `/with-me:stats` analytics
+- Entropy maximization learning
+- Best question pattern discovery
+
+**Recovery procedure** (if recordings were missed):
+1. Review conversation history
+2. Identify all questions and answers
+3. Use `record-batch` command to record missed questions
+4. Verify recordings before completing session
+
+**Why this matters:**
+- Machine learning feedback loop depends on complete data
+- Incomplete recordings bias statistics toward recorded questions only
+- Pattern recognition requires full question coverage
+
+---
+
 ### Phase 3: Convergence Detection
 
 After each answer, assess:
 
 **CRITICAL: Before calculating uncertainty, translate content to English**
 
-The uncertainty calculator uses word count analysis, which only works correctly with English text. Before calling `uncertainty_calculator.py`:
+The uncertainty calculator uses word count analysis, which only works correctly with English text. Before calling the uncertainty calculator:
 
 1. **Translate all `content` fields to English**
    - Detect if content is non-English (Japanese, etc.)
@@ -493,7 +612,7 @@ Example:
 
 1. **Calculate uncertainty scores** (with translated English content):
    ```bash
-   UNCERTAINTIES=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/uncertainty_calculator.py" "$DIMENSION_DATA_JSON")
+   UNCERTAINTIES=$(cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 -m lib.uncertainty_calculator "$DIMENSION_DATA_JSON")
    ```
 
    Where `DIMENSION_DATA_JSON` contains all dimension data with translated English content:
@@ -516,7 +635,7 @@ Example:
 
 2. **Record this question-answer pair:**
    ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/scripts/good-question-impl.sh" record \
+   cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 -m lib.question_feedback_cli record \
      "$SESSION_ID" \
      "$QUESTION_TEXT" \
      "$CONTEXT_JSON" \
@@ -607,6 +726,98 @@ If refinement needed, identify remaining gaps and ask targeted follow-ups.
 
 ---
 
+### Phase 4.5: Pre-Completion Recording Verification
+
+**Before completing the session, verify recording completeness:**
+
+```bash
+# Count recorded questions in current session
+RECORDED_COUNT=$(python3 <<EOF
+import sys
+import os
+sys.path.insert(0, "${CLAUDE_PLUGIN_ROOT}/scripts")
+from lib.question_feedback_manager import QuestionFeedbackManager
+
+manager = QuestionFeedbackManager()
+session = manager._find_session("$SESSION_ID")
+if session:
+    print(len(session["questions"]))
+else:
+    print(0)
+EOF
+)
+
+echo "Questions recorded in this session: $RECORDED_COUNT"
+```
+
+**Compare with actual questions asked:**
+
+Count all questions you asked:
+- Phase 0: Reference collection questions
+- Phase 1: Initial assessment question
+- Phase 2-1: 5 dimension survey questions
+- Phase 2-2: Deep-dive questions (varies)
+- Phase 2-3: Contradiction resolution questions (if any)
+- Phase 3: Convergence validation questions
+- Phase 4: Final validation question
+
+**If counts don't match:**
+
+1. **Identify missing questions** by reviewing conversation history
+2. **Prepare batch recording data** (if more than 2 questions missed):
+   ```bash
+   BATCH_JSON=$(cat <<EOF
+   [
+     {
+       "question": "What problem does this solve?",
+       "dimension": "purpose",
+       "context": {
+         "dimension": "purpose",
+         "uncertainties_before": {"purpose": 1.0},
+         "uncertainties_after": {"purpose": 0.3}
+       },
+       "answer": {
+         "text": "User's answer here",
+         "word_count": 45,
+         "has_examples": true
+       }
+     }
+   ]
+   EOF
+   )
+
+   cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 -m lib.question_feedback_cli record-batch \
+     "$SESSION_ID" \
+     "$BATCH_JSON"
+   ```
+
+3. **Or record individually** (if only 1-2 questions missed):
+   Use the standard `record` command for each missed question
+
+**Verification:**
+```bash
+# Re-check count after recovery
+FINAL_COUNT=$(python3 <<EOF
+import sys
+sys.path.insert(0, "${CLAUDE_PLUGIN_ROOT}/scripts")
+from lib.question_feedback_manager import QuestionFeedbackManager
+
+manager = QuestionFeedbackManager()
+session = manager._find_session("$SESSION_ID")
+print(len(session["questions"]) if session else 0)
+EOF
+)
+
+echo "Final recorded count: $FINAL_COUNT"
+```
+
+**Proceed to Phase 5 only when:**
+- Recorded count matches actual questions asked
+- OR missing questions have been recovered via batch recording
+- OR you acknowledge incomplete data and document it in session notes
+
+---
+
 ### Phase 5: Analysis (Forked Context)
 
 Once all dimensions are sufficiently clear and validated:
@@ -614,7 +825,7 @@ Once all dimensions are sufficiently clear and validated:
 **Complete the question session tracking:**
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/good-question-impl.sh" complete \
+cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 -m lib.question_feedback_cli complete \
   "$SESSION_ID" \
   "$FINAL_UNCERTAINTIES_JSON"
 ```
