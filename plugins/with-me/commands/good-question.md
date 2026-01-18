@@ -67,20 +67,20 @@ graph TD
     Purpose["Purpose (Why)<br/>Foundation - No prerequisites"]
     Data["Data (What)<br/>Requires: Purpose clear"]
     Behavior["Behavior (How)<br/>Requires: Purpose clear"]
-    Constraints["Constraints (Limits)<br/>Requires: Behavior clear"]
-    Quality["Quality (Success)<br/>Requires: Behavior + Data clear"]
+    Constraints["Constraints (Limits)<br/>Requires: Behavior + Data clear"]
+    Quality["Quality (Success)<br/>Requires: Behavior clear"]
 
     Purpose --> Data
     Purpose --> Behavior
     Behavior --> Constraints
+    Data --> Constraints
     Behavior --> Quality
-    Data --> Quality
 
-    style Purpose fill:#e1f5e1
-    style Data fill:#fff3cd
-    style Behavior fill:#fff3cd
-    style Constraints fill:#f8d7da
-    style Quality fill:#f8d7da
+    style Purpose fill:#2d5016,stroke:#4a7c2c,stroke-width:3px,color:#fff
+    style Data fill:#5d4a1f,stroke:#9a7b32,stroke-width:3px,color:#fff
+    style Behavior fill:#5d4a1f,stroke:#9a7b32,stroke-width:3px,color:#fff
+    style Constraints fill:#5c1f1f,stroke:#8b3434,stroke-width:3px,color:#fff
+    style Quality fill:#5c1f1f,stroke:#8b3434,stroke-width:3px,color:#fff
 ```
 
 **Dependency Rules:**
@@ -100,12 +100,14 @@ graph TD
    - Gates: Constraints, Quality
 
 4. **Constraints**
-   - Prerequisite: Behavior < 0.4 (sufficiently clear)
-   - Rationale: Performance/compatibility constraints depend on what the system does
+   - Prerequisites: Behavior < 0.4 AND Data < 0.4 (both clear)
+   - Rationale: Constraints require understanding both what the system does and what data it processes
+   - Example: "15fps processing" is meaningless without knowing data volume and format
 
 5. **Quality**
-   - Prerequisites: Behavior < 0.4 AND Data < 0.4 (both clear)
-   - Rationale: Test criteria require understanding both what data flows and how it's processed
+   - Prerequisite: Behavior < 0.4 (sufficiently clear)
+   - Rationale: Success criteria primarily depend on expected behavior
+   - Data specifics are helpful but not required for defining test scenarios
 
 **Dimension Selection Algorithm:**
 
@@ -116,8 +118,8 @@ def can_ask_dimension(dim, uncertainties):
         "purpose": [],
         "data": ["purpose"],
         "behavior": ["purpose"],
-        "constraints": ["behavior"],
-        "quality": ["behavior", "data"]
+        "constraints": ["behavior", "data"],  # Requires both Behavior and Data
+        "quality": ["behavior"]  # Requires only Behavior
     }
 
     for prereq in prerequisites[dim]:
@@ -216,17 +218,71 @@ Begin with an open question to gauge overall clarity:
 
 ---
 
-### Phase 2: Adaptive Questioning
+### Phase 2: Structured Questioning
 
-**CRITICAL: Use DAG-aware dimension selection (see "Dimension Dependencies" section above).**
+**Three-stage approach to ensure completeness and detect contradictions:**
 
-At each step:
-1. Calculate uncertainty scores for all dimensions
-2. **Filter dimensions by prerequisites** (check DAG dependencies)
-3. Identify the dimension with **highest remaining uncertainty among askable dimensions**
-4. Ask targeted questions for that dimension
+1. **Phase 2-1: Initial Survey** - Ask each dimension once (guarantees completeness)
+2. **Phase 2-2: DAG-based Deep Dive** - Follow DAG order for efficient clarification
+3. **Phase 2-3: Contradiction Resolution** - Resolve any detected inconsistencies
 
-The question templates below are organized by dimension. Always verify prerequisites before using a template.
+---
+
+#### Phase 2-1: Initial Survey (Completeness Guarantee)
+
+**Goal:** Ensure all dimensions are addressed at least once, preventing `answered: false` (uncertainty = 1.0) from remaining.
+
+**Process:**
+
+Ask **one lightweight question** for each dimension in this fixed order:
+1. Purpose
+2. Data
+3. Behavior
+4. Constraints
+5. Quality
+
+**IMPORTANT:**
+- Ask **brief, open-ended questions** to get initial context
+- Do NOT deep-dive yet - save detailed follow-ups for Phase 2-2
+- Even if user says "not sure", mark dimension as `answered: true` with high uncertainty
+- Goal: All dimensions reach `answered: true`, uncertainties typically 0.5-0.8
+
+**After Initial Survey:**
+```bash
+# All dimensions now have answered: true
+# Calculate uncertainties (will be 0.5-0.8 range typically)
+UNCERTAINTIES=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/uncertainty_calculator.py" "$DIMENSION_DATA_JSON")
+```
+
+Expected result:
+```json
+{
+  "purpose": 0.6,    // answered: true, brief response
+  "data": 0.8,       // answered: true, user said "not sure"
+  "behavior": 0.7,   // answered: true, partial explanation
+  "constraints": 0.5,
+  "quality": 0.7
+}
+```
+
+All dimensions are now in the system. None will remain at 1.0.
+
+---
+
+#### Phase 2-2: DAG-based Deep Dive (Efficient Clarification)
+
+**Goal:** Reduce uncertainties below threshold (< 0.3) following logical DAG order.
+
+**Process:**
+
+At each iteration:
+1. **Calculate current uncertainties** (with English translation)
+2. **Apply DAG filter** to identify askable dimensions
+3. **Select highest uncertainty** among askable dimensions
+4. **Ask detailed, targeted questions** for that dimension
+5. **Detect cross-dimension contradictions** (see below)
+
+**Question templates below are organized by dimension. Use these for deep-dive questions.**
 
 #### If Purpose has highest uncertainty:
 
@@ -311,6 +367,116 @@ Follow up with:
 
 ---
 
+**Cross-Dimension Contradiction Detection:**
+
+After each answer in Phase 2-2, check for contradictions with prerequisite dimensions:
+
+```python
+def detect_contradictions(current_dim, current_answer, dimension_data):
+    """
+    Detect semantic contradictions between current answer and prerequisites.
+
+    Examples of contradictions:
+    - Purpose: "for streamers" + Data: "enterprise customer database"
+    - Behavior: "real-time processing" + Constraints: "batch processing acceptable"
+    - Data: "video files" + Constraints: "must work in text-only terminals"
+    """
+    contradictions = []
+
+    if current_dim == "data":
+        purpose_content = dimension_data.get("purpose", {}).get("content", "").lower()
+        current_lower = current_answer.lower()
+
+        # Check for user-type mismatches
+        if any(word in purpose_content for word in ["streamer", "individual", "creator"]):
+            if any(word in current_lower for word in ["enterprise", "corporate", "organization"]):
+                contradictions.append({
+                    "type": "purpose-data mismatch",
+                    "prereq_dim": "purpose",
+                    "reason": "Target users (individuals) don't typically use enterprise-scale data"
+                })
+
+    if current_dim == "behavior":
+        purpose_content = dimension_data.get("purpose", {}).get("content", "").lower()
+        current_lower = current_answer.lower()
+
+        # Check for complexity mismatches
+        if "simple" in purpose_content or "basic" in purpose_content:
+            if any(word in current_lower for word in ["complex workflow", "multi-stage", "orchestration"]):
+                contradictions.append({
+                    "type": "purpose-behavior mismatch",
+                    "prereq_dim": "purpose",
+                    "reason": "Purpose mentions simplicity, but behavior describes complex processes"
+                })
+
+    if current_dim == "constraints":
+        behavior_content = dimension_data.get("behavior", {}).get("content", "").lower()
+        data_content = dimension_data.get("data", {}).get("content", "").lower()
+        current_lower = current_answer.lower()
+
+        # Check for processing-type conflicts
+        if "real-time" in behavior_content or "streaming" in behavior_content:
+            if "batch" in current_lower:
+                contradictions.append({
+                    "type": "behavior-constraints conflict",
+                    "prereq_dim": "behavior",
+                    "reason": "Behavior describes real-time processing, but constraint allows batch"
+                })
+
+        # Check for data-format conflicts
+        if "video" in data_content or "image" in data_content:
+            if "text-only" in current_lower or "cli" in current_lower:
+                contradictions.append({
+                    "type": "data-constraints conflict",
+                    "prereq_dim": "data",
+                    "reason": "Data includes media files, but constraints limit to text-only environment"
+                })
+
+    return contradictions
+```
+
+**When contradictions are detected:**
+
+1. **Immediately notify user:**
+   ```
+   ⚠️ Potential contradiction detected:
+
+   [Dimension 1]: "user statement"
+   [Dimension 2]: "conflicting statement"
+
+   Reason: [explanation]
+   ```
+
+2. **Ask user to clarify** using AskUserQuestion:
+   - Question: "I noticed a potential contradiction. Which is correct?"
+   - Header: "Clarification"
+   - Options:
+     - Label: "[Dimension 1] is correct", Description: "Update [Dimension 2] to align"
+     - Label: "[Dimension 2] is correct", Description: "Update [Dimension 1] to align"
+     - Label: "Both are correct", Description: "Let me explain the nuance"
+
+3. **Update dimension data** based on user's choice
+4. **Recalculate uncertainties** for affected dimensions
+5. **Continue deep dive** with updated context
+
+**Store contradictions for Phase 2-3:**
+```json
+{
+  "detected_contradictions": [
+    {
+      "round": 8,
+      "dimension": "constraints",
+      "conflicting_with": "behavior",
+      "type": "processing-type conflict",
+      "resolved": true,
+      "resolution": "Updated constraints to allow real-time processing"
+    }
+  ]
+}
+```
+
+---
+
 ### Phase 2.5: Question Quality Evaluation (Optional but Recommended)
 
 **Before asking a question, evaluate its expected effectiveness:**
@@ -363,6 +529,66 @@ Where `CONTEXT_JSON` contains:
 2. Adjust question to improve that aspect
 3. Re-evaluate reward score
 4. Proceed when total_reward > 0.7 or after 2 refinement attempts
+
+---
+
+#### Phase 2-3: Contradiction Resolution
+
+**Goal:** Resolve any unresolved contradictions before proceeding to validation.
+
+**Check for unresolved contradictions:**
+
+```python
+unresolved = [
+    c for c in detected_contradictions
+    if not c.get("resolved", False)
+]
+
+if unresolved:
+    # Need to resolve before proceeding
+    for contradiction in unresolved:
+        # Present to user for resolution
+        # Update affected dimensions
+        # Mark as resolved
+```
+
+**If contradictions remain:**
+
+1. **List all unresolved contradictions** to user
+2. **For each contradiction**, ask user to choose:
+   - Which dimension is correct?
+   - Should both be updated?
+   - Is there context that makes both valid?
+
+3. **Update dimension data** based on resolution
+4. **Recalculate uncertainties** for updated dimensions
+
+**If no contradictions:**
+- Proceed directly to Phase 3
+
+**Phase 2-2 Exit Criteria:**
+
+Proceed to Phase 2-3 (or Phase 3 if no contradictions) when:
+
+```python
+# Check 1: All dimensions have been questioned at least once (from Phase 2-1)
+all_answered = all(
+    dim_data.get("answered", False)
+    for dim_data in dimension_data.values()
+)
+
+# Check 2: All dimensions are below threshold
+all_clear = all(unc < 0.3 for unc in uncertainties.values())
+
+# Check 3: OR stuck dimension (same uncertainty after 3+ questions)
+stuck_dimensions = [
+    dim for dim, history in uncertainty_history.items()
+    if len(history) >= 3 and history[-1] == history[-3]
+]
+
+if all_answered and (all_clear or stuck_dimensions):
+    # Proceed to Phase 2-3 or Phase 3
+```
 
 ---
 
@@ -439,8 +665,8 @@ Example:
        "purpose": [],
        "data": ["purpose"],
        "behavior": ["purpose"],
-       "constraints": ["behavior"],
-       "quality": ["behavior", "data"]
+       "constraints": ["behavior", "data"],  # Requires both Behavior and Data
+       "quality": ["behavior"]  # Requires only Behavior
    }
 
    def can_ask_dimension(dim):
@@ -496,7 +722,7 @@ Example:
 
 **Check readiness for validation phase:**
 
-Verify that all dimensions meet the uncertainty threshold:
+Verify that all dimensions meet BOTH conditions:
 
 ```python
 # Example uncertainty scores
@@ -508,21 +734,34 @@ uncertainties = {
   "quality": 0.28
 }
 
-# Check if all dimensions are sufficiently clear
+# Condition 1: All dimensions have been questioned (completeness guarantee)
+all_answered = all(
+    dim_data.get("answered", False)
+    for dim_data in dimension_data.values()
+)
+
+# Condition 2: All dimensions are below threshold (clarity achieved)
+all_clear = all(unc < 0.3 for unc in uncertainties.values())
+
+# Additional metrics
 max_uncertainty = max(uncertainties.values())
 avg_uncertainty = sum(uncertainties.values()) / len(uncertainties)
 
+print(f"All answered: {all_answered}")
+print(f"All clear (< 0.3): {all_clear}")
 print(f"Max uncertainty: {max_uncertainty:.2f}")
 print(f"Avg uncertainty: {avg_uncertainty:.2f}")
 ```
 
 **Proceed to validation if:**
-- All dimensions < 0.30 (sufficiently clear)
+- All dimensions have `answered: true` (from Phase 2-1)
+- AND all dimensions < 0.30 (from Phase 2-2)
 - Average uncertainty < 0.25 (overall clarity achieved)
 
 **Continue questioning if:**
-- Any dimension ≥ 0.30 (needs more clarification)
-- Average uncertainty ≥ 0.25 (more work needed)
+- Any dimension still has `answered: false` (should not happen after Phase 2-1)
+- OR any dimension ≥ 0.30 (needs more clarification)
+- OR average uncertainty ≥ 0.25 (more work needed)
 
 **Edge case - stuck dimension:**
 If a dimension remains > 0.30 after 3+ questions:
