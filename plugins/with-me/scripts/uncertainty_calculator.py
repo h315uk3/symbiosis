@@ -62,10 +62,18 @@ def calculate_dimension_uncertainty(dimension_data: dict[str, Any]) -> float:
         1.0
         >>> calculate_dimension_uncertainty({"answered": True, "content": "short"})
         0.7
-        >>> data = {"answered": True, "content": "detailed explanation with specifics", "examples": 2}
+        >>> data = {
+        ...     "answered": True,
+        ...     "content": "detailed explanation with specifics",
+        ...     "examples": 2,
+        ... }
         >>> calculate_dimension_uncertainty(data) < 0.6
         True
-        >>> data_with_contradiction = {"answered": True, "content": "some info", "contradictions": True}
+        >>> data_with_contradiction = {
+        ...     "answered": True,
+        ...     "content": "some info",
+        ...     "contradictions": True,
+        ... }
         >>> calculate_dimension_uncertainty(data_with_contradiction) > 0.8
         True
     """
@@ -174,7 +182,9 @@ def identify_highest_uncertainty_dimension(uncertainties: dict[str, float]) -> s
         Name of dimension with highest uncertainty
 
     Examples:
-        >>> identify_highest_uncertainty_dimension({"purpose": 0.2, "data": 0.8, "behavior": 0.5})
+        >>> identify_highest_uncertainty_dimension(
+        ...     {"purpose": 0.2, "data": 0.8, "behavior": 0.5}
+        ... )
         'data'
         >>> identify_highest_uncertainty_dimension({"purpose": 1.0, "data": 0.1})
         'purpose'

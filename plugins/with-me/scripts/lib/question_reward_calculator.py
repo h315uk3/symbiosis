@@ -58,14 +58,14 @@ class QuestionRewardCalculator:
         Examples:
             >>> calc = QuestionRewardCalculator()
             >>> context = {
-            ...     'uncertainties': {'purpose': 0.9, 'data': 0.7},
-            ...     'answered_dimensions': [],
-            ...     'question_history': []
+            ...     "uncertainties": {"purpose": 0.9, "data": 0.7},
+            ...     "answered_dimensions": [],
+            ...     "question_history": [],
             ... }
             >>> result = calc.calculate_reward("What problem does this solve?", context)
-            >>> result['total_reward'] > 0.7
+            >>> result["total_reward"] > 0.7
             True
-            >>> 'info_gain' in result['components']
+            >>> "info_gain" in result["components"]
             True
         """
         components = {}
@@ -98,7 +98,7 @@ class QuestionRewardCalculator:
 
         Examples:
             >>> calc = QuestionRewardCalculator()
-            >>> context = {'uncertainties': {'purpose': 0.9}}
+            >>> context = {"uncertainties": {"purpose": 0.9}}
             >>> calc._estimate_info_gain("What is the purpose?", context, None) > 0.5
             True
         """
@@ -186,7 +186,7 @@ class QuestionRewardCalculator:
 
         Examples:
             >>> calc = QuestionRewardCalculator()
-            >>> context = {'answered_dimensions': []}
+            >>> context = {"answered_dimensions": []}
             >>> calc._score_actionability("What is the purpose?", context) > 0.7
             True
         """
@@ -217,7 +217,7 @@ class QuestionRewardCalculator:
 
         Examples:
             >>> calc = QuestionRewardCalculator()
-            >>> context = {'uncertainties': {'purpose': 0.9, 'data': 0.2}}
+            >>> context = {"uncertainties": {"purpose": 0.9, "data": 0.2}}
             >>> # Question about high-uncertainty dimension
             >>> calc._score_relevance("What is the purpose?", context) > 0.7
             True
@@ -244,10 +244,12 @@ class QuestionRewardCalculator:
 
         Examples:
             >>> calc = QuestionRewardCalculator()
-            >>> context = {'question_history': ["What is it?"]}
+            >>> context = {"question_history": ["What is it?"]}
             >>> calc._estimate_kl_divergence("What is it?", context) > 0.5
             True
-            >>> calc._estimate_kl_divergence("How does it work?", {'question_history': []})
+            >>> calc._estimate_kl_divergence(
+            ...     "How does it work?", {"question_history": []}
+            ... )
             0.0
         """
         anomaly_score = 0.0

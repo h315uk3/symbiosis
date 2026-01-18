@@ -86,13 +86,15 @@ def load_tracker(tracker_file: Path) -> TrackerData:
     Examples:
         >>> from pathlib import Path
         >>> import tempfile
-        >>> with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        >>> with tempfile.NamedTemporaryFile(
+        ...     mode="w", suffix=".json", delete=False
+        ... ) as f:
         ...     _ = f.write('{"patterns": {}, "promotion_candidates": []}')
         ...     temp_path = Path(f.name)
         >>> data = load_tracker(temp_path)
-        >>> 'patterns' in data
+        >>> "patterns" in data
         True
-        >>> 'cooccurrences' in data
+        >>> "cooccurrences" in data
         True
         >>> temp_path.unlink()
     """

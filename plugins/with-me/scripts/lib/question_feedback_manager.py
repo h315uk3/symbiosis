@@ -101,13 +101,15 @@ def load_feedback(feedback_file: Path) -> FeedbackData:
     Examples:
         >>> from pathlib import Path
         >>> import tempfile
-        >>> with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        >>> with tempfile.NamedTemporaryFile(
+        ...     mode="w", suffix=".json", delete=False
+        ... ) as f:
         ...     _ = f.write('{"sessions": [], "statistics": {}}')
         ...     temp_path = Path(f.name)
         >>> data = load_feedback(temp_path)
-        >>> 'sessions' in data
+        >>> "sessions" in data
         True
-        >>> 'statistics' in data
+        >>> "statistics" in data
         True
         >>> temp_path.unlink()
     """
@@ -276,13 +278,18 @@ class QuestionFeedbackManager:
             >>> manager = QuestionFeedbackManager(Path("/tmp/test_feedback.json"))
             >>> session_id = manager.start_session()
             >>> manager.record_question(
-            ...     session_id, "What?", "purpose",
-            ...     {"uncertainties_before": {"purpose": 1.0}, "uncertainties_after": {"purpose": 0.3}},
+            ...     session_id,
+            ...     "What?",
+            ...     "purpose",
+            ...     {
+            ...         "uncertainties_before": {"purpose": 1.0},
+            ...         "uncertainties_after": {"purpose": 0.3},
+            ...     },
             ...     {"word_count": 50, "has_examples": True},
-            ...     {"info_gain": 0.7, "total_reward": 0.85}
+            ...     {"info_gain": 0.7, "total_reward": 0.85},
             ... )
             >>> summary = manager.complete_session(session_id, {"purpose": 0.3})
-            >>> summary['total_questions']
+            >>> summary["total_questions"]
             1
         """
         session = self._find_session(session_id)

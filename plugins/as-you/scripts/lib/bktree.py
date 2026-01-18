@@ -9,7 +9,6 @@ Standard library only - no external dependencies.
 """
 
 
-
 class BKTreeNode:
     """Node in a BK-Tree."""
 
@@ -50,7 +49,8 @@ class BKTree:
         Time: O(log n) average, O(n) worst case
 
         Examples:
-            >>> def simple_dist(a, b): return abs(len(a) - len(b))
+            >>> def simple_dist(a, b):
+            ...     return abs(len(a) - len(b))
             >>> tree1 = BKTree(simple_dist)
             >>> tree1.add("kitten")
             >>> tree1.size
@@ -106,7 +106,8 @@ class BKTree:
         Time: O(log n) average, O(n) worst case
 
         Examples:
-            >>> def simple_dist(a, b): return abs(len(a) - len(b))
+            >>> def simple_dist(a, b):
+            ...     return abs(len(a) - len(b))
             >>> tree = BKTree(simple_dist)
             >>> for w in ["cat", "cats", "dog"]:
             ...     tree.add(w)

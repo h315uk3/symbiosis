@@ -27,7 +27,7 @@ def get_top_patterns(tracker: dict, limit: int = 10) -> list[str]:
         ...     "patterns": {
         ...         "python": {"count": 10},
         ...         "test": {"count": 5},
-        ...         "deploy": {"count": 15}
+        ...         "deploy": {"count": 15},
         ...     }
         ... }
         >>> get_top_patterns(tracker, limit=2)
@@ -68,11 +68,13 @@ def get_pattern_contexts(pattern_name: str, tracker_file: Path) -> list[str]:
         ...     "patterns": {
         ...         "python": {
         ...             "count": 5,
-        ...             "contexts": ["Working on Python script", "Python testing"]
+        ...             "contexts": ["Working on Python script", "Python testing"],
         ...         }
         ...     }
         ... }
-        >>> with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        >>> with tempfile.NamedTemporaryFile(
+        ...     mode="w", suffix=".json", delete=False
+        ... ) as f:
         ...     json.dump(tracker_data, f)
         ...     temp_path = Path(f.name)
         >>> contexts = get_pattern_contexts("python", temp_path)
@@ -83,7 +85,9 @@ def get_pattern_contexts(pattern_name: str, tracker_file: Path) -> list[str]:
         >>> temp_path.unlink()
 
         >>> # Test non-existent pattern
-        >>> with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        >>> with tempfile.NamedTemporaryFile(
+        ...     mode="w", suffix=".json", delete=False
+        ... ) as f:
         ...     json.dump({"patterns": {}}, f)
         ...     temp_path = Path(f.name)
         >>> get_pattern_contexts("missing", temp_path)
@@ -117,7 +121,9 @@ def extract_contexts_for_pattern(
         >>> from pathlib import Path
         >>> import tempfile
         >>> temp_dir = Path(tempfile.mkdtemp())
-        >>> _ = (temp_dir / "memo1.md").write_text("Line before\\nPython is great\\nLine after")
+        >>> _ = (temp_dir / "memo1.md").write_text(
+        ...     "Line before\\nPython is great\\nLine after"
+        ... )
         >>> contexts = extract_contexts_for_pattern("Python", temp_dir, max_contexts=3)
         >>> len(contexts) > 0
         True
@@ -185,12 +191,14 @@ def extract_contexts(
         >>> from pathlib import Path
         >>> import tempfile, json
         >>> tracker_data = {"patterns": {"test": {"count": 5}}}
-        >>> with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        >>> with tempfile.NamedTemporaryFile(
+        ...     mode="w", suffix=".json", delete=False
+        ... ) as f:
         ...     json.dump(tracker_data, f)
         ...     tracker_path = Path(f.name)
         >>> archive_path = Path(tempfile.mkdtemp())
         >>> result = extract_contexts(tracker_path, archive_path)
-        >>> 'patterns' in result
+        >>> "patterns" in result
         True
         >>> tracker_path.unlink()
         >>> archive_path.rmdir()

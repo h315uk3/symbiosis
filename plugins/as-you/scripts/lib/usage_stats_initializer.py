@@ -23,11 +23,13 @@ def load_stats(stats_file: Path) -> dict:
     Examples:
         >>> from pathlib import Path
         >>> import tempfile
-        >>> with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        >>> with tempfile.NamedTemporaryFile(
+        ...     mode="w", suffix=".json", delete=False
+        ... ) as f:
         ...     _ = f.write('{"skills": {}, "agents": {}}')
         ...     temp_path = Path(f.name)
         >>> stats = load_stats(temp_path)
-        >>> 'skills' in stats and 'agents' in stats
+        >>> "skills" in stats and "agents" in stats
         True
         >>> temp_path.unlink()
     """

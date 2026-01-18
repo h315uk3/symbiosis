@@ -29,13 +29,23 @@ def merge_patterns(tracker_file: Path, keep_pattern: str, merge_pattern: str) ->
         >>> import tempfile, json
         >>> data = {
         ...     "patterns": {
-        ...         "python": {"count": 5, "sessions": ["2026-01-01"], "last_seen": "2026-01-01"},
-        ...         "Python": {"count": 3, "sessions": ["2026-01-02"], "last_seen": "2026-01-02"}
+        ...         "python": {
+        ...             "count": 5,
+        ...             "sessions": ["2026-01-01"],
+        ...             "last_seen": "2026-01-01",
+        ...         },
+        ...         "Python": {
+        ...             "count": 3,
+        ...             "sessions": ["2026-01-02"],
+        ...             "last_seen": "2026-01-02",
+        ...         },
         ...     },
         ...     "promotion_candidates": [],
-        ...     "cooccurrences": []
+        ...     "cooccurrences": [],
         ... }
-        >>> with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        >>> with tempfile.NamedTemporaryFile(
+        ...     mode="w", suffix=".json", delete=False
+        ... ) as f:
         ...     json.dump(data, f)
         ...     temp_path = Path(f.name)
         >>> result = merge_patterns(temp_path, "python", "Python")
@@ -111,13 +121,13 @@ def mark_promoted(
         >>> from pathlib import Path
         >>> import tempfile, json
         >>> data = {
-        ...     "patterns": {
-        ...         "test": {"count": 5, "promoted": False}
-        ...     },
+        ...     "patterns": {"test": {"count": 5, "promoted": False}},
         ...     "promotion_candidates": [],
-        ...     "cooccurrences": []
+        ...     "cooccurrences": [],
         ... }
-        >>> with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        >>> with tempfile.NamedTemporaryFile(
+        ...     mode="w", suffix=".json", delete=False
+        ... ) as f:
         ...     json.dump(data, f)
         ...     temp_path = Path(f.name)
         >>> result = mark_promoted(temp_path, "test", "skill", "skills/test/")
