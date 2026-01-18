@@ -6,6 +6,9 @@
 # As You plugin - runtime-generated data (user local only)
 .claude/as_you/
 
+# Plugin runtime data (user local only)
+plugins/**/.claude/
+
 # Local tools directory
 .tools/
 
