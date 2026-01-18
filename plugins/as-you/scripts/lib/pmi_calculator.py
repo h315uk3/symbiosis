@@ -30,7 +30,9 @@ def count_total_patterns(archive_dir: Path) -> int:
         ...     archive_dir = Path(tmpdir)
         ...     # Create sample archive file
         ...     test_file = archive_dir / "2025-01-01.md"
-        ...     _ = test_file.write_text("test deployment authentication system", encoding="utf-8")
+        ...     _ = test_file.write_text(
+        ...         "test deployment authentication system", encoding="utf-8"
+        ...     )
         ...     count = count_total_patterns(archive_dir)
         ...     count >= 4  # At least 4 patterns
         True

@@ -199,7 +199,7 @@ def get_promotion_summary(tracker_file: Path) -> dict:
         ...     "skills": 3,
         ...     "agents": 2,
         ...     "top_pattern": "python-testing",
-        ...     "top_type": "skill"
+        ...     "top_type": "skill",
         ... }
         >>> summary["total"]
         5

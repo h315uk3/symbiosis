@@ -64,10 +64,14 @@ def mark_as_promoted(
         ...     tracker = Path(tmpdir) / "pattern_tracker.json"
         ...     data = {
         ...         "patterns": {
-        ...             "deployment": {"count": 10, "last_seen": "2025-01-05", "sessions": ["s1"]}
+        ...             "deployment": {
+        ...                 "count": 10,
+        ...                 "last_seen": "2025-01-05",
+        ...                 "sessions": ["s1"],
+        ...             }
         ...         },
         ...         "promotion_candidates": ["deployment"],
-        ...         "cooccurrences": []
+        ...         "cooccurrences": [],
         ...     }
         ...     _ = tracker.write_text(json.dumps(data), encoding="utf-8")
         ...

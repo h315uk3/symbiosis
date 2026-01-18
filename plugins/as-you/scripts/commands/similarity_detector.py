@@ -46,7 +46,7 @@ def detect_similar_patterns(
         ...         "patterns": {
         ...             "test": {"count": 5, "composite_score": 0.8},
         ...             "tests": {"count": 3, "composite_score": 0.6},
-        ...             "testing": {"count": 2, "composite_score": 0.5}
+        ...             "testing": {"count": 2, "composite_score": 0.5},
         ...         }
         ...     }
         ...     _ = tracker_file.write_text(json.dumps(data), encoding="utf-8")
@@ -64,7 +64,7 @@ def detect_similar_patterns(
         ...     data = {
         ...         "patterns": {
         ...             "rare": {"count": 1, "composite_score": 0.5},
-        ...             "rarer": {"count": 1, "composite_score": 0.4}
+        ...             "rarer": {"count": 1, "composite_score": 0.4},
         ...         }
         ...     }
         ...     _ = tracker_file.write_text(json.dumps(data), encoding="utf-8")

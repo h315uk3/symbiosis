@@ -58,6 +58,105 @@ Track implicit uncertainty across five key dimensions:
 
 ---
 
+## Dimension Dependencies (DAG Structure)
+
+**CRITICAL: Dimensions have prerequisite relationships. Always check dependencies before selecting the next dimension.**
+
+```mermaid
+graph TD
+    Purpose["Purpose (Why)<br/>Foundation - No prerequisites"]
+    Data["Data (What)<br/>Requires: Purpose clear"]
+    Behavior["Behavior (How)<br/>Requires: Purpose clear"]
+    Constraints["Constraints (Limits)<br/>Requires: Behavior + Data clear"]
+    Quality["Quality (Success)<br/>Requires: Behavior clear"]
+
+    Purpose --> Data
+    Purpose --> Behavior
+    Behavior --> Constraints
+    Data --> Constraints
+    Behavior --> Quality
+
+    style Purpose fill:#2d5016,stroke:#4a7c2c,stroke-width:3px,color:#fff
+    style Data fill:#5d4a1f,stroke:#9a7b32,stroke-width:3px,color:#fff
+    style Behavior fill:#5d4a1f,stroke:#9a7b32,stroke-width:3px,color:#fff
+    style Constraints fill:#5c1f1f,stroke:#8b3434,stroke-width:3px,color:#fff
+    style Quality fill:#5c1f1f,stroke:#8b3434,stroke-width:3px,color:#fff
+```
+
+**Dependency Rules:**
+
+1. **Purpose** (Foundation)
+   - No prerequisites
+   - Must be addressed first if unclear
+   - Gates: Data, Behavior
+
+2. **Data**
+   - Prerequisite: Purpose < 0.4 (sufficiently clear)
+   - Rationale: Cannot define data requirements without understanding the problem
+
+3. **Behavior**
+   - Prerequisite: Purpose < 0.4 (sufficiently clear)
+   - Rationale: Cannot define workflow without understanding the goal
+   - Gates: Constraints, Quality
+
+4. **Constraints**
+   - Prerequisites: Behavior < 0.4 AND Data < 0.4 (both clear)
+   - Rationale: Constraints require understanding both what the system does and what data it processes
+   - Example: "15fps processing" is meaningless without knowing data volume and format
+
+5. **Quality**
+   - Prerequisite: Behavior < 0.4 (sufficiently clear)
+   - Rationale: Success criteria primarily depend on expected behavior
+   - Data specifics are helpful but not required for defining test scenarios
+
+**Dimension Selection Algorithm:**
+
+```python
+# 1. Filter dimensions by prerequisites
+def can_ask_dimension(dim, uncertainties):
+    prerequisites = {
+        "purpose": [],
+        "data": ["purpose"],
+        "behavior": ["purpose"],
+        "constraints": ["behavior", "data"],  # Requires both Behavior and Data
+        "quality": ["behavior"]  # Requires only Behavior
+    }
+
+    for prereq in prerequisites[dim]:
+        if uncertainties[prereq] > 0.4:  # Threshold: >0.4 = unclear
+            return False
+    return True
+
+# 2. Select highest uncertainty among askable dimensions
+askable_dims = {
+    dim: unc
+    for dim, unc in uncertainties.items()
+    if can_ask_dimension(dim, uncertainties)
+}
+
+next_dimension = max(askable_dims, key=askable_dims.get)
+```
+
+**Example Scenarios:**
+
+```
+Scenario 1: Purpose unclear, Behavior has highest uncertainty
+uncertainties = {"purpose": 0.7, "data": 0.5, "behavior": 0.8, "constraints": 0.6}
+
+Without DAG: Select "behavior" (highest = 0.8)
+With DAG: Select "purpose" (behavior blocked by purpose prerequisite)
+```
+
+```
+Scenario 2: Purpose clear, Behavior unclear
+uncertainties = {"purpose": 0.2, "data": 0.5, "behavior": 0.8, "constraints": 0.6}
+
+Without DAG: Select "behavior" (highest = 0.8)
+With DAG: Select "behavior" (prerequisite satisfied ✓)
+```
+
+---
+
 ## Interview Protocol
 
 ### Phase 0: Reference Collection (Optional)
@@ -91,6 +190,16 @@ Before beginning the interview, check if the developer has reference materials t
 
 ### Phase 1: Initial Assessment
 
+**Start tracking this question session:**
+
+```bash
+SESSION_ID=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/good-question-impl.sh" start | jq -r '.session_id')
+```
+
+Store `SESSION_ID` in a variable for use throughout this session.
+
+---
+
 Begin with an open question to gauge overall clarity:
 
 **Ask using AskUserQuestion:**
@@ -109,9 +218,71 @@ Begin with an open question to gauge overall clarity:
 
 ---
 
-### Phase 2: Adaptive Questioning
+### Phase 2: Structured Questioning
 
-At each step, identify the dimension with **highest remaining uncertainty** and ask targeted questions.
+**Three-stage approach to ensure completeness and detect contradictions:**
+
+1. **Phase 2-1: Initial Survey** - Ask each dimension once (guarantees completeness)
+2. **Phase 2-2: DAG-based Deep Dive** - Follow DAG order for efficient clarification
+3. **Phase 2-3: Contradiction Resolution** - Resolve any detected inconsistencies
+
+---
+
+#### Phase 2-1: Initial Survey (Completeness Guarantee)
+
+**Goal:** Ensure all dimensions are addressed at least once, preventing `answered: false` (uncertainty = 1.0) from remaining.
+
+**Process:**
+
+Ask **one lightweight question** for each dimension in this fixed order:
+1. Purpose
+2. Data
+3. Behavior
+4. Constraints
+5. Quality
+
+**IMPORTANT:**
+- Ask **brief, open-ended questions** to get initial context
+- Do NOT deep-dive yet - save detailed follow-ups for Phase 2-2
+- Even if user says "not sure", mark dimension as `answered: true` with high uncertainty
+- Goal: All dimensions reach `answered: true`, uncertainties typically 0.5-0.8
+
+**After Initial Survey:**
+```bash
+# All dimensions now have answered: true
+# Calculate uncertainties (will be 0.5-0.8 range typically)
+UNCERTAINTIES=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/uncertainty_calculator.py" "$DIMENSION_DATA_JSON")
+```
+
+Expected result:
+```json
+{
+  "purpose": 0.6,    // answered: true, brief response
+  "data": 0.8,       // answered: true, user said "not sure"
+  "behavior": 0.7,   // answered: true, partial explanation
+  "constraints": 0.5,
+  "quality": 0.7
+}
+```
+
+All dimensions are now in the system. None will remain at 1.0.
+
+---
+
+#### Phase 2-2: DAG-based Deep Dive (Efficient Clarification)
+
+**Goal:** Reduce uncertainties below threshold (< 0.3) following logical DAG order.
+
+**Process:**
+
+At each iteration:
+1. **Calculate current uncertainties** (with English translation)
+2. **Apply DAG filter** to identify askable dimensions
+3. **Select highest uncertainty** among askable dimensions
+4. **Ask detailed, targeted questions** for that dimension
+5. **Detect cross-dimension contradictions** (see below)
+
+**Question templates below are organized by dimension. Use these for deep-dive questions.**
 
 #### If Purpose has highest uncertainty:
 
@@ -196,27 +367,212 @@ Follow up with:
 
 ---
 
+**Cross-Dimension Contradiction Detection:**
+
+After each answer in Phase 2-2, review prerequisite dimensions for semantic contradictions.
+
+**Common contradiction types:**
+- Purpose-Data: Target users don't match data scale (e.g., "individual streamers" + "enterprise database")
+- Purpose-Behavior: Complexity mismatch (e.g., "simple tool" + "complex multi-stage workflow")
+- Behavior-Constraints: Processing type conflict (e.g., "real-time" + "batch processing")
+- Data-Constraints: Format incompatibility (e.g., "video files" + "text-only environment")
+
+**When contradictions detected:**
+1. Notify user with specific conflicting statements
+2. Ask user to clarify using AskUserQuestion with options: which is correct, both need update, or nuance explanation
+3. Update affected dimension data and recalculate uncertainties
+
+---
+
+### Phase 2.5: Question Quality Evaluation (Optional but Recommended)
+
+**Before asking a question, evaluate its expected effectiveness:**
+
+```bash
+REWARD=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/question_reward_calculator.py" \
+  "$QUESTION_TEXT" \
+  "$CONTEXT_JSON")
+```
+
+Where `CONTEXT_JSON` contains:
+```json
+{
+  "uncertainties": {"purpose": 0.9, "data": 0.7, ...},
+  "answered_dimensions": ["purpose"],
+  "question_history": ["What problem does this solve?", ...]
+}
+```
+
+**Interpret reward score:**
+
+```json
+{
+  "total_reward": 0.75,
+  "components": {
+    "info_gain": 0.80,
+    "clarity": 0.85,
+    "specificity": 0.60,
+    "actionability": 0.75,
+    "relevance": 0.90
+  },
+  "kl_divergence": 0.15
+}
+```
+
+**Quality thresholds:**
+- `total_reward > 0.7`: High-quality question, proceed
+- `0.5 < total_reward ≤ 0.7`: Acceptable, but consider refinement
+- `total_reward ≤ 0.5`: Low quality, rephrase for better effectiveness
+
+**Component interpretation:**
+- **Low info_gain** (<0.5): Target dimension already well-understood, choose different dimension
+- **Low clarity** (<0.6): Question is too complex or compound, simplify
+- **Low specificity** (<0.5): Question is too vague, add concrete examples or constraints
+- **Low actionability** (<0.5): Question may be too technical or premature, adjust level
+- **Low relevance** (<0.5): Question doesn't address high-uncertainty areas, refocus
+
+**If total_reward is low, refine the question:**
+1. Identify the weakest component
+2. Adjust question to improve that aspect
+3. Re-evaluate reward score
+4. Proceed when total_reward > 0.7 or after 2 refinement attempts
+
+---
+
+#### Phase 2-3: Contradiction Resolution
+
+**Goal:** Resolve any unresolved contradictions before proceeding to validation.
+
+**If contradictions remain unresolved:**
+
+1. **List all unresolved contradictions** to user
+2. **For each contradiction**, ask user to choose:
+   - Which dimension is correct?
+   - Should both be updated?
+   - Is there context that makes both valid?
+
+3. **Update dimension data** based on resolution
+4. **Recalculate uncertainties** for updated dimensions
+
+**If no contradictions:**
+- Proceed directly to Phase 3
+
+**Phase 2-2 Exit Criteria:**
+
+Proceed to Phase 2-3 (or Phase 3 if no contradictions) when:
+- All dimensions `answered: true` (guaranteed by Phase 2-1)
+- AND all dimensions < 0.3 threshold
+- OR stuck dimension detected (same uncertainty after 3+ questions)
+
+---
+
 ### Phase 3: Convergence Detection
 
 After each answer, assess:
 
-1. **Did this reduce uncertainty significantly?**
-   - Yes → Continue on this dimension with deeper questions
-   - No → Move to next highest-uncertainty dimension
+**CRITICAL: Before calculating uncertainty, translate content to English**
 
-2. **Is this dimension now sufficiently clear?**
-   - Yes → Mark dimension as resolved, move to next
-   - No → Continue questioning this dimension
+The uncertainty calculator uses word count analysis, which only works correctly with English text. Before calling `uncertainty_calculator.py`:
 
-3. **Are all dimensions sufficiently clear?**
-   - Yes → Proceed to validation phase
-   - No → Continue adaptive questioning
+1. **Translate all `content` fields to English**
+   - Detect if content is non-English (Japanese, etc.)
+   - If non-English: Translate to English while preserving technical terms
+   - If already English: Use as-is
+   - This ensures consistent word count calculation across languages
+
+Example:
+```python
+# Before (Japanese content - word count = 1)
+"content": "機微情報漏洩防止、配信者一般向け、リスクと価値提案が明確"
+
+# After translation (English content - word count = 12)
+"content": "Prevent sensitive information leakage, for general streamers, risks and value proposition are clear"
+```
+
+**Then perform uncertainty assessment and record the question:**
+
+1. **Calculate uncertainty scores** (with translated English content):
+   ```bash
+   UNCERTAINTIES=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/uncertainty_calculator.py" "$DIMENSION_DATA_JSON")
+   ```
+
+   Where `DIMENSION_DATA_JSON` contains all dimension data with translated English content:
+   ```json
+   {
+     "purpose": {"answered": true, "content": "Translated English text...", "examples": 2, "contradictions": false},
+     "data": {"answered": true, "content": "Translated English text...", "examples": 1, "contradictions": false},
+     ...
+   }
+   ```
+
+   The script outputs uncertainty scores and recommendations:
+   ```json
+   {
+     "uncertainties": {"purpose": 0.2, "data": 0.5, ...},
+     "continue_questioning": true,
+     "next_focus": "data"
+   }
+   ```
+
+2. **Record this question-answer pair:**
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/good-question-impl.sh" record \
+     "$SESSION_ID" \
+     "$QUESTION_TEXT" \
+     "$CONTEXT_JSON" \
+     "$ANSWER_JSON"
+   ```
+
+   Where:
+   - `CONTEXT_JSON`: `{"dimension": "...", "uncertainties_before": {...}, "uncertainties_after": {...}}`
+   - `ANSWER_JSON`: `{"text": "...", "word_count": N, "has_examples": true/false}`
+
+3. **Assess progress using uncertainty scores and DAG dependencies:**
+
+   Use the DAG-aware dimension selection algorithm (see "Dimension Dependencies" section above) to identify the next focus dimension.
+
+   **Determine questioning strategy based on uncertainty level:**
+
+   - **High uncertainty (> 0.6)**: Ask broad exploratory questions
+     - Example: "What problem does this solve?" (Purpose)
+     - Goal: Gather foundational understanding
+
+   - **Medium uncertainty (0.3 - 0.6)**: Ask specific clarification questions
+     - Example: "What are the specific data inputs required?" (Data)
+     - Goal: Fill remaining gaps with targeted questions
+
+   - **Low uncertainty (< 0.3)**: Validate understanding or move to next dimension
+     - Example: "To confirm, the data flow is X→Y→Z, correct?" (Validation)
+     - Goal: Confirm completeness before proceeding
+
+   **Decision flow:**
+   1. If next_uncertainty > 0.3 → Continue questioning on that dimension
+   2. If all uncertainties < 0.3 → Proceed to validation phase
+   3. If stuck (no uncertainty reduction after 2 questions) → Rephrase or change approach
 
 ---
 
 ### Phase 4: Validation & Gap Analysis
 
-When most dimensions have low uncertainty:
+**Validation Readiness Criteria:**
+- All dimensions have `answered: true` (from Phase 2-1)
+- AND all dimensions < 0.30 (from Phase 2-2)
+- Average uncertainty < 0.25 (overall clarity achieved)
+
+**Continue questioning if:**
+- Any dimension still has `answered: false` (should not happen after Phase 2-1)
+- OR any dimension ≥ 0.30 (needs more clarification)
+- OR average uncertainty ≥ 0.25 (more work needed)
+
+**Edge case - stuck dimension:**
+If a dimension remains > 0.30 after 3+ questions:
+- User may genuinely not know the answer
+- Acknowledge the uncertainty in the specification
+- Proceed to validation with documented assumptions
+
+---
+
+When ready for validation:
 
 **Summarize your understanding:**
 ```markdown
@@ -254,6 +610,23 @@ If refinement needed, identify remaining gaps and ask targeted follow-ups.
 ### Phase 5: Analysis (Forked Context)
 
 Once all dimensions are sufficiently clear and validated:
+
+**Complete the question session tracking:**
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/good-question-impl.sh" complete \
+  "$SESSION_ID" \
+  "$FINAL_UNCERTAINTIES_JSON"
+```
+
+Where `FINAL_UNCERTAINTIES_JSON` contains the final uncertainty scores for all dimensions:
+```json
+{"purpose": 0.2, "data": 0.3, "behavior": 0.25, "constraints": 0.15, "quality": 0.28}
+```
+
+This generates session statistics for the `/with-me:stats` command.
+
+---
 
 **Invoke the requirement-analysis skill:**
 
@@ -301,11 +674,42 @@ Choose questions that maximize expected information gain:
 - Confirmations: "Is this correct?"
 - Already-implied information
 
+### Numerical Guidance Integration
+
+**Use uncertainty scores and reward metrics to guide decisions:**
+
+**Uncertainty-driven selection:**
+```python
+# Always target the dimension with highest uncertainty
+next_dim = max(uncertainties, key=uncertainties.get)
+```
+
+**Reward-driven refinement:**
+- Generate initial question
+- Calculate reward score
+- If total_reward < 0.7: Refine based on weakest component
+- Repeat until total_reward ≥ 0.7 or 2 attempts made
+
+**Progress tracking:**
+```python
+# Track uncertainty reduction
+info_gain = uncertainty_before - uncertainty_after
+
+# If info_gain < 0.1 after 2 questions on same dimension:
+#   → Question approach not working, try different angle
+#   → Or dimension may be inherently unclear to user
+```
+
+**Statistical learning:**
+- Consult `/with-me:stats` for best-performing question patterns
+- Use historical avg_questions_per_dimension to estimate remaining effort
+- Avoid question patterns with low historical reward
+
 ### Adaptive Depth
 
-- High uncertainty → Broad exploratory questions
-- Medium uncertainty → Targeted clarification questions
-- Low uncertainty → Validation questions
+- **High uncertainty (> 0.6)** → Broad exploratory questions
+- **Medium uncertainty (0.3 - 0.6)** → Targeted clarification questions
+- **Low uncertainty (< 0.3)** → Validation questions
 
 ### Branching Logic
 

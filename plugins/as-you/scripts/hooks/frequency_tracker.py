@@ -105,8 +105,12 @@ def update_frequency(
     Examples:
         >>> from pathlib import Path
         >>> import tempfile
-        >>> with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-        ...     _ = f.write('{"patterns": {}, "promotion_candidates": [], "cooccurrences": []}')
+        >>> with tempfile.NamedTemporaryFile(
+        ...     mode="w", suffix=".json", delete=False
+        ... ) as f:
+        ...     _ = f.write(
+        ...         '{"patterns": {}, "promotion_candidates": [], "cooccurrences": []}'
+        ...     )
         ...     temp_path = Path(f.name)
         >>> patterns = [{"word": "test", "count": 3}, {"word": "python", "count": 5}]
         >>> result = update_frequency(temp_path, patterns)

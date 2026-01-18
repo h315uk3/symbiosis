@@ -45,9 +45,13 @@ class UnifiedScoreCalculator:
         ...     # Create sample tracker
         ...     data = {
         ...         "patterns": {
-        ...             "test": {"count": 5, "last_seen": "2025-01-05", "sessions": ["s1", "s2"]}
+        ...             "test": {
+        ...                 "count": 5,
+        ...                 "last_seen": "2025-01-05",
+        ...                 "sessions": ["s1", "s2"],
+        ...             }
         ...         },
-        ...         "cooccurrences": []
+        ...         "cooccurrences": [],
         ...     }
         ...     _ = tracker_file.write_text(json.dumps(data), encoding="utf-8")
         ...

@@ -60,7 +60,9 @@ def create_backup(tracker_file: Path, keep_count: int = 5) -> Path | None:
         ...         backups.append(backup)
         ...
         ...     # Only 3 most recent should remain
-        ...     remaining = len(list(tracker.parent.glob("pattern_tracker.json.backup.*")))
+        ...     remaining = len(
+        ...         list(tracker.parent.glob("pattern_tracker.json.backup.*"))
+        ...     )
         ...     remaining <= 3
         True
     """
@@ -118,12 +120,24 @@ def merge_similar_patterns_batch(
         ...
         ...     data = {
         ...         "patterns": {
-        ...             "test": {"count": 5, "last_seen": "2025-01-05", "sessions": ["s1"]},
-        ...             "tests": {"count": 3, "last_seen": "2025-01-05", "sessions": ["s1"]},
-        ...             "testing": {"count": 2, "last_seen": "2025-01-05", "sessions": ["s1"]}
+        ...             "test": {
+        ...                 "count": 5,
+        ...                 "last_seen": "2025-01-05",
+        ...                 "sessions": ["s1"],
+        ...             },
+        ...             "tests": {
+        ...                 "count": 3,
+        ...                 "last_seen": "2025-01-05",
+        ...                 "sessions": ["s1"],
+        ...             },
+        ...             "testing": {
+        ...                 "count": 2,
+        ...                 "last_seen": "2025-01-05",
+        ...                 "sessions": ["s1"],
+        ...             },
         ...         },
         ...         "promotion_candidates": [],
-        ...         "cooccurrences": []
+        ...         "cooccurrences": [],
         ...     }
         ...     _ = tracker.write_text(json.dumps(data), encoding="utf-8")
         ...
@@ -139,11 +153,19 @@ def merge_similar_patterns_batch(
         ...     tracker = Path(tmpdir) / "pattern_tracker.json"
         ...     data = {
         ...         "patterns": {
-        ...             "unique": {"count": 5, "last_seen": "2025-01-05", "sessions": ["s1"]},
-        ...             "different": {"count": 3, "last_seen": "2025-01-05", "sessions": ["s1"]}
+        ...             "unique": {
+        ...                 "count": 5,
+        ...                 "last_seen": "2025-01-05",
+        ...                 "sessions": ["s1"],
+        ...             },
+        ...             "different": {
+        ...                 "count": 3,
+        ...                 "last_seen": "2025-01-05",
+        ...                 "sessions": ["s1"],
+        ...             },
         ...         },
         ...         "promotion_candidates": [],
-        ...         "cooccurrences": []
+        ...         "cooccurrences": [],
         ...     }
         ...     _ = tracker.write_text(json.dumps(data), encoding="utf-8")
         ...     result = merge_similar_patterns_batch(tracker, threshold=1)

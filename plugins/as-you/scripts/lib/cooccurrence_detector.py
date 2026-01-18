@@ -49,12 +49,12 @@ def generate_word_pairs(words: list[str]) -> list[tuple]:
         List of sorted tuples (word1, word2) where word1 < word2
 
     Examples:
-        >>> pairs = generate_word_pairs(['test', 'code', 'python'])
+        >>> pairs = generate_word_pairs(["test", "code", "python"])
         >>> len(pairs)
         3
-        >>> ('code', 'test') in pairs
+        >>> ("code", "test") in pairs
         True
-        >>> generate_word_pairs(['single'])
+        >>> generate_word_pairs(["single"])
         []
         >>> generate_word_pairs([])
         []
@@ -82,11 +82,13 @@ def detect_cooccurrences(archive_dir: Path, top_n: int = 20) -> list[dict]:
         >>> from pathlib import Path
         >>> import tempfile
         >>> temp_dir = Path(tempfile.mkdtemp())
-        >>> _ = (temp_dir / "test.md").write_text("Testing Python code\\nPython testing")
+        >>> _ = (temp_dir / "test.md").write_text(
+        ...     "Testing Python code\\nPython testing"
+        ... )
         >>> result = detect_cooccurrences(temp_dir, top_n=5)
         >>> len(result) > 0
         True
-        >>> result[0]['words']
+        >>> result[0]["words"]
         ['python', 'testing']
         >>> import shutil
         >>> shutil.rmtree(temp_dir)
