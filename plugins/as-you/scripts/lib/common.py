@@ -106,7 +106,7 @@ def load_tracker(tracker_file: Path) -> TrackerData:
         return default_data
 
     try:
-        with open(tracker_file, "r", encoding="utf-8") as f:
+        with open(tracker_file, encoding="utf-8") as f:
             data = json.load(f)
 
         # Ensure all required keys exist
@@ -116,7 +116,7 @@ def load_tracker(tracker_file: Path) -> TrackerData:
 
         return data
 
-    except (json.JSONDecodeError, IOError) as e:
+    except (OSError, json.JSONDecodeError) as e:
         # Python 3.11+: Add context to exception
         e.add_note(f"Failed to load tracker file: {tracker_file}")
         e.add_note("File may be corrupted. Consider restoring from backup.")
@@ -159,7 +159,7 @@ def save_tracker(tracker_file: Path, data: TrackerData) -> None:
 
         temp_file.replace(tracker_file)
 
-    except IOError as e:
+    except OSError as e:
         e.add_note(f"Failed to save tracker file: {tracker_file}")
         raise
 

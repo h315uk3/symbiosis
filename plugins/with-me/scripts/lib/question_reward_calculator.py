@@ -13,10 +13,9 @@ Based on AI reward function research and RLHF principles.
 """
 
 import json
-import math
 import re
 import sys
-from typing import Dict, List, Any, Optional
+from typing import Any
 
 
 class QuestionRewardCalculator:
@@ -34,8 +33,8 @@ class QuestionRewardCalculator:
         self.kl_penalty = 0.02  # KL divergence penalty weight
 
     def calculate_reward(
-        self, question: str, context: Dict[str, Any], answer: Optional[str] = None
-    ) -> Dict[str, float]:
+        self, question: str, context: dict[str, Any], answer: str | None = None
+    ) -> dict[str, float]:
         """
         Calculate total reward for a question
 
@@ -92,7 +91,7 @@ class QuestionRewardCalculator:
         }
 
     def _estimate_info_gain(
-        self, question: str, context: Dict, answer: Optional[str]
+        self, question: str, context: dict, answer: str | None
     ) -> float:
         """
         Estimate information gain
@@ -170,9 +169,7 @@ class QuestionRewardCalculator:
             score += 0.2
         if re.search(r"\bspecific(ally)?\b", question, re.I):
             score += 0.1
-        if re.search(
-            r"\b(purpose|data|behavior|constraint|quality)\b", question, re.I
-        ):
+        if re.search(r"\b(purpose|data|behavior|constraint|quality)\b", question, re.I):
             score += 0.2
 
         # Abstractness indicators
@@ -183,7 +180,7 @@ class QuestionRewardCalculator:
 
         return max(0.0, min(1.0, score))
 
-    def _score_actionability(self, question: str, context: Dict) -> float:
+    def _score_actionability(self, question: str, context: dict) -> float:
         """
         Score answerability
 
@@ -214,7 +211,7 @@ class QuestionRewardCalculator:
 
         return 0.8  # Default: answerable
 
-    def _score_relevance(self, question: str, context: Dict) -> float:
+    def _score_relevance(self, question: str, context: dict) -> float:
         """
         Score context relevance
 
@@ -241,7 +238,7 @@ class QuestionRewardCalculator:
 
         return relevance
 
-    def _estimate_kl_divergence(self, question: str, context: Dict) -> float:
+    def _estimate_kl_divergence(self, question: str, context: dict) -> float:
         """
         Estimate question anomaly (simplified KL divergence)
 
@@ -277,7 +274,7 @@ class QuestionRewardCalculator:
 
         return anomaly_score
 
-    def _extract_target_dimension(self, question: str) -> Optional[str]:
+    def _extract_target_dimension(self, question: str) -> str | None:
         """
         Extract target dimension from question
 
@@ -296,9 +293,7 @@ class QuestionRewardCalculator:
             return "purpose"
         if any(kw in q_lower for kw in ["what data", "input", "output", "information"]):
             return "data"
-        if any(
-            kw in q_lower for kw in ["how", "step", "process", "flow", "happen"]
-        ):
+        if any(kw in q_lower for kw in ["how", "step", "process", "flow", "happen"]):
             return "behavior"
         if any(
             kw in q_lower
@@ -306,8 +301,7 @@ class QuestionRewardCalculator:
         ):
             return "constraints"
         if any(
-            kw in q_lower
-            for kw in ["test", "success", "quality", "fail", "edge case"]
+            kw in q_lower for kw in ["test", "success", "quality", "fail", "edge case"]
         ):
             return "quality"
 
@@ -341,7 +335,9 @@ class QuestionRewardCalculator:
 def main():
     """Command-line usage example"""
     if len(sys.argv) < 3:
-        print("Usage: python question_reward_calculator.py '<question>' '<context_json>'")
+        print(
+            "Usage: python question_reward_calculator.py '<question>' '<context_json>'"
+        )
         print("\nExample:")
         print(
             '  python question_reward_calculator.py "What problem does this solve?" \'{"uncertainties": {"purpose": 0.9}}\''

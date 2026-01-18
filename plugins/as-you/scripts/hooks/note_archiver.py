@@ -8,7 +8,6 @@ Replaces archive-note.sh with testable implementation.
 import sys
 from datetime import date
 from pathlib import Path
-from typing import Optional
 
 # Add scripts/ to Python path
 scripts_dir = Path(__file__).parent.parent
@@ -17,7 +16,7 @@ sys.path.insert(0, str(scripts_dir))
 from lib.common import AsYouConfig
 
 
-def archive_note(memo_file: Path, archive_dir: Path) -> Optional[Path]:
+def archive_note(memo_file: Path, archive_dir: Path) -> Path | None:
     """
     Archive memo to date-based file.
 

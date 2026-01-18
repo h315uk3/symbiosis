@@ -8,7 +8,6 @@ Reduces O(n²) all-pairs comparison to O(n log n) for similarity search.
 Standard library only - no external dependencies.
 """
 
-from typing import Dict, List, Tuple, Optional, Set
 
 
 class BKTreeNode:
@@ -16,7 +15,7 @@ class BKTreeNode:
 
     def __init__(self, word: str):
         self.word = word
-        self.children: Dict[int, "BKTreeNode"] = {}
+        self.children: dict[int, BKTreeNode] = {}
 
 
 class BKTree:
@@ -40,7 +39,7 @@ class BKTree:
         Args:
             distance_func: Function(str, str) -> int for calculating distance
         """
-        self.root: Optional[BKTreeNode] = None
+        self.root: BKTreeNode | None = None
         self.distance_func = distance_func
         self.size = 0
 
@@ -89,7 +88,7 @@ class BKTree:
         current.children[distance] = BKTreeNode(word)
         self.size += 1
 
-    def search(self, word: str, max_distance: int) -> List[Tuple[str, int]]:
+    def search(self, word: str, max_distance: int) -> list[tuple[str, int]]:
         """
         Find all words within max_distance of the query word.
 
@@ -143,7 +142,7 @@ class BKTree:
 
     def find_all_similar_pairs(
         self, max_distance: int, _min_count: int = 1
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
         Find all similar pairs in the tree within max_distance.
 
@@ -167,7 +166,7 @@ class BKTree:
         all_words = self._collect_all_words()
 
         # Track seen pairs to avoid duplicates
-        seen_pairs: Set[Tuple[str, str]] = set()
+        seen_pairs: set[tuple[str, str]] = set()
         similar_pairs = []
 
         for word in all_words:
@@ -190,7 +189,7 @@ class BKTree:
 
         return similar_pairs
 
-    def _collect_all_words(self) -> List[str]:
+    def _collect_all_words(self) -> list[str]:
         """Collect all words in the tree via DFS."""
         if self.root is None:
             return []
@@ -206,7 +205,7 @@ class BKTree:
         return words
 
 
-def build_bktree_from_patterns(patterns: Dict[str, Dict], distance_func) -> BKTree:
+def build_bktree_from_patterns(patterns: dict[str, dict], distance_func) -> BKTree:
     """
     Build BK-Tree from pattern dictionary.
 
@@ -221,15 +220,15 @@ def build_bktree_from_patterns(patterns: Dict[str, Dict], distance_func) -> BKTr
     """
     tree = BKTree(distance_func)
 
-    for word in patterns.keys():
+    for word in patterns:
         tree.add(word)
 
     return tree
 
 
 if __name__ == "__main__":
-    import sys
     import doctest
+    import sys
 
     # Check if running doctests
     if "--test" in sys.argv or "-v" in sys.argv:

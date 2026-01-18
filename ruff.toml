@@ -1,0 +1,75 @@
+# Ruff configuration for As You project
+# See: https://docs.astral.sh/ruff/configuration/
+
+# Line length (matching Black default)
+line-length = 88
+
+# Python version target
+target-version = "py311"
+
+# Extend default excludes
+extend-exclude = [
+    ".git",
+    "__pycache__",
+    "*.egg-info",
+]
+
+[lint]
+# Start with Ruff defaults (E4, E7, E9, F) and extend with additional rules
+# See: https://docs.astral.sh/ruff/rules/
+extend-select = [
+    "B",    # flake8-bugbear: Common bugs and design problems
+    "I",    # isort: Import sorting
+    "UP",   # pyupgrade: Modern Python syntax upgrades
+    "SIM",  # flake8-simplify: Simplification suggestions
+    "RUF",  # Ruff-specific rules
+    "W",    # pycodestyle warnings
+]
+
+# Project-specific ignores
+ignore = [
+    "E501",  # Line too long
+             # Doctest examples often exceed line length for readability
+    "RUF002",  # Ambiguous unicode characters
+               # Mathematical symbols (×) used intentionally in docstrings
+]
+
+[lint.per-file-ignores]
+# Allow module-level imports after sys.path manipulation in commands/hooks
+"plugins/*/scripts/commands/*.py" = ["E402"]
+"plugins/*/scripts/hooks/*.py" = ["E402"]
+
+# Allow unused imports and shadowing in __init__.py files
+"__init__.py" = ["F401", "F403"]
+
+# Relax rules for test files
+"tests/*.py" = [
+    "S101",  # Allow assert in tests
+    "E501",  # Allow long lines in test output
+]
+
+[lint.isort]
+# Import organization matching project structure
+known-first-party = ["lib"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+
+[lint.mccabe]
+# Maximum cyclomatic complexity
+max-complexity = 10
+
+[format]
+# Use double quotes for strings (matches project style)
+quote-style = "double"
+
+# Use spaces for indentation (4 spaces)
+indent-style = "space"
+
+# Respect magic trailing comma
+skip-magic-trailing-comma = false
+
+# Line ending style
+line-ending = "auto"
+
+# Quote style in docstrings
+docstring-code-format = true
+docstring-code-line-length = "dynamic"

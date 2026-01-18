@@ -40,19 +40,27 @@ def collect_stats() -> dict:
         formatted_sessions = []
         for session in recent_sessions:
             if session.get("completed_at"):
-                formatted_sessions.append({
-                    "session_id": session["session_id"],
-                    "questions_asked": len(session["questions"]),
-                    "avg_reward": session["summary"]["avg_reward_per_question"] if session.get("summary") else 0,
-                    "efficiency": session["summary"]["session_efficiency"] if session.get("summary") else 0,
-                    "completed_at": session["completed_at"],
-                })
+                formatted_sessions.append(
+                    {
+                        "session_id": session["session_id"],
+                        "questions_asked": len(session["questions"]),
+                        "avg_reward": session["summary"]["avg_reward_per_question"]
+                        if session.get("summary")
+                        else 0,
+                        "efficiency": session["summary"]["session_efficiency"]
+                        if session.get("summary")
+                        else 0,
+                        "completed_at": session["completed_at"],
+                    }
+                )
 
         return {
             "overview": {
                 "total_sessions": statistics.get("total_sessions", 0),
                 "total_questions": statistics.get("total_questions", 0),
-                "avg_questions_per_session": statistics.get("avg_questions_per_session", 0.0),
+                "avg_questions_per_session": statistics.get(
+                    "avg_questions_per_session", 0.0
+                ),
             },
             "best_questions": statistics.get("best_questions", [])[:5],  # Top 5
             "dimension_stats": statistics.get("dimension_stats", {}),
