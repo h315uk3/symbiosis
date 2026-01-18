@@ -300,7 +300,10 @@ class QuestionFeedbackManager:
         questions = session["questions"]
         total_questions = len(questions)
         total_reward = sum(q["reward_scores"].get("total_reward", 0) for q in questions)
-        total_info_gain = sum(q["reward_scores"].get("info_gain", 0) for q in questions)
+        total_info_gain = sum(
+            q["reward_scores"].get("components", {}).get("info_gain", 0)
+            for q in questions
+        )
         final_clarity = 1.0 - (
             sum(final_uncertainties.values()) / len(final_uncertainties)
             if final_uncertainties
@@ -422,7 +425,8 @@ class QuestionFeedbackManager:
 
             if dim_questions:
                 avg_info_gain = sum(
-                    q["reward_scores"].get("info_gain", 0) for q in dim_questions
+                    q["reward_scores"].get("components", {}).get("info_gain", 0)
+                    for q in dim_questions
                 ) / len(dim_questions)
 
                 # Average questions to resolve (sessions where this dimension was resolved)
@@ -458,40 +462,3 @@ class QuestionFeedbackManager:
         }
 
 
-# CLI interface for testing
-def main():
-    """Test the feedback manager"""
-    import sys
-
-    if len(sys.argv) > 1 and sys.argv[1] == "--test":
-        import doctest
-
-        print("Running doctests...")
-        doctest.testmod()
-        print("✓ All doctests passed")
-        return
-
-    # Example usage
-    manager = QuestionFeedbackManager()
-    session_id = manager.start_session()
-    print(f"Started session: {session_id}")
-
-    manager.record_question(
-        session_id,
-        "What problem does this solve?",
-        "purpose",
-        {
-            "uncertainties_before": {"purpose": 1.0},
-            "uncertainties_after": {"purpose": 0.3},
-        },
-        {"word_count": 45, "has_examples": True},
-        {"info_gain": 0.7, "clarity": 0.9, "total_reward": 0.85},
-    )
-    print("Recorded question")
-
-    summary = manager.complete_session(session_id, {"purpose": 0.3})
-    print(f"Completed session with summary: {json.dumps(summary, indent=2)}")
-
-
-if __name__ == "__main__":
-    main()

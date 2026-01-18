@@ -17,6 +17,7 @@ Examples:
 import doctest
 import importlib.util
 import sys
+from contextlib import suppress
 from pathlib import Path
 
 
@@ -58,6 +59,16 @@ def discover_and_test(root: Path, verbose: bool = False) -> tuple[int, int]:
         # First add lib/ files (dependencies)
         lib_dir = plugin_scripts / "lib"
         if lib_dir.exists():
+            # Load lib package first to support relative imports
+            lib_init = lib_dir / "__init__.py"
+            if lib_init.exists():
+                spec = importlib.util.spec_from_file_location("lib", lib_init)
+                if spec and spec.loader:
+                    lib_module = importlib.util.module_from_spec(spec)
+                    sys.modules["lib"] = lib_module
+                    with suppress(Exception):
+                        spec.loader.exec_module(lib_module)
+
             py_files.extend(sorted(lib_dir.glob("*.py")))
 
         # Then add other files

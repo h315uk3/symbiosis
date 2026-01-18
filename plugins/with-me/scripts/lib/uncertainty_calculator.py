@@ -238,19 +238,34 @@ def main():
     CLI interface for uncertainty calculation.
 
     Usage:
-        python uncertainty_calculator.py '{"purpose": {"answered": true, "content": "..."}}'
+        python uncertainty_calculator.py [--json-only] '<json_data>'
+
+    Flags:
+        --json-only    Output only JSON (for programmatic use)
     """
-    if len(sys.argv) != 2:
-        print("Usage: uncertainty_calculator.py '<json_data>'", file=sys.stderr)
+    # Parse arguments
+    json_only = False
+    args = sys.argv[1:]
+
+    if "--json-only" in args:
+        json_only = True
+        args.remove("--json-only")
+
+    if len(args) != 1:
+        print("Usage: uncertainty_calculator.py [--json-only] '<json_data>'", file=sys.stderr)
         print("\nExample:", file=sys.stderr)
         print(
             '  python uncertainty_calculator.py \'{"purpose": {"answered": true, "content": "Build API"}}\'',
             file=sys.stderr,
         )
+        print(
+            '  python uncertainty_calculator.py --json-only \'{"purpose": {...}}\'',
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     try:
-        dimension_data = json.loads(sys.argv[1])
+        dimension_data = json.loads(args[0])
     except json.JSONDecodeError as e:
         print(f"Error: Invalid JSON - {e}", file=sys.stderr)
         sys.exit(1)
@@ -261,11 +276,7 @@ def main():
         for dim, data in dimension_data.items()
     }
 
-    # Generate report
-    report = format_uncertainty_report(uncertainties)
-    print(report)
-
-    # Output JSON for programmatic use
+    # Generate result
     result = {
         "uncertainties": uncertainties,
         "continue_questioning": should_continue_questioning(uncertainties),
@@ -273,7 +284,15 @@ def main():
         if should_continue_questioning(uncertainties)
         else None,
     }
-    print("\n" + json.dumps(result, indent=2))
+
+    if json_only:
+        # JSON only mode (for programmatic use)
+        print(json.dumps(result, indent=2))
+    else:
+        # Human-readable report + JSON
+        report = format_uncertainty_report(uncertainties)
+        print(report)
+        print("\n" + json.dumps(result, indent=2))
 
 
 if __name__ == "__main__":

@@ -19,7 +19,7 @@ Shows:
 
 ```bash
 # Run statistics collector
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/question_stats.py"
+cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 stats.py
 ```
 
 ## Display Format
@@ -81,4 +81,4 @@ Simply run the command:
 /with-me:stats
 ```
 
-No arguments required. The command reads from `~/.claude/with_me/question_feedback.json`.
+No arguments required. The command reads from `~/.claude/with-me/question_feedback.json`.
