@@ -19,7 +19,7 @@ Shows:
 
 ```bash
 # Run statistics collector
-cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 -m lib.question_stats
+cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 stats.py
 ```
 
 ## Display Format

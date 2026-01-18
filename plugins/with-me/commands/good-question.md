@@ -194,7 +194,7 @@ Before beginning the interview, check if the developer has reference materials t
 
 ```bash
 cd "${CLAUDE_PLUGIN_ROOT}/scripts"
-SESSION_ID=$(python3 -m lib.question_feedback_cli start | jq -r '.session_id')
+SESSION_ID=$(python3 session.py start)
 ```
 
 Store `SESSION_ID` in a variable for use throughout this session.
@@ -279,7 +279,7 @@ After asking each dimension question:
 
 4. **Record the question**:
    ```bash
-   cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 -m lib.question_feedback_cli record \
+   cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 session.py record \
      "$SESSION_ID" \
      "$QUESTION_TEXT" \
      "$CONTEXT_JSON" \
@@ -292,7 +292,7 @@ After asking each dimension question:
 ```bash
 # All dimensions now have answered: true
 # Calculate uncertainties (will be 0.5-0.8 range typically)
-UNCERTAINTIES=$(cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 -m lib.uncertainty_calculator "$DIMENSION_DATA_JSON")
+UNCERTAINTIES=$(cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 uncertainty.py --json-only "$DIMENSION_DATA_JSON")
 ```
 
 Expected result:
@@ -357,7 +357,7 @@ EOF
 )
 
 # 5. Record the question
-cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 -m lib.question_feedback_cli record \
+cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 session.py record \
   "$SESSION_ID" \
   "$QUESTION_TEXT" \
   "$CONTEXT_JSON" \
@@ -612,7 +612,7 @@ Example:
 
 1. **Calculate uncertainty scores** (with translated English content):
    ```bash
-   UNCERTAINTIES=$(cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 -m lib.uncertainty_calculator "$DIMENSION_DATA_JSON")
+   UNCERTAINTIES=$(cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 uncertainty.py --json-only "$DIMENSION_DATA_JSON")
    ```
 
    Where `DIMENSION_DATA_JSON` contains all dimension data with translated English content:
@@ -635,7 +635,7 @@ Example:
 
 2. **Record this question-answer pair:**
    ```bash
-   cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 -m lib.question_feedback_cli record \
+   cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 session.py record \
      "$SESSION_ID" \
      "$QUESTION_TEXT" \
      "$CONTEXT_JSON" \
@@ -786,7 +786,7 @@ Count all questions you asked:
    EOF
    )
 
-   cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 -m lib.question_feedback_cli record-batch \
+   cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 session.py record-batch \
      "$SESSION_ID" \
      "$BATCH_JSON"
    ```
@@ -825,7 +825,7 @@ Once all dimensions are sufficiently clear and validated:
 **Complete the question session tracking:**
 
 ```bash
-cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 -m lib.question_feedback_cli complete \
+cd "${CLAUDE_PLUGIN_ROOT}/scripts" && python3 session.py complete \
   "$SESSION_ID" \
   "$FINAL_UNCERTAINTIES_JSON"
 ```

@@ -13,11 +13,14 @@ from .question_feedback_manager import QuestionFeedbackManager
 from .question_reward_calculator import QuestionRewardCalculator
 
 
-def cmd_start() -> None:
+def cmd_start(plain_output: bool = False) -> None:
     """Start a new session"""
     manager = QuestionFeedbackManager()
     session_id = manager.start_session()
-    print(json.dumps({"session_id": session_id}))
+    if plain_output:
+        print(session_id)
+    else:
+        print(json.dumps({"session_id": session_id}))
 
 
 def cmd_record(
@@ -102,23 +105,35 @@ def main() -> None:
         usage()
         sys.exit(1)
 
-    command = sys.argv[1]
+    # Check for --plain-output flag
+    plain_output = False
+    args = sys.argv[1:]
+    if "--plain-output" in args:
+        plain_output = True
+        args.remove("--plain-output")
+        sys.argv = [sys.argv[0]] + args  # Rebuild argv without flag
+
+    if len(args) < 1:
+        usage()
+        sys.exit(1)
+
+    command = args[0]
 
     try:
         if command == "start":
-            cmd_start()
+            cmd_start(plain_output=plain_output)
         elif command == "record":
-            if len(sys.argv) != 6:
+            if len(args) != 5:
                 raise ValueError("record requires 4 arguments")
-            cmd_record(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+            cmd_record(args[1], args[2], args[3], args[4])
         elif command == "record-batch":
-            if len(sys.argv) != 4:
+            if len(args) != 3:
                 raise ValueError("record-batch requires 2 arguments")
-            cmd_record_batch(sys.argv[2], sys.argv[3])
+            cmd_record_batch(args[1], args[2])
         elif command == "complete":
-            if len(sys.argv) != 4:
+            if len(args) != 3:
                 raise ValueError("complete requires 2 arguments")
-            cmd_complete(sys.argv[2], sys.argv[3])
+            cmd_complete(args[1], args[2])
         elif command == "stats":
             cmd_stats()
         else:

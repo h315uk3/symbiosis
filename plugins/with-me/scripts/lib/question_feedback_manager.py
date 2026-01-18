@@ -37,7 +37,7 @@ class WithMeConfig:
         claude_dir = Path(
             os.getenv("CLAUDE_DIR", os.path.join(project_root, ".claude"))
         )
-        with_me_dir = claude_dir / "with-me"
+        with_me_dir = claude_dir / "with_me"
         feedback_file = with_me_dir / "question_feedback.json"
 
         return cls(
