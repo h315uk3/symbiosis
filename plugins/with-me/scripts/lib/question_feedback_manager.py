@@ -33,7 +33,18 @@ class WithMeConfig:
             >>> config.feedback_file.name
             'question_feedback.json'
         """
-        project_root = Path(os.getenv("PROJECT_ROOT", os.getcwd()))
+        # Use PROJECT_ROOT if available, otherwise find git root
+        if "PROJECT_ROOT" in os.environ:
+            project_root = Path(os.environ["PROJECT_ROOT"])
+        else:
+            # Try to find git root from current directory
+            current = Path.cwd()
+            project_root = current
+            for parent in [current, *current.parents]:
+                if (parent / ".git").exists():
+                    project_root = parent
+                    break
+
         claude_dir = Path(
             os.getenv("CLAUDE_DIR", os.path.join(project_root, ".claude"))
         )
