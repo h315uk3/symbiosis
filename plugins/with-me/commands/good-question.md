@@ -732,20 +732,7 @@ If refinement needed, identify remaining gaps and ask targeted follow-ups.
 
 ```bash
 # Count recorded questions in current session
-RECORDED_COUNT=$(python3 <<EOF
-import sys
-import os
-sys.path.insert(0, "${CLAUDE_PLUGIN_ROOT}/scripts")
-from lib.question_feedback_manager import QuestionFeedbackManager
-
-manager = QuestionFeedbackManager()
-session = manager._find_session("$SESSION_ID")
-if session:
-    print(len(session["questions"]))
-else:
-    print(0)
-EOF
-)
+RECORDED_COUNT=$(cd "${CLAUDE_PLUGIN_ROOT}/scripts/commands" && python3 session_question_count.py "$SESSION_ID")
 
 echo "Questions recorded in this session: $RECORDED_COUNT"
 ```
@@ -797,16 +784,7 @@ Count all questions you asked:
 **Verification:**
 ```bash
 # Re-check count after recovery
-FINAL_COUNT=$(python3 <<EOF
-import sys
-sys.path.insert(0, "${CLAUDE_PLUGIN_ROOT}/scripts")
-from lib.question_feedback_manager import QuestionFeedbackManager
-
-manager = QuestionFeedbackManager()
-session = manager._find_session("$SESSION_ID")
-print(len(session["questions"]) if session else 0)
-EOF
-)
+FINAL_COUNT=$(cd "${CLAUDE_PLUGIN_ROOT}/scripts/commands" && python3 session_question_count.py "$SESSION_ID")
 
 echo "Final recorded count: $FINAL_COUNT"
 ```
