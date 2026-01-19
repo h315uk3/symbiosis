@@ -218,7 +218,7 @@ After the user responds to the reference collection question:
    )
    ```
 
-4. **Record the question**:
+4. **Record the question** (runs in background to avoid interrupting the interview):
    ```bash
    export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" && python3 -m with_me.commands.session record \
      "$SESSION_ID" \
@@ -226,6 +226,8 @@ After the user responds to the reference collection question:
      "$CONTEXT_JSON" \
      "$ANSWER_JSON"
    ```
+
+   **IMPORTANT**: Use `run_in_background: true` when calling the Bash tool to execute this command. This prevents user confirmation prompts and keeps the interview flow smooth.
 
 **If Phase 0 is skipped**: No recording needed, proceed directly to Phase 1.
 
@@ -294,7 +296,7 @@ After the user responds:
    )
    ```
 
-5. **Record the question**:
+5. **Record the question** (runs in background to avoid interrupting the interview):
    ```bash
    export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" && python3 -m with_me.commands.session record \
      "$SESSION_ID" \
@@ -302,6 +304,8 @@ After the user responds:
      "$CONTEXT_JSON" \
      "$ANSWER_JSON"
    ```
+
+   **IMPORTANT**: Use `run_in_background: true` when calling the Bash tool to execute this command. This prevents user confirmation prompts and keeps the interview flow smooth.
 
 **Based on response:**
 - Detailed explanation → Assess which dimensions are clear vs uncertain
@@ -368,7 +372,7 @@ After asking each dimension question:
    )
    ```
 
-4. **Record the question**:
+4. **Record the question** (runs in background to avoid interrupting the interview):
    ```bash
    export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" && python3 -m with_me.commands.session record \
      "$SESSION_ID" \
@@ -376,6 +380,8 @@ After asking each dimension question:
      "$CONTEXT_JSON" \
      "$ANSWER_JSON"
    ```
+
+   **IMPORTANT**: Use `run_in_background: true` when calling the Bash tool to execute this command. This prevents user confirmation prompts and keeps the interview flow smooth.
 
 **Repeat for all 5 dimensions in Phase 2-1.**
 
@@ -454,6 +460,8 @@ export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" && python3 -m with_me.commands.session
   "$CONTEXT_JSON" \
   "$ANSWER_JSON"
 ```
+
+**IMPORTANT**: Use `run_in_background: true` when calling the Bash tool to execute this command. This prevents user confirmation prompts and keeps the interview flow smooth.
 
 **This recording step is MANDATORY for every question, including:**
 - AskUserQuestion selections
@@ -724,7 +732,7 @@ Example:
    }
    ```
 
-2. **Record this question-answer pair:**
+2. **Record this question-answer pair** (runs in background to avoid interrupting the interview):
    ```bash
    export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" && python3 -m with_me.commands.session record \
      "$SESSION_ID" \
@@ -732,6 +740,8 @@ Example:
      "$CONTEXT_JSON" \
      "$ANSWER_JSON"
    ```
+
+   **IMPORTANT**: Use `run_in_background: true` when calling the Bash tool to execute this command. This prevents user confirmation prompts and keeps the interview flow smooth.
 
    Where:
    - `CONTEXT_JSON`: `{"dimension": "...", "uncertainties_before": {...}, "uncertainties_after": {...}}`
@@ -873,6 +883,8 @@ Count all questions you asked:
      "$SESSION_ID" \
      "$BATCH_JSON"
    ```
+
+   **IMPORTANT**: Use `run_in_background: true` when calling the Bash tool to execute this command. This prevents user confirmation prompts and keeps the interview flow smooth.
 
 3. **Or record individually** (if only 1-2 questions missed):
    Use the standard `record` command for each missed question
