@@ -88,7 +88,6 @@ def calculate_dimension_uncertainty(dimension_data: dict[str, Any]) -> float:
     
     # Detect non-English content (warning for potential word count issues)
     if any(ord(char) > 127 for char in content):
-        import sys
         print(
             "WARNING: Non-ASCII characters detected in content. "
             "Word count may be inaccurate for non-English text. "

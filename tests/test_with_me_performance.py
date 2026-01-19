@@ -7,15 +7,28 @@ Uses only Python standard library for minimal dependencies.
 
 Usage:
     python3 tests/test_with_me_performance.py
+    
+Environment:
+    PYTHONPATH can be set to include the plugin directory, or
+    the script will auto-detect the plugin path relative to itself.
 """
 
+import os
 import sys
 import time
 from pathlib import Path
 
-# Add plugin to path
-plugin_root = Path(__file__).parent.parent / "plugins" / "with-me"
-sys.path.insert(0, str(plugin_root))
+# Add plugin to path - check environment first, fallback to relative path
+if "PYTHONPATH" not in os.environ or "with-me" not in os.environ.get("PYTHONPATH", ""):
+    # Auto-detect plugin path relative to test file location
+    plugin_root = Path(__file__).parent.parent / "plugins" / "with-me"
+    if plugin_root.exists():
+        sys.path.insert(0, str(plugin_root))
+    else:
+        raise RuntimeError(
+            f"Plugin directory not found at {plugin_root}. "
+            "Set PYTHONPATH to include the with-me plugin directory."
+        )
 
 from with_me.lib.question_reward_calculator import QuestionRewardCalculator
 from with_me.lib.uncertainty_calculator import calculate_dimension_uncertainty
