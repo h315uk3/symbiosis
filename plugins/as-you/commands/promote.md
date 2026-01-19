@@ -15,7 +15,8 @@ Promote a frequent pattern to knowledge base (Skill or Agent).
 Get current directory and retrieve candidates:
 ```bash
 pwd
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/promotion_analyzer.py"
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m as_you.commands.promotion_analyzer
 ```
 
 If 0 candidates:
@@ -42,7 +43,8 @@ Analyze selected pattern to determine if it should be Skill or Agent:
 
 **Read pattern context:**
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/pattern_context.py" PATTERN_NAME
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m as_you.commands.pattern_context PATTERN_NAME
 ```
 
 **Analyze characteristics:**

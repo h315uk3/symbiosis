@@ -8,12 +8,12 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# Add scripts/ to Python path
+# Add plugin root to Python path
 HOOK_DIR = Path(__file__).parent.resolve()
 REPO_ROOT = HOOK_DIR.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
+sys.path.insert(0, str(REPO_ROOT))
 
-from lib.common import AsYouConfig
+from as_you.lib.common import AsYouConfig
 
 
 class SessionCounter:
@@ -226,7 +226,7 @@ def main() -> dict:
 
     # 1. Archive session notes
     result = run_python_script(
-        REPO_ROOT / "scripts/hooks/note_archiver.py",
+        REPO_ROOT / "as_you/hooks/note_archiver.py",
         error_log=error_log,
         timeout=10
     )
@@ -235,7 +235,7 @@ def main() -> dict:
 
     # 2. Update pattern tracker (detect patterns, extract contexts, update tracker)
     result = run_python_script(
-        REPO_ROOT / "scripts/hooks/pattern_tracker_update.py",
+        REPO_ROOT / "as_you/hooks/pattern_tracker_update.py",
         error_log=error_log,
         timeout=30
     )
@@ -245,7 +245,7 @@ def main() -> dict:
 
     # 3. Calculate pattern scores (independent from tracker update)
     result = run_python_script(
-        REPO_ROOT / "scripts/hooks/score_calculator_hook.py",
+        REPO_ROOT / "as_you/hooks/score_calculator_hook.py",
         error_log=error_log,
         timeout=30
     )
@@ -262,7 +262,7 @@ def main() -> dict:
         print(f"Running periodic pattern merge (session {session_num})...")
 
         result = run_python_script(
-            REPO_ROOT / "scripts/hooks/pattern_merger.py",
+            REPO_ROOT / "as_you/hooks/pattern_merger.py",
             error_log=error_log,
             timeout=60
         )

@@ -6,14 +6,9 @@ Split from frequency_tracker.py for independent execution and testing.
 """
 
 import sys
-from pathlib import Path
 
-# Add scripts/ to Python path
-scripts_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(scripts_dir))
-
-from lib.common import AsYouConfig
-from lib.score_calculator import UnifiedScoreCalculator
+from as_you.lib.common import AsYouConfig
+from as_you.lib.score_calculator import UnifiedScoreCalculator
 
 
 def main():

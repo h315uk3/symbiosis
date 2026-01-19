@@ -5,14 +5,9 @@ Command-line wrapper for lib.context_extractor.get_pattern_contexts().
 """
 
 import sys
-from pathlib import Path
 
-# Add scripts/ to Python path
-scripts_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(scripts_dir))
-
-from lib.common import AsYouConfig
-from lib.context_extractor import get_pattern_contexts
+from as_you.lib.common import AsYouConfig
+from as_you.lib.context_extractor import get_pattern_contexts
 
 
 def main():

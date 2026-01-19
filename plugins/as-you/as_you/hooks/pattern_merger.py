@@ -11,15 +11,10 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# Add scripts/ to Python path
-scripts_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(scripts_dir))
-
-from commands.similarity_detector import detect_similar_patterns
-
-from lib.common import AsYouConfig
-from lib.pattern_updater import merge_patterns as update_merge_patterns
-from lib.score_calculator import UnifiedScoreCalculator
+from as_you.commands.similarity_detector import detect_similar_patterns
+from as_you.lib.common import AsYouConfig
+from as_you.lib.pattern_updater import merge_patterns as update_merge_patterns
+from as_you.lib.score_calculator import UnifiedScoreCalculator
 
 
 def create_backup(tracker_file: Path, keep_count: int = 5) -> Path | None:

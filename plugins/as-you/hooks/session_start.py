@@ -9,12 +9,12 @@ from datetime import datetime
 from pathlib import Path
 import time
 
-# Add scripts/ to Python path
+# Add plugin root to Python path
 HOOK_DIR = Path(__file__).parent.resolve()
 REPO_ROOT = HOOK_DIR.parent
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
+sys.path.insert(0, str(REPO_ROOT))
 
-from lib.common import AsYouConfig
+from as_you.lib.common import AsYouConfig
 
 
 def cleanup_old_archives(archive_dir: Path, days: int = 7) -> int:
@@ -72,7 +72,7 @@ def fetch_promotion_summary_from_analyzer(repo_root: Path, error_log: Path) -> d
         Dict with keys: total, skills, agents, top_pattern, top_type
         None if analysis fails
     """
-    script = repo_root / "scripts/commands/promotion_analyzer.py"
+    script = repo_root / "as_you/commands/promotion_analyzer.py"
 
     try:
         result = subprocess.run(

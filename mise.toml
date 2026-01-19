@@ -27,15 +27,15 @@ done
 
 [tasks.lint]
 description = "Lint Python code with ruff"
-run = "ruff check plugins/*/scripts"
+run = "ruff check plugins/*/as_you plugins/*/with_me"
 
 [tasks.format]
 description = "Format Python code with ruff"
-run = "ruff format plugins/*/scripts"
+run = "ruff format plugins/*/as_you plugins/*/with_me"
 
 [tasks."format:check"]
 description = "Check Python formatting without writing"
-run = "ruff format --check plugins/*/scripts"
+run = "ruff format --check plugins/*/as_you plugins/*/with_me"
 
 [tasks.validate]
 description = "Validate plugin configuration files"
@@ -43,8 +43,8 @@ run = "python3 tests/validate_plugins.py"
 
 [tasks."scoring:calculate"]
 description = "Calculate all scores (TF-IDF, PMI, time decay, composite)"
-env = { PYTHONPATH = "{{config_root}}/plugins/as-you/scripts" }
-run = "python3 plugins/as-you/scripts/lib/score_calculator.py"
+env = { PYTHONPATH = "{{config_root}}/plugins/as-you" }
+run = "python3 -m as_you.lib.score_calculator"
 
 # Note: Individual scoring tasks (tfidf, pmi, decay, composite) have been unified
 # into a single Python implementation (score_calculator.py)

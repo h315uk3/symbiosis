@@ -8,7 +8,7 @@ Replaces extract-contexts.sh with testable Python implementation.
 import sys
 from pathlib import Path
 
-from lib.common import AsYouConfig, load_tracker
+from as_you.lib.common import AsYouConfig, load_tracker
 
 
 def get_top_patterns(tracker: dict, limit: int = 10) -> list[str]:

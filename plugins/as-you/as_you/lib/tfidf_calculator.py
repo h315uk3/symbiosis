@@ -10,7 +10,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from lib.common import AsYouConfig, load_tracker, save_tracker
+from as_you.lib.common import AsYouConfig, load_tracker, save_tracker
 
 # English stopwords (common words to exclude from high scores)
 # Notes are now translated to English before storage, so only English stopwords needed
