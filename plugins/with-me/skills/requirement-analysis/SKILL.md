@@ -527,10 +527,11 @@ Based on the collected information, assess each dimension:
 
 ### Step 2: Calculate Uncertainty
 
-Use the uncertainty_calculator.py script to quantify uncertainty:
+Use the with_me.commands.uncertainty module to quantify uncertainty:
 
 ```bash
-python3 ../../scripts/uncertainty_calculator.py '<json_data>'
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m with_me.commands.uncertainty --json-only '<json_data>'
 ```
 
 The script will output:
@@ -607,6 +608,6 @@ Recommendation: Sufficient clarity achieved, proceed to validation
 ### Important Notes
 
 - **Threshold**: Default uncertainty threshold is 0.3 (70% certainty). Any dimension above this triggers a loop recommendation.
-- **Script Location**: The uncertainty_calculator.py script is located at `../../scripts/uncertainty_calculator.py` relative to this skill.
-- **JSON Format**: Ensure the JSON passed to the script is properly formatted and escaped.
+- **Module Location**: The uncertainty calculator is accessed via `with_me.commands.uncertainty` module using Python's `-m` flag.
+- **JSON Format**: Ensure the JSON passed to the module is properly formatted and escaped.
 - **Iterative Refinement**: Each loop iteration should target the highest-uncertainty dimension first, following the information gain maximization principle.

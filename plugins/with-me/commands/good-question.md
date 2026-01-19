@@ -186,6 +186,49 @@ Before beginning the interview, check if the developer has reference materials t
 
 **Note:** This phase is optional and can be skipped if the developer has no references or prefers to provide them inline during questioning.
 
+**IMPORTANT: If Phase 0 is executed, record the question immediately after receiving the answer:**
+
+After the user responds to the reference collection question:
+
+1. **Capture the answer** from AskUserQuestion (e.g., "Git repository", "No references")
+2. **Prepare answer data**:
+   ```bash
+   ANSWER="[User's selected option and any details]"
+   WORD_COUNT=$(echo "$ANSWER" | wc -w)
+
+   ANSWER_JSON=$(cat <<EOF
+   {
+     "text": "$ANSWER",
+     "word_count": $WORD_COUNT,
+     "has_examples": false
+   }
+   EOF
+   )
+   ```
+
+3. **Prepare context** (all dimensions start at 1.0 uncertainty):
+   ```bash
+   CONTEXT_JSON=$(cat <<EOF
+   {
+     "dimension": "reference_collection",
+     "uncertainties_before": {"purpose": 1.0, "data": 1.0, "behavior": 1.0, "constraints": 1.0, "quality": 1.0},
+     "uncertainties_after": {"purpose": 1.0, "data": 1.0, "behavior": 1.0, "constraints": 1.0, "quality": 1.0}
+   }
+   EOF
+   )
+   ```
+
+4. **Record the question**:
+   ```bash
+   export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" && python3 -m with_me.commands.session record \
+     "$SESSION_ID" \
+     "Do you have reference materials to save for this session?" \
+     "$CONTEXT_JSON" \
+     "$ANSWER_JSON"
+   ```
+
+**If Phase 0 is skipped**: No recording needed, proceed directly to Phase 1.
+
 ---
 
 ### Phase 1: Initial Assessment
@@ -211,6 +254,54 @@ Begin with an open question to gauge overall clarity:
   - Label: "Let me explain", Description: "I'll describe what I have in mind"
   - Label: "Show you examples", Description: "I have references or similar implementations"
   - Label: "Just a goal", Description: "I know what I want to achieve but not how"
+
+**CRITICAL: Record this initial assessment question immediately after receiving the answer**
+
+After the user responds:
+
+1. **Capture the answer** from AskUserQuestion (selected option and any follow-up explanation)
+2. **Prepare answer data**:
+   ```bash
+   ANSWER="[User's selected option and explanation]"
+   WORD_COUNT=$(echo "$ANSWER" | wc -w)
+   HAS_EXAMPLES=false  # Set to true if user provided examples
+
+   ANSWER_JSON=$(cat <<EOF
+   {
+     "text": "$ANSWER",
+     "word_count": $WORD_COUNT,
+     "has_examples": $HAS_EXAMPLES
+   }
+   EOF
+   )
+   ```
+
+3. **Assess initial uncertainties** based on the response:
+   - "Let me explain" with detailed description → Some dimensions may be clearer
+   - "Show you examples" → Need to analyze examples before assessing
+   - "Just a goal" → All dimensions remain at high uncertainty
+
+4. **Prepare context** with estimated uncertainties:
+   ```bash
+   # Example: User gave detailed explanation
+   CONTEXT_JSON=$(cat <<EOF
+   {
+     "dimension": "initial_assessment",
+     "uncertainties_before": {"purpose": 1.0, "data": 1.0, "behavior": 1.0, "constraints": 1.0, "quality": 1.0},
+     "uncertainties_after": {"purpose": 0.6, "data": 0.8, "behavior": 0.7, "constraints": 0.9, "quality": 0.9}
+   }
+   EOF
+   )
+   ```
+
+5. **Record the question**:
+   ```bash
+   export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" && python3 -m with_me.commands.session record \
+     "$SESSION_ID" \
+     "What do you want to build?" \
+     "$CONTEXT_JSON" \
+     "$ANSWER_JSON"
+   ```
 
 **Based on response:**
 - Detailed explanation → Assess which dimensions are clear vs uncertain
@@ -740,13 +831,18 @@ echo "Questions recorded in this session: $RECORDED_COUNT"
 **Compare with actual questions asked:**
 
 Count all questions you asked:
-- Phase 0: Reference collection questions
-- Phase 1: Initial assessment question
-- Phase 2-1: 5 dimension survey questions
-- Phase 2-2: Deep-dive questions (varies)
-- Phase 2-3: Contradiction resolution questions (if any)
-- Phase 3: Convergence validation questions
-- Phase 4: Final validation question
+- Phase 0: Reference collection question (1 question, only if Phase 0 was executed)
+- Phase 1: Initial assessment question (1 question)
+- Phase 2-1: 5 dimension survey questions (exactly 5 questions)
+- Phase 2-2: Deep-dive questions (varies, typically 2-10 questions)
+- Phase 2-3: Contradiction resolution questions (if any, typically 0-3 questions)
+- Phase 3: Convergence validation questions (if any, typically 0-2 questions)
+- Phase 4: Final validation question (1 question)
+
+**Expected total:**
+- Minimum: 8 questions (if Phase 0 skipped, no Phase 2-3, no Phase 3 follow-ups)
+- Typical: 10-15 questions
+- Maximum: 20+ questions (complex requirements with many clarifications)
 
 **If counts don't match:**
 
