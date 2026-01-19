@@ -1,5 +1,5 @@
 ---
-description: "Entropy-reducing requirement elicitation - systematically reduce uncertainty through information-maximizing questions"
+description: "Adaptive requirement elicitation - systematically reduce uncertainty through information-maximizing questions"
 allowed-tools: [AskUserQuestion, Read, Glob, Grep, WebFetch, Bash, Skill]
 ---
 
@@ -7,13 +7,15 @@ allowed-tools: [AskUserQuestion, Read, Glob, Grep, WebFetch, Bash, Skill]
 
 **When you can't articulate your requirements, let me ask the right questions.**
 
-This command uses an information-theoretic approach to extract requirements by reducing uncertainty (entropy) through adaptive questioning.
+This command uses an information theory-inspired approach to extract requirements by reducing uncertainty through adaptive questioning.
 
 ---
 
-## Core Principle: Entropy Reduction
+## Core Principle: Uncertainty Reduction
 
-Your requirements exist in an uncertain state. Each question aims to maximize information gain, systematically reducing entropy until clarity emerges.
+Your requirements exist in an uncertain state. Each question aims to maximize information gain, systematically reducing uncertainty until clarity emerges.
+
+**Note**: Uses simplified approximation model (Python stdlib only), not strict information-theoretic implementation.
 
 ```
 Initial State: H(Requirements) = High (Maximum Uncertainty)
@@ -622,7 +624,7 @@ Where `CONTEXT_JSON` contains:
     "actionability": 0.75,
     "relevance": 0.90
   },
-  "kl_divergence": 0.15
+  "question_anomaly": 0.15
 }
 ```
 
@@ -688,7 +690,7 @@ Proceed to Phase 2-3 (or Phase 3 if no contradictions) when:
 Questions without proper recording will NOT contribute to:
 - Question quality improvement
 - `/with-me:stats` analytics
-- Entropy maximization learning
+- Uncertainty reduction learning
 - Best question pattern discovery
 
 **Recovery procedure** (if recordings were missed):
