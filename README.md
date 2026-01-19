@@ -39,12 +39,12 @@ Claude learns from your work patterns and builds knowledge automatically from yo
 
 **"You work with me (Claude)"**
 
-Working with you, Claude elicits requirements through entropy-reducing communication and adaptive questioning.
+Working with you, Claude elicits requirements through information theory-inspired adaptive questioning.
 
 **Key Features:**
-- `/with-me:good-question` - Information-theoretic requirement elicitation with automatic effectiveness tracking
+- `/with-me:good-question` - Adaptive requirement elicitation with automatic effectiveness tracking
 - `/with-me:stats` - Question effectiveness dashboard with reward-based analytics
-- Adaptive questioning based on uncertainty dimensions
+- Adaptive questioning based on uncertainty dimensions (simplified approximation model)
 - Structured specification generation via forked context analysis
 
 ---

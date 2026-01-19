@@ -2,13 +2,13 @@
 
 **"You work with me (Claude)" - Collaborative AI assistant**
 
-Working with you, Claude elicits requirements through entropy-reducing communication and adaptive questioning.
+Working with you, Claude elicits requirements through information theory-inspired adaptive questioning.
 
 ---
 
 ## Available Commands
 
-### `/with-me:good-question` - Entropy-Reducing Requirement Elicitation
+### `/with-me:good-question` - Adaptive Requirement Elicitation
 
 **Note**: This command now includes automatic question effectiveness tracking. Each question's reward score (information gain, clarity, specificity, etc.) is recorded for continuous improvement.
 
@@ -38,24 +38,26 @@ The with-me plugin includes an AI reward function-based question evaluation syst
 **Composite Reward Function:**
 ```
 r = 0.40*info_gain + 0.20*clarity + 0.15*specificity +
-    0.15*actionability + 0.10*relevance - 0.02*kl_divergence
+    0.15*actionability + 0.10*relevance - 0.02*question_anomaly
 ```
 
 **Evaluation Dimensions:**
-1. **Information Gain** (40%): How much uncertainty is reduced
+1. **Information Gain** (40%): Estimated uncertainty reduction (simplified proxy)
 2. **Clarity** (20%): Question understandability
 3. **Specificity** (15%): Explicit dimension targeting
 4. **Actionability** (15%): User's ability to answer
 5. **Context Relevance** (10%): Focus on highest uncertainty
-6. **KL Divergence Penalty**: Redundancy detection
+6. **Question Anomaly Penalty**: Redundancy detection (heuristic checks)
+
+**Note**: This is a simplified approximation model inspired by information theory, not a strict information-theoretic implementation. Uses Python stdlib only (no NumPy/SciPy).
 
 This system helps identify which questions are most effective at eliciting requirements, enabling continuous improvement of the interview process.
 
 ---
 
-### `/with-me:good-question` - Entropy-Reducing Requirement Elicitation
+### `/with-me:good-question` - Adaptive Requirement Elicitation
 
-When you can't articulate your requirements, this command uses an information-theoretic approach to systematically reduce uncertainty through adaptive questioning.
+When you can't articulate your requirements, this command uses an information theory-inspired approach to systematically reduce uncertainty through adaptive questioning.
 
 **How it works:**
 
