@@ -817,30 +817,107 @@ This generates session statistics for the `/with-me:stats` command.
 
 ---
 
-**Invoke the requirement-analysis skill:**
+**Prepare dimension data for requirement-analysis skill:**
+
+The `requirement-analysis` skill requires dimension data in a specific JSON format. You need to prepare this data from the collected information during the interview.
+
+**Step 1: Compile dimension data JSON**
+
+For each dimension, summarize what was learned:
+
+```bash
+DIMENSION_DATA_JSON=$(cat <<'EOF'
+{
+  "purpose": {
+    "answered": true,
+    "content": "Summary of purpose answers in English",
+    "examples": 2,
+    "contradictions": false
+  },
+  "data": {
+    "answered": true,
+    "content": "Summary of data answers in English",
+    "examples": 1,
+    "contradictions": false
+  },
+  "behavior": {
+    "answered": true,
+    "content": "Summary of behavior answers in English",
+    "examples": 3,
+    "contradictions": false
+  },
+  "constraints": {
+    "answered": true,
+    "content": "Summary of constraints answers in English",
+    "examples": 1,
+    "contradictions": false
+  },
+  "quality": {
+    "answered": true,
+    "content": "Summary of quality answers in English",
+    "examples": 0,
+    "contradictions": false
+  }
+}
+EOF
+)
+```
+
+**CRITICAL: Content must be in English**
+- The uncertainty calculator uses word count analysis, which only works correctly with English text
+- If answers were collected in other languages, translate the content summaries to English
+- Keep technical terms in their original form
+
+**Step 2: Verify uncertainty calculation**
+
+Before invoking the skill, verify that all dimensions meet the threshold:
+
+```bash
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+UNCERTAINTIES=$(python3 -m with_me.commands.uncertainty --json-only "$DIMENSION_DATA_JSON")
+
+echo "Final uncertainties: $UNCERTAINTIES"
+```
+
+Expected output:
+```json
+{
+  "uncertainties": {"purpose": 0.2, "data": 0.25, "behavior": 0.15, "constraints": 0.1, "quality": 0.2},
+  "continue_questioning": false,
+  "next_focus": null
+}
+```
+
+If `continue_questioning: true`, do NOT proceed to requirement-analysis yet. Return to Phase 2-2 for additional questioning.
+
+**Step 3: Invoke the requirement-analysis skill**
 
 The `requirement-analysis` skill uses `context: fork`, which automatically runs in an isolated sub-agent context, keeping the main session clean.
 
-Simply invoke the skill with all collected information:
+Pass the dimension data JSON to the skill:
 
 ```
 Use the requirement-analysis skill to analyze the gathered requirements.
 
-Provide all collected answers and context:
-- Purpose: [answers from Purpose dimension]
-- Data: [answers from Data dimension]
-- Behavior: [answers from Behavior dimension]
-- Constraints: [answers from Constraints dimension]
-- Quality: [answers from Quality dimension]
+Dimension data (JSON format):
+```json
+{JSON content from DIMENSION_DATA_JSON}
+```
 
-The skill will generate:
-1. Structured requirement specification
-2. Identified ambiguities or contradictions
-3. Implementation approach suggestions
-4. Risk assessment and challenges
+The skill will:
+1. Calculate final uncertainty scores
+2. Generate structured requirement specification if uncertainty is low enough
+3. Identify any remaining ambiguities or contradictions
+4. Provide implementation approach suggestions
+5. Assess risks and challenges
 ```
 
 The skill automatically runs in a forked context, so the analysis won't pollute the main conversation.
+
+**Important notes:**
+- The skill reads dimension data from your prompt, NOT from session files
+- Ensure dimension summaries are comprehensive and in English
+- All collected examples and context should be included in the content field
 
 ---
 
