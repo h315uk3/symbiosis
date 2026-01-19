@@ -85,6 +85,17 @@ def calculate_dimension_uncertainty(dimension_data: dict[str, Any]) -> float:
 
     # Factor 1: Content detail (more words = less uncertainty)
     content = dimension_data.get("content", "")
+    
+    # Detect non-English content (warning for potential word count issues)
+    if any(ord(char) > 127 for char in content):
+        import sys
+        print(
+            "WARNING: Non-ASCII characters detected in content. "
+            "Word count may be inaccurate for non-English text. "
+            "Consider translating to English for accurate uncertainty calculation.",
+            file=sys.stderr
+        )
+    
     word_count = len(content.split())
     if word_count > 50:
         uncertainty -= 0.5
