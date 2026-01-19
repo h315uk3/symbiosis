@@ -6,19 +6,16 @@ This is a thin wrapper around lib.question_feedback_manager.
 No business logic or tests here - see lib/ for tested implementations.
 
 Usage:
-    python3 -m scripts.commands.session_question_count <session_id>
+    cd "${CLAUDE_PLUGIN_ROOT}/scripts/commands" && python3 session_question_count.py <session_id>
 """
 
 import sys
+from pathlib import Path
 
-# Support both direct execution and module execution
-try:
-    from ..lib.question_feedback_manager import QuestionFeedbackManager
-except ImportError:
-    from pathlib import Path
+# Add scripts/ to path for lib imports (matches as-you pattern)
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    from lib.question_feedback_manager import QuestionFeedbackManager
+from lib.question_feedback_manager import QuestionFeedbackManager
 
 
 def main():

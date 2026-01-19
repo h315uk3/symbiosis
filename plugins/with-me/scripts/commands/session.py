@@ -7,11 +7,15 @@ Outputs plain values (not JSON) for shell script usage without jq dependency
 """
 
 import sys
+from pathlib import Path
+
+# Add scripts/ to path for lib imports (matches as-you pattern)
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 if __name__ == "__main__":
     # Delegate to lib.question_feedback_cli with --plain-output flag
     sys.argv.insert(1, "--plain-output") if len(sys.argv) > 1 else None
 
-    from ..lib import question_feedback_cli
+    from lib import question_feedback_cli
 
     question_feedback_cli.main()

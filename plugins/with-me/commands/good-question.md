@@ -279,7 +279,7 @@ After asking each dimension question:
 
 4. **Record the question**:
    ```bash
-   cd "${CLAUDE_PLUGIN_ROOT}" && python3 -m scripts.commands.session record \
+   cd "${CLAUDE_PLUGIN_ROOT}/scripts/commands" && python3 session.py record \
      "$SESSION_ID" \
      "$QUESTION_TEXT" \
      "$CONTEXT_JSON" \
@@ -292,7 +292,7 @@ After asking each dimension question:
 ```bash
 # All dimensions now have answered: true
 # Calculate uncertainties (will be 0.5-0.8 range typically)
-UNCERTAINTIES=$(cd "${CLAUDE_PLUGIN_ROOT}" && python3 -m scripts.commands.uncertainty --json-only "$DIMENSION_DATA_JSON")
+UNCERTAINTIES=$(cd "${CLAUDE_PLUGIN_ROOT}/scripts/commands" && python3 uncertainty.py --json-only "$DIMENSION_DATA_JSON")
 ```
 
 Expected result:
@@ -357,7 +357,7 @@ EOF
 )
 
 # 5. Record the question
-cd "${CLAUDE_PLUGIN_ROOT}" && python3 -m scripts.commands.session record \
+cd "${CLAUDE_PLUGIN_ROOT}/scripts/commands" && python3 session.py record \
   "$SESSION_ID" \
   "$QUESTION_TEXT" \
   "$CONTEXT_JSON" \
@@ -612,7 +612,7 @@ Example:
 
 1. **Calculate uncertainty scores** (with translated English content):
    ```bash
-   UNCERTAINTIES=$(cd "${CLAUDE_PLUGIN_ROOT}" && python3 -m scripts.commands.uncertainty --json-only "$DIMENSION_DATA_JSON")
+   UNCERTAINTIES=$(cd "${CLAUDE_PLUGIN_ROOT}/scripts/commands" && python3 uncertainty.py --json-only "$DIMENSION_DATA_JSON")
    ```
 
    Where `DIMENSION_DATA_JSON` contains all dimension data with translated English content:
@@ -635,7 +635,7 @@ Example:
 
 2. **Record this question-answer pair:**
    ```bash
-   cd "${CLAUDE_PLUGIN_ROOT}" && python3 -m scripts.commands.session record \
+   cd "${CLAUDE_PLUGIN_ROOT}/scripts/commands" && python3 session.py record \
      "$SESSION_ID" \
      "$QUESTION_TEXT" \
      "$CONTEXT_JSON" \
@@ -732,7 +732,7 @@ If refinement needed, identify remaining gaps and ask targeted follow-ups.
 
 ```bash
 # Count recorded questions in current session
-RECORDED_COUNT=$(cd "${CLAUDE_PLUGIN_ROOT}" && python3 -m scripts.commands.session_question_count "$SESSION_ID")
+RECORDED_COUNT=$(cd "${CLAUDE_PLUGIN_ROOT}/scripts/commands" && python3 session.py_question_count "$SESSION_ID")
 
 echo "Questions recorded in this session: $RECORDED_COUNT"
 ```
@@ -773,7 +773,7 @@ Count all questions you asked:
    EOF
    )
 
-   cd "${CLAUDE_PLUGIN_ROOT}" && python3 -m scripts.commands.session record-batch \
+   cd "${CLAUDE_PLUGIN_ROOT}/scripts/commands" && python3 session.py record-batch \
      "$SESSION_ID" \
      "$BATCH_JSON"
    ```
@@ -784,7 +784,7 @@ Count all questions you asked:
 **Verification:**
 ```bash
 # Re-check count after recovery
-FINAL_COUNT=$(cd "${CLAUDE_PLUGIN_ROOT}" && python3 -m scripts.commands.session_question_count "$SESSION_ID")
+FINAL_COUNT=$(cd "${CLAUDE_PLUGIN_ROOT}/scripts/commands" && python3 session.py_question_count "$SESSION_ID")
 
 echo "Final recorded count: $FINAL_COUNT"
 ```
@@ -803,7 +803,7 @@ Once all dimensions are sufficiently clear and validated:
 **Complete the question session tracking:**
 
 ```bash
-cd "${CLAUDE_PLUGIN_ROOT}" && python3 -m scripts.commands.session complete \
+cd "${CLAUDE_PLUGIN_ROOT}/scripts/commands" && python3 session.py complete \
   "$SESSION_ID" \
   "$FINAL_UNCERTAINTIES_JSON"
 ```
