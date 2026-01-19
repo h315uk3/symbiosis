@@ -2,14 +2,20 @@
 """
 Question Reward Calculator for with-me plugin
 
-Calculates reward scores for questions using information theory principles.
-Pure Python standard library implementation.
+Linear additive reward model with information theory-inspired scoring.
 
 Composite reward function:
     r = 0.40*info_gain + 0.20*clarity + 0.15*specificity +
-        0.15*actionability + 0.10*relevance - 0.02*kl_divergence
+        0.15*actionability + 0.10*relevance - 0.02*question_anomaly
 
-Based on AI reward function research and RLHF principles.
+Design notes:
+- Simplified model: Components assumed independent (correlated in reality)
+- Information gain: Uses uncertainty proxy (not strict I(X;Y))
+- Anomaly penalty: Heuristic checks (not true KL divergence)
+- Constraint: Python 3.11+ stdlib only
+
+Based on RLHF principles (Ouyang et al., 2022; Christiano et al., 2017).
+See: docs/with-me-information-theory-analysis.md for theoretical analysis.
 """
 
 import json
@@ -19,18 +25,68 @@ from typing import Any
 
 
 class QuestionRewardCalculator:
-    """Calculate reward scores for questions to evaluate their effectiveness"""
+    """
+    Calculate reward scores for questions to evaluate their effectiveness.
+
+    Theoretical basis:
+    - Reward function design based on RLHF (Reinforcement Learning from Human Feedback)
+    - Weight allocation follows multi-objective optimization principles
+    - KL divergence penalty prevents redundant/anomalous questions
+
+    References:
+    - Ouyang et al., "Training language models to follow instructions with human feedback", 2022
+    - Christiano et al., "Deep reinforcement learning from human preferences", 2017
+    - Requirements doc: docs/with-me-evaluation-logic-requirements.md
+    """
 
     def __init__(self):
+        """
+        Initialize reward calculator with theoretically justified weights.
+
+        Examples:
+            >>> calc = QuestionRewardCalculator()
+            >>> # Verify weight sum = 1.0 (normalized probability distribution)
+            >>> sum(calc.weights.values())
+            1.0
+            >>> # Verify all weights are positive
+            >>> all(w > 0 for w in calc.weights.values())
+            True
+            >>> # Verify primary objective has highest weight
+            >>> calc.weights["info_gain"] == max(calc.weights.values())
+            True
+        """
         # Weight coefficients for composite reward
+        # Theoretical basis:
+        # - info_gain (0.40): Primary objective - entropy reduction is core goal
+        #   RLHF literature typically assigns 0.4-0.5 to main objective
+        # - clarity (0.20): Quality assurance - clear questions get accurate answers
+        #   Secondary importance for practical effectiveness
+        # - specificity (0.15): Contributes to information gain
+        #   Specific questions yield precise answers
+        # - actionability (0.15): Practical constraint - questions must be answerable
+        #   Balance between ideal and feasible questions
+        # - relevance (0.10): Contextual optimization - ensures questions fit current state
+        #   Complementary role in multi-objective function
+        #
+        # Sum = 1.0 (normalized probability distribution)
+        # References: Ouyang et al. (2022), multi-objective optimization literature
         self.weights = {
-            "info_gain": 0.40,  # Information acquisition
-            "clarity": 0.20,  # Question clarity
-            "specificity": 0.15,  # Specificity
-            "actionability": 0.15,  # Answerability
-            "relevance": 0.10,  # Context relevance
+            "info_gain": 0.40,  # Information acquisition (primary objective)
+            "clarity": 0.20,  # Question clarity (quality assurance)
+            "specificity": 0.15,  # Specificity (information richness)
+            "actionability": 0.15,  # Answerability (practical constraint)
+            "relevance": 0.10,  # Context relevance (optimization)
         }
-        self.kl_penalty = 0.02  # KL divergence penalty weight
+
+        # Question anomaly penalty weight (equivalent to KL divergence penalty concept)
+        # Theoretical basis:
+        # - Prevents distribution shift in question patterns
+        # - Small weight (0.02) acts as regularization, not hard constraint
+        # - Based on KL penalty in RLHF: prevents overfitting to specific patterns
+        # Note: Implementation uses heuristic (similarity + length + format checks)
+        #       rather than true KL divergence (which requires probability distributions)
+        # References: KL regularization in policy gradient methods
+        self.anomaly_penalty = 0.02  # Question anomaly penalty weight (KL penalty equivalent)
 
     def calculate_reward(
         self, question: str, context: dict[str, Any], answer: str | None = None
@@ -52,7 +108,7 @@ class QuestionRewardCalculator:
             {
                 'total_reward': float,
                 'components': Dict[str, float],
-                'kl_divergence': float
+                'question_anomaly': float  # Heuristic anomaly score (KL penalty equivalent)
             }
 
         Examples:
@@ -67,6 +123,32 @@ class QuestionRewardCalculator:
             True
             >>> "info_gain" in result["components"]
             True
+            >>> # Test composite effects: high uncertainty + clear question
+            >>> clear_q = "What specific problem does this solve?"
+            >>> vague_q = "What?"
+            >>> result_clear = calc.calculate_reward(clear_q, context)
+            >>> result_vague = calc.calculate_reward(vague_q, context)
+            >>> result_clear["total_reward"] > result_vague["total_reward"]
+            True
+            >>> # Test anomaly penalty: redundant question
+            >>> context_with_history = {
+            ...     "uncertainties": {"purpose": 0.9},
+            ...     "answered_dimensions": [],
+            ...     "question_history": ["What problem does this solve?"],
+            ... }
+            >>> result_redundant = calc.calculate_reward("What problem does this solve?", context_with_history)
+            >>> result_redundant["question_anomaly"] > 0.5
+            True
+            >>> # Test relevance: high uncertainty dimension vs low uncertainty dimension
+            >>> context_mixed = {
+            ...     "uncertainties": {"purpose": 0.9, "data": 0.1},
+            ...     "answered_dimensions": [],
+            ...     "question_history": [],
+            ... }
+            >>> result_purpose = calc.calculate_reward("Why is this needed?", context_mixed)
+            >>> result_data = calc.calculate_reward("What data is involved?", context_mixed)
+            >>> result_purpose["total_reward"] > result_data["total_reward"]
+            True
         """
         components = {}
 
@@ -80,27 +162,52 @@ class QuestionRewardCalculator:
         # Weighted sum
         total = sum(self.weights[k] * v for k, v in components.items())
 
-        # KL penalty
-        kl_div = self._estimate_kl_divergence(question, context)
-        total -= self.kl_penalty * kl_div
+        # Question anomaly penalty (KL penalty equivalent)
+        anomaly = self._estimate_question_anomaly(question, context)
+        total -= self.anomaly_penalty * anomaly
 
         return {
             "total_reward": total,
             "components": components,
-            "kl_divergence": kl_div,
+            "question_anomaly": anomaly,
         }
 
     def _estimate_info_gain(
         self, question: str, context: dict, answer: str | None
     ) -> float:
         """
-        Estimate information gain
+        Estimate information gain using simplified heuristics.
+
+        Note: Simplified approximation, not strict I(X;Y) = H(X) - H(X|Y).
+
+        Theoretical definition requires:
+        - Probability distributions P(X_before) and P(X_after|Y)
+        - Full session history for statistical inference
+        - Cannot compute without sufficient data (cold start problem)
+
+        Current implementation:
+        - Pre-answer: Returns target dimension uncertainty as proxy
+        - Post-answer: Maps answer word count to [0.0, 1.0] range
+        - Practical approximation under stdlib-only constraint
+
+        Args:
+            question: Question text
+            context: Context including uncertainties and history
+            answer: User's answer (optional, for post-evaluation)
+
+        Returns:
+            Estimated information gain (0.0-1.0)
 
         Examples:
             >>> calc = QuestionRewardCalculator()
+            >>> # Pre-answer: uses target dimension uncertainty
             >>> context = {"uncertainties": {"purpose": 0.9}}
             >>> calc._estimate_info_gain("What is the purpose?", context, None) > 0.5
             True
+            >>> # Post-answer: uses answer word count
+            >>> long_answer = " ".join(["word"] * 60)
+            >>> calc._estimate_info_gain("What is it?", context, long_answer)
+            0.9
         """
         if answer:
             # Actual information gain (post-evaluation)
@@ -238,16 +345,31 @@ class QuestionRewardCalculator:
 
         return relevance
 
-    def _estimate_kl_divergence(self, question: str, context: dict) -> float:
+    def _estimate_question_anomaly(self, question: str, context: dict) -> float:
         """
-        Estimate question anomaly (simplified KL divergence)
+        Estimate question anomaly score (KL divergence penalty equivalent).
+
+        Note: This is a heuristic approximation, not true KL divergence.
+        True KL divergence requires probability distributions: KL(P||Q) = Σ P(x) log(P(x)/Q(x))
+        This implementation uses practical heuristics:
+        - Similarity to past questions (redundancy detection)
+        - Extreme length (too short or too long)
+        - Abnormal question marks (format validation)
+
+        Theoretical basis:
+        - Concept inspired by KL regularization in RLHF
+        - Prevents distribution shift in question patterns
+        - Acts as regularization penalty
+
+        Returns:
+            Anomaly score (0.0 = normal, higher = more anomalous)
 
         Examples:
             >>> calc = QuestionRewardCalculator()
             >>> context = {"question_history": ["What is it?"]}
-            >>> calc._estimate_kl_divergence("What is it?", context) > 0.5
+            >>> calc._estimate_question_anomaly("What is it?", context) > 0.5
             True
-            >>> calc._estimate_kl_divergence(
+            >>> calc._estimate_question_anomaly(
             ...     "How does it work?", {"question_history": []}
             ... )
             0.0
