@@ -24,9 +24,9 @@ from datetime import datetime
 from pathlib import Path
 
 # Import from existing modules
-from lib.common import AsYouConfig
-from lib.pmi_calculator import count_total_patterns
-from lib.tfidf_calculator import calculate_tfidf_single_pass, is_stopword
+from as_you.lib.common import AsYouConfig
+from as_you.lib.pmi_calculator import count_total_patterns
+from as_you.lib.tfidf_calculator import calculate_tfidf_single_pass, is_stopword
 
 
 class UnifiedScoreCalculator:

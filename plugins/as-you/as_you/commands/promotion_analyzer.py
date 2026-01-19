@@ -9,11 +9,7 @@ import re
 import sys
 from pathlib import Path
 
-# Add scripts/ to Python path
-scripts_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(scripts_dir))
-
-from lib.common import AsYouConfig, load_tracker
+from as_you.lib.common import AsYouConfig, load_tracker
 
 
 def determine_type(contexts: list[str]) -> str:

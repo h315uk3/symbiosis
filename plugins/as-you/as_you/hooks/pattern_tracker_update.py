@@ -9,14 +9,10 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# Add scripts/ to Python path
-scripts_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(scripts_dir))
-
-from lib.common import AsYouConfig, load_tracker, save_tracker
-from lib.context_extractor import extract_contexts as extract_contexts_func
-from lib.cooccurrence_detector import detect_cooccurrences
-from lib.pattern_detector import detect_patterns_from_archives
+from as_you.lib.common import AsYouConfig, load_tracker, save_tracker
+from as_you.lib.context_extractor import extract_contexts as extract_contexts_func
+from as_you.lib.cooccurrence_detector import detect_cooccurrences
+from as_you.lib.pattern_detector import detect_patterns_from_archives
 
 
 def update_pattern(patterns: dict, word: str, count: int, current_date: str) -> None:

@@ -41,56 +41,44 @@ def discover_and_test(root: Path, verbose: bool = False) -> tuple[int, int]:
     total_tests = 0
     total_failures = 0
 
-    plugins = ["as-you", "with-me"]
+    plugins = [
+        ("as-you", "as_you"),
+        ("with-me", "with_me")
+    ]
 
-    for plugin in plugins:
-        plugin_scripts = root / "plugins" / plugin / "scripts"
-        if not plugin_scripts.exists():
+    for plugin_dir, plugin_pkg in plugins:
+        plugin_root = root / "plugins" / plugin_dir
+        if not plugin_root.exists():
             continue
 
-        print(f"Testing plugins/{plugin}...")
+        print(f"Testing plugins/{plugin_dir}...")
 
-        # Add plugin scripts to path for imports
-        sys.path.insert(0, str(plugin_scripts))
+        # Add plugin root to path for imports (for as_you.* / with_me.* imports)
+        sys.path.insert(0, str(plugin_root))
 
         # Find all Python files, prioritizing lib/ first for dependencies
         py_files = []
 
         # First add lib/ files (dependencies)
-        lib_dir = plugin_scripts / "lib"
+        lib_dir = plugin_root / plugin_pkg / "lib"
         if lib_dir.exists():
-            # Load lib package first to support relative imports
-            lib_init = lib_dir / "__init__.py"
-            if lib_init.exists():
-                spec = importlib.util.spec_from_file_location("lib", lib_init)
-                if spec and spec.loader:
-                    lib_module = importlib.util.module_from_spec(spec)
-                    sys.modules["lib"] = lib_module
-                    with suppress(Exception):
-                        spec.loader.exec_module(lib_module)
-
             py_files.extend(sorted(lib_dir.glob("*.py")))
 
         # Then add other files
         for subdir in ["commands", "hooks"]:
-            subdir_path = plugin_scripts / subdir
+            subdir_path = plugin_root / plugin_pkg / subdir
             if subdir_path.exists():
                 py_files.extend(sorted(subdir_path.glob("*.py")))
 
-        # Finally add root-level files
-        py_files.extend(sorted(plugin_scripts.glob("*.py")))
-
         for py_file in py_files:
-            # Skip __init__.py files
+            # Skip __init__.py files (shouldn't exist but check anyway)
             if py_file.name == "__init__.py":
                 continue
 
             # Import module dynamically with proper module name
-            # For lib/ files, use "lib.filename" as module name
-            if py_file.parent.name == "lib":
-                module_name = f"lib.{py_file.stem}"
-            else:
-                module_name = py_file.stem
+            # Calculate relative path from plugin package root
+            rel_parts = py_file.relative_to(plugin_root / plugin_pkg).parts
+            module_name = f"{plugin_pkg}.{'.'.join(rel_parts[:-1])}.{py_file.stem}" if len(rel_parts) > 1 else f"{plugin_pkg}.{py_file.stem}"
 
             spec = importlib.util.spec_from_file_location(module_name, py_file)
             if spec and spec.loader:

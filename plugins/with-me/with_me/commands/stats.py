@@ -6,11 +6,7 @@ Provides question effectiveness statistics
 Called from stats.md command
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent))
-
 if __name__ == "__main__":
-    from lib import question_stats
+    from with_me.lib import question_stats
+
     question_stats.main()

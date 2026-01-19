@@ -8,13 +8,9 @@ import json
 import sys
 from pathlib import Path
 
-# Add scripts/ to Python path
-scripts_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(scripts_dir))
-
-from lib.bktree import build_bktree_from_patterns
-from lib.common import AsYouConfig, load_tracker
-from lib.levenshtein import levenshtein_distance
+from as_you.lib.bktree import build_bktree_from_patterns
+from as_you.lib.common import AsYouConfig, load_tracker
+from as_you.lib.levenshtein import levenshtein_distance
 
 
 def detect_similar_patterns(

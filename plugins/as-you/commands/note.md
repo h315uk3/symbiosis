@@ -33,7 +33,8 @@ If $ARGUMENTS is provided:
 
 2. Execute with Bash tool:
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/note_add.py" "<english-text>"
+   export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+   python3 -m as_you.commands.note_add "<english-text>"
    ```
    Replace `<english-text>` with translated content from step 1.
 

@@ -6,14 +6,9 @@ Collects and outputs JSON statistics about current memory state.
 
 import json
 import os
-import sys
 from pathlib import Path
 
-# Add scripts/ to Python path
-scripts_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(scripts_dir))
-
-from lib.common import load_tracker
+from as_you.lib.common import load_tracker
 
 
 def collect_stats() -> dict:

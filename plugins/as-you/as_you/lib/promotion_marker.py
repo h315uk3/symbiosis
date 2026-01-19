@@ -11,9 +11,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Self
 
-from lib.common import AsYouConfig
-from lib.pattern_updater import mark_promoted as mark_pattern_as_promoted
-from lib.score_calculator import UnifiedScoreCalculator
+from as_you.lib.common import AsYouConfig
+from as_you.lib.pattern_updater import mark_promoted as mark_pattern_as_promoted
+from as_you.lib.score_calculator import UnifiedScoreCalculator
 
 
 class PromotionType(Enum):

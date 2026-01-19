@@ -9,11 +9,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-# Add scripts/ to Python path
-scripts_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(scripts_dir))
-
-from lib.common import AsYouConfig
+from as_you.lib.common import AsYouConfig
 
 
 def archive_note(memo_file: Path, archive_dir: Path) -> Path | None:

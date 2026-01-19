@@ -14,7 +14,8 @@ Display memory statistics and analyze patterns.
    Get current directory and execute statistics collection:
    ```bash
    pwd
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/memory_stats.py"
+   export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+   python3 -m as_you.commands.memory_stats
    ```
 
 2. **Display Dashboard**
@@ -54,7 +55,11 @@ Display memory statistics and analyze patterns.
 4. **Execute Based on Selection**
 
    **If "View promotion candidates":**
-   - Execute: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/promotion_analyzer.py"`
+   - Execute:
+     ```bash
+     export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+     python3 -m as_you.commands.promotion_analyzer
+     ```
    - Display candidates with scores
    - Suggest: "Use /as-you:promote to create skill/agent"
 
@@ -67,10 +72,18 @@ Display memory statistics and analyze patterns.
      ```
 
    **If "Detect similar patterns":**
-   - Execute: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/commands/similarity_detector.py"`
+   - Execute:
+     ```bash
+     export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+     python3 -m as_you.commands.similarity_detector
+     ```
    - Display similar pairs with Levenshtein distance
    - Ask if user wants to merge:
-     - If yes: Execute `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/pattern_merger.py"`
+     - If yes: Execute:
+       ```bash
+       export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+       python3 -m as_you.hooks.pattern_merger
+       ```
      - If no: Return to menu
 
    **If "Review knowledge base":**

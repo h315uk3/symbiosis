@@ -9,7 +9,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from lib.common import load_tracker, save_tracker
+from as_you.lib.common import load_tracker, save_tracker
 
 
 def merge_patterns(tracker_file: Path, keep_pattern: str, merge_pattern: str) -> dict:
