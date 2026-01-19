@@ -482,10 +482,14 @@ export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" && python3 -m with_me.commands.session
   - Label: "User needs", Description: "There's a specific user need or pain point"
   - Label: "Technical requirement", Description: "This is needed for technical reasons"
 
-Follow up with:
+**CRITICAL: After receiving the user's selection, ask follow-up questions to get detailed explanation:**
+
+Based on their selection, ask appropriate follow-up questions:
 - "Who experiences this problem?"
 - "What happens if this isn't built?"
 - "What does success look like from the user's perspective?"
+
+**Wait for the user's detailed explanation before proceeding to record and move to the next dimension.**
 
 #### If Data has highest uncertainty:
 
@@ -498,10 +502,14 @@ Follow up with:
   - Label: "Show examples", Description: "I have sample data or schemas"
   - Label: "Not sure yet", Description: "I haven't thought about the data structure"
 
-Follow up with:
+**CRITICAL: After receiving the user's selection, ask follow-up questions to get detailed explanation:**
+
+Based on their selection, ask appropriate follow-up questions:
 - "What triggers data to enter the system?"
 - "What format is the data in?"
 - "What information must be preserved vs transformed?"
+
+**Wait for the user's detailed explanation before proceeding to record and move to the next dimension.**
 
 #### If Behavior has highest uncertainty:
 
@@ -514,10 +522,14 @@ Follow up with:
   - Label: "Similar to existing", Description: "It works like [reference] but with differences"
   - Label: "Uncertain", Description: "I'm not sure about the exact flow"
 
-Follow up with:
+**CRITICAL: After receiving the user's selection, ask follow-up questions to get detailed explanation:**
+
+Based on their selection, ask appropriate follow-up questions:
 - "What initiates this process?"
 - "What are the critical decision points?"
 - "When does the process complete?"
+
+**Wait for the user's detailed explanation before proceeding to record and move to the next dimension.**
 
 #### If Constraints have highest uncertainty:
 
@@ -531,10 +543,14 @@ Follow up with:
   - Label: "Compatibility needs", Description: "Must work with specific versions or systems"
   - Label: "No specific constraints", Description: "Standard practices are fine"
 
+**CRITICAL: After receiving the user's selection(s), ask follow-up questions for each selected constraint:**
+
 For each selected constraint, drill deeper:
 - Performance: "What are the acceptable thresholds?"
 - Security: "What are the threat scenarios?"
 - Compatibility: "What must be supported?"
+
+**Wait for the user's detailed explanation before proceeding to record and move to the next dimension.**
 
 #### If Quality has highest uncertainty:
 
@@ -547,10 +563,14 @@ For each selected constraint, drill deeper:
   - Label: "Follow standards", Description: "Apply standard testing practices"
   - Label: "Not sure", Description: "I need help defining success criteria"
 
-Follow up with:
+**CRITICAL: After receiving the user's selection, ask follow-up questions to get detailed explanation:**
+
+Based on their selection, ask appropriate follow-up questions:
 - "What are the critical success scenarios?"
 - "What edge cases concern you?"
 - "What failure modes should be handled?"
+
+**Wait for the user's detailed explanation before proceeding to record and move to the next dimension.**
 
 ---
 
