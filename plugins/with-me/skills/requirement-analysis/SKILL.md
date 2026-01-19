@@ -55,7 +55,52 @@ Provide:
 
 ## Input Format
 
-Provide the raw interview data in any format:
+**PREFERRED: Dimension Data JSON (from /good-question)**
+
+If invoked after a `/good-question` interview, provide dimension data in JSON format:
+
+```json
+{
+  "purpose": {
+    "answered": true,
+    "content": "English summary of purpose answers with examples",
+    "examples": 2,
+    "contradictions": false
+  },
+  "data": {
+    "answered": true,
+    "content": "English summary of data answers with examples",
+    "examples": 1,
+    "contradictions": false
+  },
+  "behavior": {
+    "answered": true,
+    "content": "English summary of behavior answers with examples",
+    "examples": 3,
+    "contradictions": false
+  },
+  "constraints": {
+    "answered": true,
+    "content": "English summary of constraints answers with examples",
+    "examples": 1,
+    "contradictions": false
+  },
+  "quality": {
+    "answered": true,
+    "content": "English summary of quality answers with examples",
+    "examples": 0,
+    "contradictions": false
+  }
+}
+```
+
+**CRITICAL**: Content fields MUST be in English for uncertainty calculation to work correctly.
+
+---
+
+**ALTERNATIVE: Raw Interview Data**
+
+For ad-hoc analysis without `/good-question`, provide raw interview data:
 
 ```markdown
 ## Interview Transcript
