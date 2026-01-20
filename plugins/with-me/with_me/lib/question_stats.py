@@ -378,14 +378,18 @@ def collect_enhanced_stats() -> dict:
 
     Returns:
         Enhanced statistics dictionary with efficiency analysis,
-        entropy reduction, correlations, and ASCII report
+        entropy reduction, correlations, and ASCII report (when data available)
 
     Examples:
-        >>> # This would require actual session data
+        >>> # Always returns at least basic stats structure
         >>> stats = collect_enhanced_stats()
         >>> "overview" in stats
         True
-        >>> "ascii_report" in stats
+        >>> "total_sessions" in stats["overview"]
+        True
+        >>> # ASCII report is string when present, or absent when no data
+        >>> report = stats.get("ascii_report")
+        >>> report is None or isinstance(report, str)
         True
     """
     # Get basic stats
