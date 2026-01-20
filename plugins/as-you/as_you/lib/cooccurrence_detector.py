@@ -124,8 +124,8 @@ def detect_cooccurrences(archive_dir: Path, top_n: int = 20) -> list[dict]:
             except (OSError, UnicodeDecodeError):
                 continue
 
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error while detecting cooccurrences in '{archive_dir}': {e}", file=sys.stderr)
 
     # Return top N pairs as list of dicts
     result = []
