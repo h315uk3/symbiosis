@@ -169,23 +169,7 @@ Purpose (Foundation)
 - Cannot specify constraints without knowing what's being built (Behavior, Data)
 - Cannot define quality criteria without understanding operations (Behavior)
 
-**Validation:** Before selecting next dimension, check prerequisites:
-```python
-def is_dimension_accessible(dim, dimension_beliefs):
-    prerequisites = {
-        'purpose': [],
-        'data': ['purpose'],
-        'behavior': ['purpose'],
-        'constraints': ['behavior', 'data'],
-        'quality': ['behavior']
-    }
-
-    for prereq in prerequisites[dim]:
-        if dimension_beliefs[prereq].entropy() >= 1.5:
-            return False  # Prerequisite not sufficiently clear
-
-    return True
-```
+**Validation:** Before selecting next dimension, check that all prerequisites have entropy below the prerequisite threshold (1.5 bits by default).
 
 ---
 
@@ -218,22 +202,16 @@ r(Q) = EIG(Q) + 0.1×clarity(Q) + 0.05×importance(Q)
 - **clarity(Q)**: Question quality (10% adjustment)
 - **importance(Q)**: Strategic dimension weighting (5% adjustment)
 
-**Implementation:** See `with_me/lib/question_reward_calculator.py`
-
 ---
 
 ## Likelihood Estimation
 
-When a user answers a question, we estimate L(answer|hypothesis) using:
+When a user answers a question, the likelihood L(answer|hypothesis) is estimated using:
 
 1. **Keyword Matching**: Count occurrences of hypothesis-specific keywords in answer
 2. **Laplace Smoothing**: Add-one smoothing to avoid zero probabilities
 
-```python
-L(answer|h) = (keyword_matches + 1) / (total_keywords + N_hypotheses)
-```
-
-**Keyword Database:** See `with_me/lib/dimension_belief.py` → `_get_hypothesis_keywords()`
+The more an answer contains keywords associated with a hypothesis, the higher the likelihood that hypothesis receives.
 
 ---
 
@@ -246,46 +224,3 @@ Session terminates when:
 3. **Max Questions**: Safety limit (default: 50 questions)
 
 **Post-Session:** Invoke `/with-me:requirement-analysis` skill for structured specification generation.
-
----
-
-## Implementation Notes
-
-### Stdlib-Only Constraint
-
-All calculations use Python 3.11+ standard library only:
-- Shannon entropy: `math.log2()`
-- Bayesian update: Basic arithmetic
-- Likelihood: String matching and counting
-- No NumPy, SciPy, or ML libraries
-
-**Rationale:** Local-first, zero external dependencies, easy deployment.
-
-### Simplified Approximations
-
-1. **EIG Approximation**: Use current entropy instead of sampling all possible answers
-2. **Likelihood**: Keyword matching instead of NLP embeddings
-3. **Independence Assumption**: Dimensions treated as independent (minor simplification)
-
-**Justification:** Practical effectiveness over theoretical purity. Results are "good enough" for requirement elicitation while maintaining simplicity.
-
----
-
-## References
-
-- Shannon (1948): "A Mathematical Theory of Communication"
-- Jaynes (2003): "Probability Theory: The Logic of Science"
-- with-me Plugin Design Docs: Issues #43, #44, #45 (Bayesian refactor)
-- Implementation: `with_me/lib/dimension_belief.py`, `with_me/lib/question_reward_calculator.py`
-
----
-
-## Version History
-
-- **v0.2.x**: Heuristic uncertainty (word count-based)
-- **v0.3.0**: Bayesian belief updating with EIG-based reward (current)
-
-For implementation details, see:
-- API Contract: Issue #54
-- Phase 1 Implementation: Issues #37-42
-- good-question Refactoring: Issue #46 (Case A approach)
