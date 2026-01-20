@@ -142,29 +142,34 @@ def extract_contexts_for_pattern(
             continue
 
         # Use contextlib.suppress for expected file-level errors
+        lines = None
         with suppress(OSError, UnicodeDecodeError):
             with open(md_file, encoding="utf-8") as f:
                 lines = f.readlines()
 
-            # Search for pattern (case-insensitive)
-            pattern_lower = pattern.lower()
-            for i, line in enumerate(lines):
-                if pattern_lower in line.lower():
-                    # Get context: line before, matching line, line after
-                    context_lines = []
-                    if i > 0:
-                        context_lines.append(lines[i - 1].strip())
-                    context_lines.append(line.strip())
-                    if i < len(lines) - 1:
-                        context_lines.append(lines[i + 1].strip())
+        # Skip file if reading failed
+        if lines is None:
+            continue
 
-                    # Add non-empty context lines
-                    for ctx_line in context_lines:
-                        if ctx_line and ctx_line != "--":
-                            contexts.append(ctx_line)
+        # Search for pattern (case-insensitive)
+        pattern_lower = pattern.lower()
+        for i, line in enumerate(lines):
+            if pattern_lower in line.lower():
+                # Get context: line before, matching line, line after
+                context_lines = []
+                if i > 0:
+                    context_lines.append(lines[i - 1].strip())
+                context_lines.append(line.strip())
+                if i < len(lines) - 1:
+                    context_lines.append(lines[i + 1].strip())
 
-                            if len(contexts) >= max_contexts:
-                                return contexts
+                # Add non-empty context lines
+                for ctx_line in context_lines:
+                    if ctx_line and ctx_line != "--":
+                        contexts.append(ctx_line)
+
+                        if len(contexts) >= max_contexts:
+                            return contexts
 
     return contexts
 
