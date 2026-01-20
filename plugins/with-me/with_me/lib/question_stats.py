@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
 """
-Question statistics collector for with-me plugin.
+Question statistics data collection.
 
-MIGRATION COMPLETE: All statistical computations have been moved to skills.
-This module now serves as data aggregation and I/O layer only.
+Collects and aggregates raw session data.
+All computation performed by Claude using skills.
 
-Computation is delegated to:
-- /with-me:statistical-measures skill: Mean, median, std dev, variance
-- /with-me:correlation skill: Pearson correlation coefficient
-- /with-me:entropy skill: Shannon entropy calculation
-- /with-me:information-gain skill: IG = H_before - H_after
+Skills:
+- /with-me:statistical-measures
+- /with-me:correlation
+- /with-me:entropy
+- /with-me:information-gain
 
-References:
-- Issue #37: Claude Computational Engine architecture
-- Skills: plugins/with-me/skills/{statistical-measures,correlation,entropy,information-gain}
+Related: #37
 """
 
 import sys

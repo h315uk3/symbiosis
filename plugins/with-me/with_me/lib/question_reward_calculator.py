@@ -1,33 +1,19 @@
 #!/usr/bin/env python3
 """
-Question Reward Calculator for with-me plugin (v0.3.0)
+Question reward calculation type definitions.
 
-MIGRATION COMPLETE: All computational algorithms have been moved to skills.
-This module now provides only type definitions for API contract.
+Provides QuestionContext and RewardResponse for API contract.
+All computation performed by Claude using skills.
 
 Reward Function:
     r(Q) = EIG(Q) + 0.1×clarity(Q) + 0.05×importance(Q)
 
-Computation is delegated to:
-- /with-me:eig-calculation skill: EIG(Q) = Σ P(a|Q) × [H_before - H_after(a)]
-- /with-me:question-clarity skill: clarity(Q) evaluation
-- /with-me:question-importance skill: importance(Q) scoring
-- /with-me:entropy skill: H(h) = -Σ p(h) log₂ p(h)
-- /with-me:bayesian-update skill: p₁(h) ∝ p₀(h) × L(obs|h)
+Skills:
+- /with-me:eig-calculation
+- /with-me:question-clarity
+- /with-me:question-importance
 
-API Contract (Issue #54):
-- Standardized interface for as-you plugin integration
-- Type-safe input/output with QuestionContext and RewardResponse
-
-Usage:
-    Claude reads the skill markdown files and performs computations directly.
-    Python code should only prepare input context and parse output results.
-
-References:
-- Issue #37: Claude Computational Engine architecture
-- Issue #44: EIG-based reward function design
-- Issue #54: API contract interface specification
-- Skills: plugins/with-me/skills/{eig-calculation,question-clarity,question-importance}
+Related: #37, #44, #54
 """
 
 from dataclasses import dataclass

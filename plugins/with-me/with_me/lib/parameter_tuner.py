@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 """
-Parameter Optimization via Grid Search
+Parameter optimization data collection.
 
-MIGRATION COMPLETE: Grid search algorithm has been moved to skill.
-This module now serves as data collection and I/O proxy only.
+Collects session data for parameter tuning.
+All computation performed by Claude using skills.
 
-Computation is delegated to:
-- /with-me:grid-search skill: Exhaustive parameter space search
-- /with-me:statistical-measures skill: Mean, median, std dev calculation
-- /with-me:correlation skill: Cross-validation scoring
+Skills:
+- /with-me:grid-search
+- /with-me:statistical-measures
+- /with-me:correlation
 
-References:
-- Issue #37: Claude Computational Engine architecture
-- Skills: plugins/with-me/skills/{grid-search,statistical-measures,correlation}
+Related: #37
 """
 
 import sys

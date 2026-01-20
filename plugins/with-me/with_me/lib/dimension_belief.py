@@ -1,24 +1,21 @@
 #!/usr/bin/env python3
 """
-Belief State Management for Requirement Dimensions
+Belief state management for requirement dimensions.
 
-Pure I/O proxy for managing posterior distributions over hypothesis sets.
-All computations (entropy, Bayesian updating, information gain) are performed
-by Claude using skills (/with-me:entropy, /with-me:bayesian-update, etc.).
+Manages posterior distributions over hypothesis sets.
+All computation performed by Claude using skills.
 
-This module handles only:
+Responsibilities:
 - State initialization and persistence
 - Data structure management (posterior, observation_history)
 - Serialization (to_dict/from_dict)
 
-Computation is delegated to:
-- /with-me:entropy skill: H(h) = -Σ p(h) log₂ p(h)
-- /with-me:bayesian-update skill: p₁(h) ∝ p₀(h) × L(obs|h)
-- /with-me:information-gain skill: IG = H_before - H_after
+Skills:
+- /with-me:entropy
+- /with-me:bayesian-update
+- /with-me:information-gain
 
-References:
-- Issue #37: Claude Computational Engine architecture
-- Skills: plugins/with-me/skills/{entropy,bayesian-update,information-gain}
+Related: #37
 """
 
 from typing import Any
