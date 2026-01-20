@@ -178,7 +178,12 @@ class HypothesisSet:
                 entropy_value -= prob * math.log2(prob)
         return entropy_value
 
-    def update(self, observation: str, answer: str) -> float:
+    def update(
+        self,
+        observation: str,
+        answer: str,
+        likelihoods: dict[str, float] | None = None,
+    ) -> float:
         """
         Update posterior distribution using Bayesian rule.
 
@@ -192,6 +197,9 @@ class HypothesisSet:
         Args:
             observation: Context of the question asked
             answer: User's answer text
+            likelihoods: Optional pre-computed likelihoods for each hypothesis.
+                        If None, likelihoods are estimated using keyword matching.
+                        If provided, must contain entries for all hypotheses.
 
         Returns:
             Information gain in bits: ΔH = H_before - H_after
@@ -208,15 +216,34 @@ class HypothesisSet:
             True
             >>> hs.entropy() < h_before  # Uncertainty decreased
             True
+
+            >>> # Using pre-computed likelihoods (semantic evaluation)
+            >>> hs2 = HypothesisSet("purpose", ["web_app", "cli_tool", "library"])
+            >>> ig2 = hs2.update(
+            ...     observation="Question about purpose",
+            ...     answer="Browser-based application",
+            ...     likelihoods={"web_app": 0.7, "cli_tool": 0.2, "library": 0.1},
+            ... )
+            >>> ig2 > 0
+            True
         """
         h_before = self.entropy()
 
-        # Calculate likelihood for each hypothesis
-        likelihoods = {}
-        for hypothesis in self.hypotheses:
-            likelihoods[hypothesis] = self._estimate_likelihood(
-                hypothesis, observation, answer
-            )
+        # Calculate or use provided likelihoods
+        if likelihoods is None:
+            # Calculate likelihood for each hypothesis using keyword matching
+            likelihoods = {}
+            for hypothesis in self.hypotheses:
+                likelihoods[hypothesis] = self._estimate_likelihood(
+                    hypothesis, observation, answer
+                )
+        else:
+            # Validate provided likelihoods
+            if set(likelihoods.keys()) != set(self.hypotheses):
+                raise ValueError(
+                    f"Provided likelihoods must contain all hypotheses. "
+                    f"Expected {set(self.hypotheses)}, got {set(likelihoods.keys())}"
+                )
 
         # Bayesian update: p1(h) proportional to p0(h) * L(obs|h)
         unnormalized = {h: self.posterior[h] * likelihoods[h] for h in self.hypotheses}

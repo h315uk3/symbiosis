@@ -52,7 +52,9 @@ Store the `session_id` for subsequent commands.
 
 Repeat until convergence:
 
-#### 2.1. Get Next Question
+#### 2.1-2.2. Generate and Ask Question
+
+**Step A: Get Dimension Context**
 
 ```bash
 PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session next-question --session-id <SESSION_ID>
@@ -78,30 +80,71 @@ Output (if converged):
 
 If `converged` is `true`, skip to step 3.
 
-#### 2.2. Ask User
+**Step B: Get Session State for Context**
 
-Use the `AskUserQuestion` tool to present the question from step 2.1:
+```bash
+PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session status --session-id <SESSION_ID>
+```
 
-- **Question**: Use the `question` field from CLI output
-- **Header**: Use the `dimension_name` field
-- **Options** (translate to system prompt language):
-  - "Skip this question" / Description: "Move to the next question without answering"
-  - "End session (clarity achieved)" / Description: "I have sufficient clarity now"
+This provides current entropy levels and previous answers for contextual question generation.
+
+**Step C: Generate Contextual Question and Options**
+
+Based on the dimension context from CLI, generate a contextual question and quick answer options:
+
+**Generation Guidelines:**
+
+1. **Load dimension configuration** from `config/dimensions.json`:
+   - Use `focus_areas` to understand what aspects to explore
+   - Use `question_guidelines.when_high_entropy` if entropy > 1.0 (broad, exploratory)
+   - Use `question_guidelines.when_converging` if entropy ≤ 1.0 (specific, validation)
+   - Use `question_guidelines.follow_up_triggers` to detect opportunities for follow-up
+
+2. **Consider conversation context**:
+   - Review previous answers (from status output) to avoid repetition
+   - Look for follow-up opportunities based on what user mentioned
+   - Adapt question depth based on current entropy level
+
+3. **Generate question**: Create a contextual question that:
+   - Aligns with dimension's focus areas
+   - Matches entropy level (broad vs. specific)
+   - Follows up on previous answers when appropriate
+   - Is clear and answerable
+
+4. **Generate 2-4 quick answer options** that:
+   - Are relevant to the specific question
+   - Cover common answer patterns for this dimension
+   - Are mutually exclusive
+   - Are brief (1-5 words)
+
+5. **Add standard options**:
+   - "Skip this question" / "Move to the next question without answering"
+   - "End session (clarity achieved)" / "I have sufficient clarity now"
+
+**Translation**: Translate all questions, options, labels, and descriptions according to the language specified in your system prompt.
+
+**Step D: Ask User with AskUserQuestion**
+
+Use the `AskUserQuestion` tool:
+
+- **Question**: Your generated contextual question
+- **Header**: Use the `dimension_name` field from CLI
+- **Options**: Your generated quick answers + standard options (all translated)
 - **multiSelect**: false
-- **IMPORTANT**: Translate all labels and descriptions according to the language specified in your system prompt
 
 **User Response Handling:**
-- If user selects "Other" option: This contains the user's answer. Proceed to step 2.3.
-- If user selects "Skip this question": Return to step 2.1.
+- If user selects a quick answer option: Use that as the answer. Proceed to step 2.3.
+- If user selects "Other" option: This contains the user's detailed answer. Proceed to step 2.3.
+- If user selects "Skip this question": Return to step 2.1-2.2.
 - If user selects "End session": Skip to step 3.
 
 #### 2.3. Update Beliefs
 
-**IMPORTANT:** If the user's answer is in a non-English language, translate it to English first before passing to the update command. This ensures accurate information gain measurement via keyword matching.
+**Two evaluation modes are supported:**
 
-Example translation process:
-- User answer (Japanese): "GitHub Copilot CLIを手動で起動する必要があるという煩雑さです"
-- Translated (English): "The complexity of manually launching GitHub Copilot CLI"
+##### Mode A: Keyword-Based Evaluation (Legacy)
+
+**IMPORTANT:** If the user's answer is in a non-English language, translate it to English first.
 
 ```bash
 PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session update \
@@ -111,17 +154,100 @@ PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session upda
   --answer <TRANSLATED_ANSWER>
 ```
 
-Use `<TRANSLATED_ANSWER>` (English) instead of the original user answer.
+Output:
+```json
+{
+  "information_gain": 0.247,
+  "entropy_before": 2.0,
+  "entropy_after": 1.753,
+  "dimension": "purpose"
+}
+```
+
+**Limitation:** Keyword matching often yields low information gain for natural language responses.
+
+##### Mode B: Semantic Evaluation (Recommended)
+
+**Step 1: Request Evaluation Context**
+
+```bash
+PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session update \
+  --session-id <SESSION_ID> \
+  --dimension <DIMENSION> \
+  --question <QUESTION> \
+  --answer <ANSWER> \
+  --enable-semantic-evaluation
+```
+
+**Note:** Use the original answer in any language (no translation required).
+
+Output (evaluation request):
+```json
+{
+  "evaluation_request": true,
+  "dimension": "purpose",
+  "dimension_name": "Purpose",
+  "hypotheses": [
+    {
+      "id": "web_app",
+      "name": "Web Application",
+      "description": "Browser-based applications with user interfaces...",
+      "focus_areas": ["user interface design...", ...]
+    },
+    ...
+  ],
+  "question": "What problem are you trying to solve?",
+  "answer": "新機能の開発",
+  "instruction": "Based on the question and answer, estimate the likelihood..."
+}
+```
+
+**Step 2: Perform Semantic Evaluation**
+
+Read the evaluation request and estimate likelihoods based on:
+- Hypothesis descriptions
+- Focus areas
+- Question-answer alignment
+- Semantic understanding
+
+Return likelihoods as JSON:
+```json
+{
+  "likelihoods": {
+    "web_app": 0.35,
+    "cli_tool": 0.40,
+    "library": 0.15,
+    "service": 0.10
+  }
+}
+```
+
+**Step 3: Update Beliefs with Likelihoods**
+
+```bash
+PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session update \
+  --session-id <SESSION_ID> \
+  --dimension <DIMENSION> \
+  --question <QUESTION> \
+  --answer <ANSWER> \
+  --likelihoods '{"web_app": 0.35, "cli_tool": 0.40, "library": 0.15, "service": 0.10}'
+```
 
 Output:
 ```json
 {
-  "information_gain": 1.234,
+  "information_gain": 0.08,
   "entropy_before": 2.0,
-  "entropy_after": 0.766,
+  "entropy_after": 1.92,
   "dimension": "purpose"
 }
 ```
+
+**Benefits of Semantic Evaluation:**
+- Context-aware understanding
+- Works with any language
+- Higher information gain for natural responses
+- No keyword dependency
 
 #### 2.4. Display Progress (Optional)
 
@@ -153,7 +279,7 @@ Output:
 
 Format dimensions for user display (entropy bars, confidence percentages, convergence status).
 
-Return to step 2.1.
+Return to step 2.1-2.2.
 
 ### 3. Complete Session
 

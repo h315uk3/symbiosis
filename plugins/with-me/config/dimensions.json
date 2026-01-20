@@ -26,7 +26,69 @@
         "benefit",
         "value",
         "solve"
-      ]
+      ],
+      "focus_areas": [
+        "problem identification",
+        "target users and stakeholders",
+        "value proposition",
+        "use cases and scenarios",
+        "motivation and context"
+      ],
+      "question_guidelines": {
+        "when_high_entropy": "Ask broad, exploratory questions about the core problem or goal. Help identify what they're trying to achieve.",
+        "when_converging": "Ask specific validation questions to confirm understanding of the problem scope and target users.",
+        "follow_up_triggers": ["mentioned problem", "mentioned users", "mentioned goal", "mentioned need"]
+      },
+      "hypotheses": {
+        "web_app": {
+          "id": "web_app",
+          "name": "Web Application",
+          "description": "Browser-based applications with user interfaces, HTTP communication, and client-side or server-side rendering",
+          "focus_areas": [
+            "user interface design and interaction",
+            "client-server HTTP communication",
+            "browser-based rendering and execution",
+            "frontend frameworks and state management",
+            "responsive design and accessibility"
+          ]
+        },
+        "cli_tool": {
+          "id": "cli_tool",
+          "name": "CLI Tool",
+          "description": "Command-line tools, scripts, and terminal utilities for automation and developer productivity",
+          "focus_areas": [
+            "terminal execution and shell integration",
+            "command-line argument parsing",
+            "automation and scripting workflows",
+            "developer productivity and tooling",
+            "batch processing and piping"
+          ]
+        },
+        "library": {
+          "id": "library",
+          "name": "Library/Package",
+          "description": "Reusable code packages, plugins, extensions, and modules that integrate with other software",
+          "focus_areas": [
+            "API design and interfaces",
+            "reusability and modularity",
+            "integration with other systems",
+            "package distribution and versioning",
+            "plugin architecture and extensibility"
+          ]
+        },
+        "service": {
+          "id": "service",
+          "name": "Service/Daemon",
+          "description": "Background services, daemons, APIs, and long-running processes that respond to requests",
+          "focus_areas": [
+            "background processing and daemon management",
+            "API endpoints and request handling",
+            "service orchestration and deployment",
+            "reliability and uptime requirements",
+            "inter-service communication"
+          ]
+        }
+      }
     },
     "data": {
       "id": "data",
@@ -55,7 +117,57 @@
         "structure",
         "json",
         "database"
-      ]
+      ],
+      "focus_areas": [
+        "data sources and inputs",
+        "data structure and format",
+        "data transformations",
+        "data outputs and destinations",
+        "data volume and characteristics"
+      ],
+      "question_guidelines": {
+        "when_high_entropy": "Ask about what information the system works with. Explore inputs, outputs, and data flow at a high level.",
+        "when_converging": "Ask specific questions about data formats, structures, validation, or transformation details.",
+        "follow_up_triggers": ["mentioned format", "mentioned database", "mentioned file", "mentioned API"]
+      },
+      "hypotheses": {
+        "structured": {
+          "id": "structured",
+          "name": "Structured Data",
+          "description": "Well-defined data formats with schemas, types, and relationships such as databases, JSON, XML, CSV",
+          "focus_areas": [
+            "schema definition and validation",
+            "relational or hierarchical structures",
+            "type systems and constraints",
+            "query languages and access patterns",
+            "data integrity and consistency"
+          ]
+        },
+        "unstructured": {
+          "id": "unstructured",
+          "name": "Unstructured Data",
+          "description": "Free-form data without predefined structure such as documents, text, images, binary files",
+          "focus_areas": [
+            "content parsing and extraction",
+            "free-form text or binary data",
+            "metadata and tagging",
+            "search and indexing strategies",
+            "content analysis and processing"
+          ]
+        },
+        "streaming": {
+          "id": "streaming",
+          "name": "Streaming Data",
+          "description": "Continuous real-time data flows, event streams, and time-series data",
+          "focus_areas": [
+            "real-time data ingestion",
+            "event-driven architecture",
+            "temporal ordering and timestamps",
+            "buffering and backpressure handling",
+            "low-latency processing requirements"
+          ]
+        }
+      }
     },
     "behavior": {
       "id": "behavior",
@@ -84,7 +196,69 @@
         "happen",
         "work",
         "interact"
-      ]
+      ],
+      "focus_areas": [
+        "operational flow and sequence",
+        "triggers and events",
+        "actions and operations",
+        "component interactions",
+        "timing and concurrency"
+      ],
+      "question_guidelines": {
+        "when_high_entropy": "Ask about the overall operational flow. Explore what triggers functionality and what happens step by step.",
+        "when_converging": "Ask specific questions about edge cases, error handling, timing, or interaction details between components.",
+        "follow_up_triggers": ["mentioned trigger", "mentioned step", "mentioned interaction", "mentioned timing"]
+      },
+      "hypotheses": {
+        "synchronous": {
+          "id": "synchronous",
+          "name": "Synchronous",
+          "description": "Sequential, blocking operations where each step waits for the previous to complete",
+          "focus_areas": [
+            "sequential execution flow",
+            "blocking operations and waiting",
+            "predictable ordering",
+            "request-response patterns",
+            "single-threaded or ordered processing"
+          ]
+        },
+        "asynchronous": {
+          "id": "asynchronous",
+          "name": "Asynchronous",
+          "description": "Non-blocking, concurrent operations that can execute in parallel without waiting",
+          "focus_areas": [
+            "concurrent execution",
+            "non-blocking operations",
+            "callbacks and promises",
+            "parallel processing",
+            "event loops and async patterns"
+          ]
+        },
+        "interactive": {
+          "id": "interactive",
+          "name": "Interactive",
+          "description": "User-driven interactions with prompts, dialogs, buttons, and manual input",
+          "focus_areas": [
+            "user input and prompts",
+            "interactive dialogs and forms",
+            "button clicks and UI events",
+            "human-in-the-loop workflows",
+            "real-time feedback and responses"
+          ]
+        },
+        "batch": {
+          "id": "batch",
+          "name": "Batch/Scheduled",
+          "description": "Automated, scheduled, or bulk processing of tasks without immediate user interaction",
+          "focus_areas": [
+            "bulk processing operations",
+            "scheduled execution and cron jobs",
+            "automated workflows",
+            "background task queues",
+            "batch data processing"
+          ]
+        }
+      }
     },
     "constraints": {
       "id": "constraints",
@@ -112,7 +286,70 @@
         "scale",
         "secure",
         "compatible"
-      ]
+      ],
+      "focus_areas": [
+        "technical limitations",
+        "performance requirements",
+        "scalability needs",
+        "security and compliance",
+        "compatibility and dependencies",
+        "resource constraints"
+      ],
+      "question_guidelines": {
+        "when_high_entropy": "Ask about any technical limitations, performance needs, or compatibility requirements. Explore what constraints exist.",
+        "when_converging": "Ask specific questions about performance metrics, security requirements, or compatibility with specific systems.",
+        "follow_up_triggers": ["mentioned performance", "mentioned scale", "mentioned security", "mentioned compatibility"]
+      },
+      "hypotheses": {
+        "performance": {
+          "id": "performance",
+          "name": "Performance",
+          "description": "Speed, latency, throughput, and resource efficiency requirements",
+          "focus_areas": [
+            "response time and latency",
+            "throughput and processing speed",
+            "resource usage optimization",
+            "performance bottlenecks",
+            "efficiency and optimization"
+          ]
+        },
+        "scalability": {
+          "id": "scalability",
+          "name": "Scalability",
+          "description": "Ability to handle growth in load, users, data volume, or system capacity",
+          "focus_areas": [
+            "horizontal and vertical scaling",
+            "load distribution and balancing",
+            "capacity planning",
+            "concurrent user handling",
+            "data volume growth"
+          ]
+        },
+        "reliability": {
+          "id": "reliability",
+          "name": "Reliability",
+          "description": "Stability, fault tolerance, error handling, and system robustness",
+          "focus_areas": [
+            "error handling and recovery",
+            "fault tolerance mechanisms",
+            "system stability and uptime",
+            "data consistency and integrity",
+            "graceful degradation"
+          ]
+        },
+        "security": {
+          "id": "security",
+          "name": "Security",
+          "description": "Authentication, authorization, encryption, and compliance requirements",
+          "focus_areas": [
+            "authentication and identity management",
+            "authorization and access control",
+            "data encryption and protection",
+            "security compliance and standards",
+            "threat mitigation and auditing"
+          ]
+        }
+      }
     },
     "quality": {
       "id": "quality",
@@ -140,7 +377,57 @@
         "error",
         "validate",
         "correct"
-      ]
+      ],
+      "focus_areas": [
+        "success criteria and metrics",
+        "edge cases and failure modes",
+        "testing strategy",
+        "validation and verification",
+        "error handling and recovery"
+      ],
+      "question_guidelines": {
+        "when_high_entropy": "Ask about how success will be measured and what could go wrong. Explore testing and validation approaches.",
+        "when_converging": "Ask specific questions about edge cases, error scenarios, acceptance criteria, or testing details.",
+        "follow_up_triggers": ["mentioned testing", "mentioned failure", "mentioned validation", "mentioned edge case"]
+      },
+      "hypotheses": {
+        "functional": {
+          "id": "functional",
+          "name": "Functional Quality",
+          "description": "Feature completeness, correctness, and requirement satisfaction",
+          "focus_areas": [
+            "feature completeness",
+            "correctness and accuracy",
+            "requirement satisfaction",
+            "capability coverage",
+            "functional testing"
+          ]
+        },
+        "usability": {
+          "id": "usability",
+          "name": "Usability",
+          "description": "User-friendliness, intuitiveness, learnability, and user experience",
+          "focus_areas": [
+            "ease of use and learning",
+            "intuitive interfaces",
+            "user experience quality",
+            "accessibility",
+            "documentation clarity"
+          ]
+        },
+        "maintainability": {
+          "id": "maintainability",
+          "name": "Maintainability",
+          "description": "Code quality, readability, testability, and long-term maintenance ease",
+          "focus_areas": [
+            "code readability",
+            "test coverage",
+            "documentation quality",
+            "modularity and structure",
+            "technical debt management"
+          ]
+        }
+      }
     }
   },
   "dag": {

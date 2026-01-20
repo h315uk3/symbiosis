@@ -127,7 +127,53 @@ def cmd_update(args: argparse.Namespace) -> None:
     """Update beliefs with user answer."""
     orch = load_session_state(args.session_id)
 
-    result = orch.update_beliefs(args.dimension, args.question, args.answer)
+    # If semantic evaluation is enabled, output evaluation request for Claude
+    if getattr(args, "enable_semantic_evaluation", False):
+        dim_config = orch.config["dimensions"][args.dimension]
+        hypotheses = []
+
+        for hyp_id, hyp_data in dim_config.get("hypotheses", {}).items():
+            hypotheses.append({
+                "id": hyp_id,
+                "name": hyp_data["name"],
+                "description": hyp_data["description"],
+                "focus_areas": hyp_data["focus_areas"],
+            })
+
+        evaluation_request = {
+            "evaluation_request": True,
+            "dimension": args.dimension,
+            "dimension_name": dim_config["name"],
+            "hypotheses": hypotheses,
+            "question": args.question,
+            "answer": args.answer,
+            "instruction": (
+                "Based on the question and answer, estimate the likelihood (0.0-1.0) "
+                "that each hypothesis is true. Consider the hypothesis descriptions and "
+                "focus areas. Return JSON with format: "
+                "{\"likelihoods\": {\"hypothesis_id\": probability, ...}}. "
+                "Likelihoods should sum to approximately 1.0."
+            ),
+        }
+
+        print(json.dumps(evaluation_request, indent=2))
+        return
+
+    # Parse likelihoods if provided
+    likelihoods = None
+    if getattr(args, "likelihoods", None):
+        try:
+            likelihoods = json.loads(args.likelihoods)
+        except json.JSONDecodeError as e:
+            print(
+                json.dumps({"error": f"Invalid JSON in --likelihoods: {e}"}),
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+    result = orch.update_beliefs(
+        args.dimension, args.question, args.answer, likelihoods
+    )
 
     # Save updated state
     save_session_state(args.session_id, orch)
@@ -207,6 +253,16 @@ def main() -> None:
     update_parser.add_argument("--dimension", required=True, help="Dimension ID")
     update_parser.add_argument("--question", required=True, help="Question asked")
     update_parser.add_argument("--answer", required=True, help="User's answer")
+    update_parser.add_argument(
+        "--enable-semantic-evaluation",
+        action="store_true",
+        help="Output evaluation request for Claude instead of computing likelihoods",
+    )
+    update_parser.add_argument(
+        "--likelihoods",
+        type=str,
+        help='Pre-computed likelihoods as JSON string: \'{"hyp1": 0.5, "hyp2": 0.3, ...}\'',
+    )
 
     # status command
     status_parser = subparsers.add_parser("status", help="Display session state")
