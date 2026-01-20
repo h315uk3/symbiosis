@@ -6,7 +6,7 @@ This is a thin wrapper around lib.question_feedback_manager.
 No business logic or tests here - see lib/ for tested implementations.
 
 Usage:
-    cd "${CLAUDE_PLUGIN_ROOT}/scripts/commands" && python3 session_question_count.py <session_id>
+    python3 -m with_me.cli.question_count <session_id>
 """
 
 import sys
@@ -18,7 +18,7 @@ def main():
     """CLI entry point - argument parsing only"""
     if len(sys.argv) != 2:
         print(
-            "Usage: python3 -m scripts.commands.session_question_count <session_id>",
+            "Usage: python3 -m with_me.cli.question_count <session_id>",
             file=sys.stderr,
         )
         sys.exit(1)

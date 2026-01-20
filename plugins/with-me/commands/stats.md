@@ -19,8 +19,7 @@ Shows:
 
 ```bash
 # Run statistics collector
-export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
-python3 -m with_me.commands.stats
+python3 -m with_me.cli.stats
 ```
 
 ## Display Format

@@ -9,8 +9,8 @@ Designed to be called from shell scripts with minimal overhead.
 import json
 import sys
 
-from .question_feedback_manager import QuestionFeedbackManager
-from .question_reward_calculator import QuestionRewardCalculator
+from with_me.lib.question_feedback_manager import QuestionFeedbackManager
+from with_me.lib.question_reward_calculator import QuestionRewardCalculator
 
 
 def cmd_start(plain_output: bool = False) -> None:

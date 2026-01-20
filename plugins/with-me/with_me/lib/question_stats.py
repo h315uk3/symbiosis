@@ -4,7 +4,6 @@ Question statistics collector for with-me plugin.
 Collects and outputs JSON statistics about question effectiveness.
 """
 
-import json
 import sys
 
 from .question_feedback_manager import QuestionFeedbackManager, WithMeConfig
@@ -82,11 +81,7 @@ def collect_stats() -> dict:
         }
 
 
-def main():
-    """Main entry point"""
-    stats = collect_stats()
-    print(json.dumps(stats, indent=2))
-
-
 if __name__ == "__main__":
+    # For backward compatibility, delegate to CLI
+    from with_me.cli.stats import main
     main()
