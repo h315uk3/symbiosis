@@ -193,7 +193,8 @@ class SessionOrchestrator:
         """
         Generate a question for the specified dimension.
 
-        Selects from pre-defined prompts in configuration.
+        Selects from pre-defined prompts in configuration, excluding
+        questions that have already been asked.
 
         Args:
             dimension: Dimension ID to generate question for
@@ -209,7 +210,15 @@ class SessionOrchestrator:
             True
         """
         prompts = self.config["dimensions"][dimension]["prompts"]
-        return random.choice(prompts)
+
+        # Filter out already asked questions
+        available_prompts = [p for p in prompts if p not in self.question_history]
+
+        # If all questions have been asked, reuse prompts (should be rare)
+        if not available_prompts:
+            available_prompts = prompts
+
+        return random.choice(available_prompts)
 
     def calculate_question_reward(self, question: str) -> dict[str, Any]:
         """
