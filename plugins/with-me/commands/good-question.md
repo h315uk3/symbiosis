@@ -97,13 +97,21 @@ Use the `AskUserQuestion` tool to present the question from step 2.1:
 
 #### 2.3. Update Beliefs
 
+**IMPORTANT:** If the user's answer is in a non-English language, translate it to English first before passing to the update command. This ensures accurate information gain measurement via keyword matching.
+
+Example translation process:
+- User answer (Japanese): "GitHub Copilot CLIを手動で起動する必要があるという煩雑さです"
+- Translated (English): "The complexity of manually launching GitHub Copilot CLI"
+
 ```bash
 PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session update \
   --session-id <SESSION_ID> \
   --dimension <DIMENSION> \
   --question <QUESTION> \
-  --answer <USER_ANSWER>
+  --answer <TRANSLATED_ANSWER>
 ```
+
+Use `<TRANSLATED_ANSWER>` (English) instead of the original user answer.
 
 Output:
 ```json
