@@ -49,8 +49,8 @@ def save_session_state(session_id: str, orchestrator: SessionOrchestrator) -> No
         "question_count": orchestrator.question_count,
     }
 
-    with open(session_file, "w") as f:
-        json.dump(state, f, indent=2)
+    with open(session_file, "w", encoding="utf-8") as f:
+        json.dump(state, f, indent=2, ensure_ascii=False)
 
 
 def load_session_state(session_id: str) -> SessionOrchestrator:
@@ -272,22 +272,22 @@ def cmd_complete(args: argparse.Namespace) -> None:
 
 
 def cmd_compute_entropy(args: argparse.Namespace) -> None:
-    """Output computation request for Claude to calculate entropy."""
+    """Output skill input for Claude to calculate entropy."""
     orch = load_session_state(args.session_id)
     posterior = orch.beliefs[args.dimension].posterior
 
-    # Output computation request for Claude
+    # Output skill input for Claude
     print(
         json.dumps(
             {
-                "computation_request": "entropy",
+                "skill_input": "entropy",
                 "dimension": args.dimension,
                 "posterior": posterior,
                 "theory_file": "plugins/with-me/theory/algorithms/entropy.md",
                 "instruction": (
-                    "Read the theory file and calculate Shannon entropy H(h) = -Σ p(h) log₂ p(h) "
-                    "for the given posterior distribution. Return the entropy value in bits, "
-                    "rounded to 4 decimal places."
+                    "MUST invoke /with-me:entropy skill with the posterior distribution. "
+                    "Calculate Shannon entropy H(h) = -Σ p(h) log₂ p(h). "
+                    "Return the entropy value in bits, rounded to 4 decimal places."
                 ),
             },
             indent=2,
@@ -296,23 +296,23 @@ def cmd_compute_entropy(args: argparse.Namespace) -> None:
 
 
 def cmd_bayesian_update(args: argparse.Namespace) -> None:
-    """Output computation request for Claude to perform Bayesian update."""
+    """Output skill input for Claude to perform Bayesian update."""
     orch = load_session_state(args.session_id)
     prior = orch.beliefs[args.dimension].posterior
     likelihoods = json.loads(args.likelihoods)
 
-    # Output computation request for Claude
+    # Output skill input for Claude
     print(
         json.dumps(
             {
-                "computation_request": "bayesian_update",
+                "skill_input": "bayesian_update",
                 "dimension": args.dimension,
                 "prior": prior,
                 "likelihoods": likelihoods,
                 "theory_file": "plugins/with-me/theory/algorithms/bayesian_update.md",
                 "instruction": (
-                    "Read the theory file and perform Bayesian belief updating: "
-                    "p₁(h) = [p₀(h) * L(obs|h)] / Σ[p₀(h) * L(obs|h)]. "
+                    "MUST invoke /with-me:bayesian-update skill with the prior and likelihoods. "
+                    "Perform Bayesian belief updating: p₁(h) = [p₀(h) * L(obs|h)] / Σ[p₀(h) * L(obs|h)]. "
                     "Return the normalized posterior distribution."
                 ),
             },
@@ -322,18 +322,19 @@ def cmd_bayesian_update(args: argparse.Namespace) -> None:
 
 
 def cmd_information_gain(args: argparse.Namespace) -> None:
-    """Output computation request for Claude to calculate information gain."""
+    """Output skill input for Claude to calculate information gain."""
     # Information gain doesn't need session state
     print(
         json.dumps(
             {
-                "computation_request": "information_gain",
+                "skill_input": "information_gain",
                 "entropy_before": args.entropy_before,
                 "entropy_after": args.entropy_after,
                 "theory_file": "plugins/with-me/theory/algorithms/information_gain.md",
                 "instruction": (
-                    "Read the theory file and calculate information gain: "
-                    "IG = H_before - H_after. Return the information gain in bits."
+                    "MUST invoke /with-me:information-gain skill with H_before and H_after. "
+                    "Calculate information gain: IG = H_before - H_after. "
+                    "Return the information gain in bits."
                 ),
             },
             indent=2,

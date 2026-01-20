@@ -172,6 +172,8 @@ class HypothesisSet:
             "hypotheses": self.hypotheses,
             "posterior": self.posterior,
             "observation_history": self.observation_history,
+            "_cached_entropy": self._cached_entropy,
+            "_cached_confidence": self._cached_confidence,
         }
 
     @classmethod
@@ -202,6 +204,9 @@ class HypothesisSet:
         )
         if "observation_history" in data:
             hs.observation_history = data["observation_history"]
+        # Restore cached computation results
+        hs._cached_entropy = data.get("_cached_entropy")
+        hs._cached_confidence = data.get("_cached_confidence")
         return hs
 
 

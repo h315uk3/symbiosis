@@ -24,12 +24,16 @@ if ! grep -q "with_me.cli.session" ~/.claude/settings.local.json 2>/dev/null; th
     "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session next-question*)",
     "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session update*)",
     "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session status*)",
-    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session complete*)"
+    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session complete*)",
+    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session compute-entropy*)",
+    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session bayesian-update*)",
+    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session information-gain*)",
+    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session persist-computation*)"
   ] | unique' ~/.claude/settings.local.json > /tmp/settings.tmp && mv /tmp/settings.tmp ~/.claude/settings.local.json
 fi
 ```
 
-This adds permissions for session commands only, without affecting other Python development.
+This adds permissions for all session commands required by the adaptive questioning workflow, without affecting other Python development.
 
 ### 1. Initialize Session
 
@@ -50,7 +54,7 @@ Store the `session_id` for subsequent commands.
 
 Repeat until convergence:
 
-#### 2.1-2.2. Generate and Ask Question
+#### 2.1. Select Dimension
 
 Get next dimension to query:
 
@@ -66,13 +70,68 @@ Get current session state:
 PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session status --session-id <SESSION_ID>
 ```
 
-Read dimension configuration from `config/dimensions.json` for the selected dimension. Use `focus_areas` and `question_guidelines` to understand what to ask.
+Read dimension configuration from `config/dimensions.json` for the selected dimension.
+
+#### 2.2. Generate and Evaluate Question
+
+**a) Generate candidate question:**
 
 Generate a contextual question based on:
-- Dimension's focus areas
+- Dimension's focus areas from config
 - Current entropy level (broad if >1.0, specific if ≤1.0)
 - Previous answers from status output
 - Follow-up opportunities
+
+**b) Evaluate question quality:**
+
+**IMPORTANT: You MUST invoke all three skills using the Skill tool. Do NOT estimate or calculate these values yourself.**
+
+**Step 1: Evaluate clarity**
+
+MUST invoke `/with-me:question-clarity` skill:
+- Input: Your generated question text
+- Output: Store as `CLARITY` (float [0.0, 1.0])
+
+**Step 2: Evaluate importance**
+
+MUST invoke `/with-me:question-importance` skill:
+- Input: Your generated question text
+- Output: Store as `IMPORTANCE` (float [0.0, 1.0])
+
+**Step 3: Calculate Expected Information Gain**
+
+First, get current beliefs from session status:
+```bash
+PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session status --session-id <SESSION_ID>
+```
+
+Extract the posterior distribution for the selected dimension from the status output.
+
+**CRITICAL: DO NOT estimate EIG yourself. You MUST invoke the skill for accurate counterfactual simulation.**
+
+Then, MUST invoke `/with-me:eig-calculation` skill with:
+- Question: Your generated question text
+- Current beliefs: The posterior distribution from status output
+- Answer templates: 3-4 representative answer options you would ask the user
+
+Output: Store as `EIG` (float, bits)
+
+**Step 4: Calculate reward score**
+
+```
+REWARD = EIG + 0.1 * CLARITY + 0.05 * IMPORTANCE
+```
+
+**Step 5: Quality threshold check**
+
+If REWARD < 0.5:
+- Regenerate question
+- Return to Step 1 with new question
+
+If REWARD >= 0.5:
+- Proceed to Step 2.2c (Ask user)
+
+**c) Ask user:**
 
 Generate 2-4 quick answer options relevant to your question, plus standard options:
 - "Skip this question" / "Move to the next question without answering"
@@ -81,19 +140,23 @@ Generate 2-4 quick answer options relevant to your question, plus standard optio
 Translate all text to the language specified in your system prompt.
 
 Ask user using `AskUserQuestion` tool:
-- Question: Your generated question
+- Question: Your evaluated question
 - Header: Use `dimension_name` from CLI
 - Options: Your options (translated)
 - multiSelect: false
 
 Handle user response:
 - Quick answer or "Other": Proceed to step 2.3 with the answer
-- "Skip": Return to step 2.1-2.2
+- "Skip": Return to step 2.1
 - "End session": Skip to step 3
 
 #### 2.3. Update Beliefs
 
-**a) Get evaluation request and calculate likelihoods:**
+**IMPORTANT: You MUST execute all CLI commands using Bash tool and invoke all skills using Skill tool. DO NOT estimate likelihoods, calculate entropy, or perform Bayesian updates yourself.**
+
+**Step 1: Get hypothesis definitions and estimate likelihoods**
+
+MUST execute this CLI command using Bash tool:
 
 ```bash
 PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session update \
@@ -104,9 +167,17 @@ PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session upda
   --enable-semantic-evaluation
 ```
 
-CLI outputs hypothesis definitions. Estimate P(answer | hypothesis) for each hypothesis using semantic evaluation. Store as: `LIKELIHOODS='{"hyp1": 0.x, ...}'`
+The CLI will output hypothesis definitions with their descriptions and focus areas.
 
-**b) Calculate entropy before update:**
+Based on the user's answer and the hypothesis definitions, estimate P(answer | hypothesis) for each hypothesis using semantic evaluation.
+
+Store the likelihoods as JSON: `LIKELIHOODS='{"hyp1": 0.x, "hyp2": 0.y, ...}'`
+
+The likelihoods should sum to approximately 1.0.
+
+**Step 2: Calculate entropy before update**
+
+MUST execute this CLI command using Bash tool:
 
 ```bash
 PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session compute-entropy \
@@ -114,9 +185,18 @@ PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session comp
   --dimension <DIMENSION>
 ```
 
-CLI outputs posterior. Use `/with-me:entropy` skill to calculate H(h) = -Σ p(h) log₂ p(h). Store as: `H_BEFORE`
+The CLI will output JSON with the current posterior distribution.
 
-**c) Perform Bayesian update:**
+**CRITICAL: DO NOT calculate entropy yourself, even if the CLI output says "computation_request". You MUST invoke the skill.**
+
+Then, MUST invoke `/with-me:entropy` skill with:
+- Input: The posterior distribution from CLI output
+- Formula: H(h) = -Σ p(h) log₂ p(h)
+- Output: Store as `H_BEFORE` (float, bits)
+
+**Step 3: Perform Bayesian update**
+
+MUST execute this CLI command using Bash tool:
 
 ```bash
 PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session bayesian-update \
@@ -125,17 +205,32 @@ PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session baye
   --likelihoods "$LIKELIHOODS"
 ```
 
-CLI outputs prior and likelihoods. Use `/with-me:bayesian-update` skill to calculate updated posterior. Store as: `UPDATED_POSTERIOR='{"hyp1": 0.x, ...}'`
+The CLI will output JSON with prior and likelihoods.
 
-**d) Calculate entropy after update:**
+**CRITICAL: DO NOT perform Bayesian update yourself, even if the CLI output says "computation_request". You MUST invoke the skill.**
 
-Use `/with-me:entropy` skill with `UPDATED_POSTERIOR`. Store as: `H_AFTER`
+Then, MUST invoke `/with-me:bayesian-update` skill with:
+- Input: Prior distribution and likelihoods from CLI output
+- Formula: p₁(h) = [p₀(h) * L(obs|h)] / Σ[p₀(h) * L(obs|h)]
+- Output: Store as `UPDATED_POSTERIOR='{"hyp1": 0.x, "hyp2": 0.y, ...}'`
 
-**e) Calculate information gain:**
+**Step 4: Calculate entropy after update**
 
-Use `/with-me:information-gain` skill with `H_BEFORE` and `H_AFTER`. Store as: `INFORMATION_GAIN`
+MUST invoke `/with-me:entropy` skill with:
+- Input: `UPDATED_POSTERIOR` from Step 3
+- Formula: H(h) = -Σ p(h) log₂ p(h)
+- Output: Store as `H_AFTER` (float, bits)
 
-**f) Persist results:**
+**Step 5: Calculate information gain**
+
+MUST invoke `/with-me:information-gain` skill with:
+- Input: `H_BEFORE` from Step 2 and `H_AFTER` from Step 4
+- Formula: IG = H_before - H_after
+- Output: Store as `INFORMATION_GAIN` (float, bits)
+
+**Step 6: Persist computation results**
+
+MUST execute this CLI command using Bash tool:
 
 ```bash
 PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session persist-computation \
@@ -149,7 +244,7 @@ PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session pers
   --updated-posterior "$UPDATED_POSTERIOR"
 ```
 
-CLI confirms persistence.
+The CLI will confirm persistence and increment the question count.
 
 #### 2.4. Display Progress (Optional)
 

@@ -6,10 +6,10 @@ Thank you for your interest in contributing to Symbiosis plugins!
 
 ### Why These Constraints Exist
 
-**Python-Centric Architecture:**
-- **Why**: Shell scripts are difficult to test, debug, and maintain at scale
-- **Purpose**: Enable comprehensive testing and rapid iteration
-- **Responsibility**: Contributors must write testable, type-safe Python code; reviewers must verify test coverage
+**Hybrid Python-Claude Architecture:**
+- **Why**: Python handles I/O and state management; Claude performs computational algorithms via skills
+- **Purpose**: Distributable intelligence (skills as markdown), transparent computation, zero computational dependencies
+- **Responsibility**: Contributors write I/O logic in Python, computational logic in skills; reviewers verify separation of concerns
 
 **Type Hints Required:**
 - **Why**: Prevent runtime errors and enable static analysis
@@ -22,9 +22,9 @@ Thank you for your interest in contributing to Symbiosis plugins!
 - **Responsibility**: Contributors write doctests for new code; reviewers verify they're meaningful, not trivial
 
 **Standard Library Only:**
-- **Why**: External dependencies create maintenance burden, version conflicts, and installation complexity
-- **Purpose**: Keep the plugin lightweight, portable, and dependency-free for all users
-- **Responsibility**: Contributors must solve problems with standard library; maintainers reject PRs with external deps
+- **Why**: External dependencies create maintenance burden, version conflicts, and installation complexity; computational algorithms are delegated to Claude via skills rather than external math libraries
+- **Purpose**: Keep the plugin lightweight, portable, and dependency-free; enable distributable intelligence without NumPy/SciPy
+- **Responsibility**: Contributors solve I/O problems with standard library, computational problems with skills; maintainers reject PRs with external deps
 
 **Shell Scripts Minimized:**
 - **Why**: Hooks require shell, but all logic should be testable Python
@@ -127,8 +127,8 @@ mise tasks
   - **Why**: Executable examples prevent documentation drift and catch regressions
   - **Responsibility**: Contributors write realistic examples; reviewers reject trivial tests (e.g., `>>> 1 + 1\n2`)
 - Standard library only (no external dependencies)
-  - **Why**: Eliminates dependency hell, version conflicts, and installation issues
-  - **Responsibility**: Contributors solve problems creatively with stdlib; maintainers provide guidance on stdlib alternatives
+  - **Why**: Eliminates dependency hell, version conflicts, and installation issues; computational algorithms are delegated to Claude via skills, not external math libraries
+  - **Responsibility**: Contributors solve I/O problems with stdlib, computational problems with skills; maintainers provide guidance on stdlib alternatives or skill-based approaches
 
 **Shell** (hooks/*.sh only):
 - Keep minimal - delegate logic to Python modules
@@ -181,15 +181,21 @@ mise tasks
    mise run lint
    ```
 
-### Testing Prompt Files (Commands & Agents)
+### Testing Prompt Files (Commands, Agents & Skills)
 
-Prompt files (`commands/*.md`, `agents/*.md`) define Claude's behavior but cannot be automatically tested. Human testing is required.
+Prompt files (`commands/*.md`, `agents/*.md`, `skills/*.md`) define Claude's behavior but cannot be automatically tested. Human testing is required.
+
+**Component Types:**
+- **Commands**: User-invocable slash commands (e.g., `/as-you:note`)
+- **Agents**: Autonomous multi-step task handlers invoked by Claude
+- **Skills**: Computational algorithms executed by Claude (hybrid architecture component)
 
 **Why Manual Testing?**
 - Claude Code interprets prompts at runtime
 - AskUserQuestion UI must be visually verified
 - LLM responses are non-deterministic
 - Tool availability varies by version
+- Skill computations must be validated against expected mathematical results
 
 #### General Test Setup
 
@@ -444,11 +450,12 @@ options: [{}, {}, {}, {}, {}]
 #### When to Test
 
 **Must test before commit:**
-- New command/agent creation
+- New command/agent/skill creation
 - Logic flow changes
-- Frontmatter modifications (allowed-tools, description)
+- Frontmatter modifications (allowed-tools, description, context)
 - Script path changes
 - AskUserQuestion structure changes
+- Skill computational logic changes (verify mathematical correctness)
 
 **Optional testing:**
 - Minor wording improvements
