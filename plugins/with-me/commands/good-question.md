@@ -40,7 +40,7 @@ This adds permissions for all session commands required by the adaptive question
 Execute the session CLI to initialize:
 
 ```bash
-PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session init
+PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session init
 ```
 
 Expected output:
@@ -59,7 +59,7 @@ Repeat until convergence:
 Get next dimension to query:
 
 ```bash
-PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session next-question --session-id <SESSION_ID>
+PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session next-question --session-id <SESSION_ID>
 ```
 
 If output shows `"converged": true`, skip to step 3. Otherwise, note the `dimension` and `dimension_name`.
@@ -67,7 +67,7 @@ If output shows `"converged": true`, skip to step 3. Otherwise, note the `dimens
 Get current session state:
 
 ```bash
-PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session status --session-id <SESSION_ID>
+PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session status --session-id <SESSION_ID>
 ```
 
 Read dimension configuration from `config/dimensions.json` for the selected dimension.
@@ -102,7 +102,7 @@ MUST invoke `/with-me:question-importance` skill:
 
 First, get current beliefs from session status:
 ```bash
-PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session status --session-id <SESSION_ID>
+PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session status --session-id <SESSION_ID>
 ```
 
 Extract the posterior distribution for the selected dimension from the status output.
@@ -159,7 +159,7 @@ Handle user response:
 MUST execute this CLI command using Bash tool:
 
 ```bash
-PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session update \
+PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session update \
   --session-id <SESSION_ID> \
   --dimension <DIMENSION> \
   --question <QUESTION> \
@@ -180,7 +180,7 @@ The likelihoods should sum to approximately 1.0.
 MUST execute this CLI command using Bash tool:
 
 ```bash
-PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session compute-entropy \
+PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session compute-entropy \
   --session-id <SESSION_ID> \
   --dimension <DIMENSION>
 ```
@@ -199,7 +199,7 @@ Then, MUST invoke `/with-me:entropy` skill with:
 MUST execute this CLI command using Bash tool:
 
 ```bash
-PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session bayesian-update \
+PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session bayesian-update \
   --session-id <SESSION_ID> \
   --dimension <DIMENSION> \
   --likelihoods "$LIKELIHOODS"
@@ -233,7 +233,7 @@ MUST invoke `/with-me:information-gain` skill with:
 MUST execute this CLI command using Bash tool:
 
 ```bash
-PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session persist-computation \
+PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session persist-computation \
   --session-id <SESSION_ID> \
   --dimension <DIMENSION> \
   --question <QUESTION> \
@@ -251,7 +251,7 @@ The CLI will confirm persistence and increment the question count.
 Show entropy reduction to user:
 
 ```bash
-PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session status --session-id <SESSION_ID>
+PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session status --session-id <SESSION_ID>
 ```
 
 Output:
@@ -281,7 +281,7 @@ Return to step 2.1-2.2.
 ### 3. Complete Session
 
 ```bash
-PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session complete --session-id <SESSION_ID>
+PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session complete --session-id <SESSION_ID>
 ```
 
 Output:
