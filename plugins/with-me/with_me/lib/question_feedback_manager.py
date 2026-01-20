@@ -59,8 +59,14 @@ class WithMeConfig:
         )
 
 
-class QuestionData(TypedDict):
-    """Type definition for a single question"""
+class QuestionData(TypedDict, total=False):
+    """
+    Type definition for a single question
+
+    v0.3.0 Extensions:
+    - dimension_beliefs_before: Posterior distributions before question
+    - dimension_beliefs_after: Posterior distributions after answer
+    """
 
     question: str
     dimension: str
@@ -68,6 +74,9 @@ class QuestionData(TypedDict):
     context: dict[str, Any]
     answer: dict[str, Any]
     reward_scores: dict[str, float]
+    # v0.3.0: Bayesian belief tracking
+    dimension_beliefs_before: dict[str, dict] | None  # Serialized HypothesisSet
+    dimension_beliefs_after: dict[str, dict] | None  # Serialized HypothesisSet
 
 
 class SessionSummary(TypedDict):
@@ -81,8 +90,14 @@ class SessionSummary(TypedDict):
     session_efficiency: float
 
 
-class SessionData(TypedDict):
-    """Type definition for a session"""
+class SessionData(TypedDict, total=False):
+    """
+    Type definition for a session
+
+    v0.3.0 Extensions:
+    - initial_dimension_beliefs: Starting posterior distributions
+    - final_dimension_beliefs: Ending posterior distributions
+    """
 
     session_id: str
     started_at: str
@@ -90,6 +105,9 @@ class SessionData(TypedDict):
     duration_seconds: int | None
     questions: list[QuestionData]
     summary: SessionSummary | None
+    # v0.3.0: Bayesian belief tracking
+    initial_dimension_beliefs: dict[str, dict] | None  # Serialized HypothesisSet
+    final_dimension_beliefs: dict[str, dict] | None  # Serialized HypothesisSet
 
 
 class FeedbackData(TypedDict, total=False):
@@ -208,9 +226,14 @@ class QuestionFeedbackManager:
         self.feedback_file = feedback_file
         self.data = load_feedback(feedback_file)
 
-    def start_session(self) -> str:
+    def start_session(
+        self, initial_dimension_beliefs: dict[str, dict] | None = None
+    ) -> str:
         """
         Start a new session
+
+        Args:
+            initial_dimension_beliefs: Optional initial Bayesian beliefs (v0.3.0)
 
         Returns:
             Session ID (ISO timestamp)
@@ -229,6 +252,8 @@ class QuestionFeedbackManager:
             "duration_seconds": None,
             "questions": [],
             "summary": None,
+            "initial_dimension_beliefs": initial_dimension_beliefs,
+            "final_dimension_beliefs": None,
         }
 
         self.data["sessions"].append(session)
@@ -244,6 +269,8 @@ class QuestionFeedbackManager:
         context: dict[str, Any],
         answer: dict[str, Any],
         reward_scores: dict[str, float],
+        dimension_beliefs_before: dict[str, dict] | None = None,
+        dimension_beliefs_after: dict[str, dict] | None = None,
     ) -> None:
         """
         Record a question-answer pair in a session
@@ -255,6 +282,8 @@ class QuestionFeedbackManager:
             context: Context with uncertainties before/after
             answer: Answer data (word_count, has_examples)
             reward_scores: Reward components and total
+            dimension_beliefs_before: Optional Bayesian beliefs before question (v0.3.0)
+            dimension_beliefs_after: Optional Bayesian beliefs after answer (v0.3.0)
         """
         session = self._find_session(session_id)
         if session is None:
@@ -267,13 +296,18 @@ class QuestionFeedbackManager:
             "context": context,
             "answer": answer,
             "reward_scores": reward_scores,
+            "dimension_beliefs_before": dimension_beliefs_before,
+            "dimension_beliefs_after": dimension_beliefs_after,
         }
 
         session["questions"].append(question_data)
         save_feedback(self.feedback_file, self.data)
 
     def complete_session(
-        self, session_id: str, final_uncertainties: dict[str, float]
+        self,
+        session_id: str,
+        final_uncertainties: dict[str, float],
+        final_dimension_beliefs: dict[str, dict] | None = None,
     ) -> SessionSummary:
         """
         Complete a session and generate summary
@@ -281,6 +315,7 @@ class QuestionFeedbackManager:
         Args:
             session_id: Session identifier
             final_uncertainties: Final uncertainty scores
+            final_dimension_beliefs: Optional final Bayesian beliefs (v0.3.0)
 
         Returns:
             Session summary
@@ -344,6 +379,7 @@ class QuestionFeedbackManager:
         end_time = datetime.fromisoformat(session["completed_at"])
         session["duration_seconds"] = int((end_time - start_time).total_seconds())
         session["summary"] = summary
+        session["final_dimension_beliefs"] = final_dimension_beliefs  # v0.3.0
 
         # Update statistics
         self._update_statistics()
