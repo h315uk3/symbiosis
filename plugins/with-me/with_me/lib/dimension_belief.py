@@ -216,8 +216,10 @@ class HypothesisSet:
            weights (1.5-2.0) than generic terms (0.5)
         2. **Negation handling**: Detects negation cues (not/no/without/etc.) and
            subtracts weight for keywords in negation scope (~5 words after cue)
-        3. **Likelihood clamping**: Result clamped to [0.05, 0.95] to avoid extremes
-        4. **Non-English fallback**: Returns conservative default (0.3) for text
+        3. **Word boundary matching**: Uses regex word boundaries to avoid substring
+           collisions (e.g., "blocking" won't match "non-blocking")
+        4. **Likelihood clamping**: Result clamped to [0.05, 0.95] to avoid extremes
+        5. **Non-English fallback**: Returns conservative default (0.3) for text
            with high non-ASCII ratio (>30%)
 
         This is a stdlib-only approximation. More sophisticated approaches (NLP,
@@ -257,6 +259,17 @@ class HypothesisSet:
             ... )
             >>> l_cli_neg < l_cli_pos  # Negation decreases likelihood
             True
+
+            >>> # Word boundary matching: "blocking" doesn't match "non-blocking"
+            >>> hs_behavior = HypothesisSet("behavior", ["synchronous", "asynchronous"])
+            >>> l_sync = hs_behavior._estimate_likelihood(
+            ...     "synchronous", "execution", "non-blocking operations"
+            ... )
+            >>> l_async = hs_behavior._estimate_likelihood(
+            ...     "asynchronous", "execution", "non-blocking operations"
+            ... )
+            >>> l_async > l_sync  # "non-blocking" matches async, not sync
+            True
         """
         # Combine observation and answer for matching
         text = (observation + " " + answer).lower()
@@ -284,9 +297,14 @@ class HypothesisSet:
         # Calculate weighted match score with negation handling
         score = 0.0
         for keyword, weight in keyword_weights.items():
-            if keyword in text:
-                # Check if keyword is in negation scope
-                is_negated = any(keyword in span for span in negated_spans)
+            # Use word boundaries to avoid substring collisions (Issue #37)
+            # e.g., "blocking" should not match "non-blocking"
+            keyword_pattern = r"\b" + re.escape(keyword) + r"\b"
+            if re.search(keyword_pattern, text):
+                # Check if keyword is in negation scope (also use word boundaries)
+                is_negated = any(
+                    re.search(keyword_pattern, span) for span in negated_spans
+                )
                 if is_negated:
                     # Subtract weight for negated keywords
                     score -= weight
