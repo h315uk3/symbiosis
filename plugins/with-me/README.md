@@ -31,27 +31,34 @@ View statistics about question effectiveness from past sessions.
 
 ---
 
-## Question Effectiveness System
+## Claude Computational Engine Architecture
 
-The with-me plugin includes an AI reward function-based question evaluation system:
+The with-me plugin implements a **hybrid computational architecture** where:
+- **Python handles I/O**: Session management, data persistence, CLI interface
+- **Claude performs computations**: All mathematical algorithms executed via skills
 
-**Composite Reward Function:**
+**Architecture Benefits:**
+- **Distributable Intelligence**: Skills are portable markdown files, not compiled code
+- **Transparent Computation**: All calculations visible in Claude's reasoning
+- **Zero External Dependencies**: No NumPy, SciPy, or ML libraries required
+- **Skill Composition**: Skills can invoke other skills for complex workflows
+
+**Information-Theoretic Foundation:**
+
+The system uses Bayesian belief updating and information theory for adaptive questioning:
+
+**Reward Function:**
 ```
-r = 0.40*info_gain + 0.20*clarity + 0.15*specificity +
-    0.15*actionability + 0.10*relevance - 0.02*question_anomaly
+r(Q) = EIG(Q) + 0.1 * clarity(Q) + 0.05 * importance(Q)
 ```
 
-**Evaluation Dimensions:**
-1. **Information Gain** (40%): Estimated uncertainty reduction (simplified proxy)
-2. **Clarity** (20%): Question understandability
-3. **Specificity** (15%): Explicit dimension targeting
-4. **Actionability** (15%): User's ability to answer
-5. **Context Relevance** (10%): Focus on highest uncertainty
-6. **Question Anomaly Penalty**: Redundancy detection (heuristic checks)
+**Key Concepts:**
+1. **Expected Information Gain (EIG)**: Predicts uncertainty reduction through counterfactual simulation
+2. **Shannon Entropy**: H(h) = -Σ p(h) log₂ p(h) - measures uncertainty in bits
+3. **Bayesian Update**: p₁(h) = [p₀(h) * L(obs|h)] / Σ[p₀(h) * L(obs|h)]
+4. **Information Gain**: IG = H_before - H_after - quantifies learning from each answer
 
-**Note**: This is a simplified approximation model inspired by information theory, not a strict information-theoretic implementation. Uses Python stdlib only (no NumPy/SciPy).
-
-This system helps identify which questions are most effective at eliciting requirements, enabling continuous improvement of the interview process.
+This architecture enables continuous improvement through statistical analysis of question effectiveness across sessions.
 
 ---
 
@@ -86,26 +93,56 @@ At each step, Claude identifies the dimension with highest remaining uncertainty
 
 ## Available Skills
 
-### `requirement-analysis` - Structured Requirement Specification
+The plugin provides 10 specialized skills for computational tasks:
 
-Transforms raw interview data into formal, actionable requirement specifications.
+### Core Computational Skills
 
-**Context Isolation:** Uses `context: fork` to run in an isolated sub-agent context, keeping your main conversation clean during analysis.
+**`/with-me:entropy`** - Shannon Entropy Calculation
+- Computes H(h) = -Σ p(h) log₂ p(h) from posterior distributions
+- Returns uncertainty measurement in bits
 
-**What it does:**
-- Organizes scattered information into clear structure
-- Detects ambiguities, contradictions, and gaps
-- Generates implementation recommendations
-- Assesses risks and suggests mitigation strategies
-- Produces acceptance criteria and testing strategy
+**`/with-me:bayesian-update`** - Bayesian Belief Updating
+- Applies p₁(h) = [p₀(h) * L(obs|h)] / Σ[p₀(h) * L(obs|h)]
+- Updates beliefs after receiving evidence
 
-**Output:**
-A comprehensive specification document including:
-- Purpose & context
-- Functional and non-functional requirements
-- Implementation guidance
-- Risk assessment
-- Open questions requiring clarification
+**`/with-me:information-gain`** - Information Gain Calculation
+- Computes IG = H_before - H_after
+- Quantifies learning from each question-answer pair
+
+### Question Evaluation Skills
+
+**`/with-me:question-clarity`** - Clarity Scoring
+- Evaluates question comprehensibility (0.0-1.0)
+- Checks for ambiguity, jargon, and structure
+
+**`/with-me:question-importance`** - Importance Scoring
+- Assesses strategic value of question (0.0-1.0)
+- Considers dimension priority and context
+
+**`/with-me:eig-calculation`** - Expected Information Gain
+- Predicts uncertainty reduction via counterfactual simulation
+- Guides optimal question selection
+
+### Statistical Analysis Skills
+
+**`/with-me:statistical-measures`** - Descriptive Statistics
+- Computes mean, median, standard deviation, variance
+- Used for analyzing question effectiveness metrics
+
+**`/with-me:correlation`** - Pearson Correlation
+- Measures linear relationship between two variables
+- Validates prediction accuracy and metric relationships
+
+**`/with-me:grid-search`** - Parameter Optimization
+- Performs exhaustive search over parameter space
+- Optimizes session configuration thresholds
+
+### Specification Generation Skill
+
+**`/with-me:requirement-analysis`** - Structured Requirement Specification
+- Transforms interview data into formal specifications
+- Uses `context: fork` for isolated sub-agent processing
+- Generates comprehensive documentation with acceptance criteria
 
 ---
 
