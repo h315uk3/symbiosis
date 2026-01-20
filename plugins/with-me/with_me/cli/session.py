@@ -1,0 +1,235 @@
+#!/usr/bin/env python3
+"""
+CLI for good-question session management.
+
+Provides JSON output for Claude Code to consume:
+- init: Initialize new session
+- next-question: Select next question
+- update: Update beliefs with answer
+- status: Display current state
+- complete: Finalize session
+
+Session state is persisted to .claude/with_me/sessions/<session_id>.json
+"""
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+from with_me.lib.session_orchestrator import SessionOrchestrator
+
+
+def get_session_dir() -> Path:
+    """Get session persistence directory."""
+    # Look for .claude directory in current or parent directories
+    current = Path.cwd()
+    while current != current.parent:
+        claude_dir = current / ".claude" / "with_me" / "sessions"
+        if claude_dir.parent.parent.exists():
+            claude_dir.mkdir(parents=True, exist_ok=True)
+            return claude_dir
+        current = current.parent
+
+    # Fallback to home directory
+    fallback = Path.home() / ".claude" / "with_me" / "sessions"
+    fallback.mkdir(parents=True, exist_ok=True)
+    return fallback
+
+
+def save_session_state(session_id: str, orchestrator: SessionOrchestrator) -> None:
+    """Save session state to disk."""
+    session_file = get_session_dir() / f"{session_id}.json"
+
+    state = {
+        "session_id": orchestrator.session_id,
+        "beliefs": {k: v.to_dict() for k, v in orchestrator.beliefs.items()},
+        "question_history": orchestrator.question_history,
+        "question_count": orchestrator.question_count,
+    }
+
+    with open(session_file, "w") as f:
+        json.dump(state, f, indent=2)
+
+
+def load_session_state(session_id: str) -> SessionOrchestrator:
+    """Load session state from disk."""
+    session_file = get_session_dir() / f"{session_id}.json"
+
+    if not session_file.exists():
+        print(json.dumps({"error": f"Session not found: {session_id}"}), file=sys.stderr)
+        sys.exit(1)
+
+    with open(session_file) as f:
+        state = json.load(f)
+
+    # Reconstruct orchestrator
+    from with_me.lib.dimension_belief import HypothesisSet
+
+    orch = SessionOrchestrator()
+    orch.session_id = state["session_id"]
+    orch.beliefs = {k: HypothesisSet.from_dict(v) for k, v in state["beliefs"].items()}
+    orch.question_history = state["question_history"]
+    orch.question_count = state["question_count"]
+
+    return orch
+
+
+def cmd_init(args: argparse.Namespace) -> None:
+    """Initialize new session."""
+    orch = SessionOrchestrator()
+    session_id = orch.initialize_session()
+
+    # Save initial state
+    save_session_state(session_id, orch)
+
+    # Output JSON
+    print(json.dumps({
+        "session_id": session_id,
+        "status": "initialized",
+    }))
+
+
+def cmd_next_question(args: argparse.Namespace) -> None:
+    """Select next question to ask."""
+    orch = load_session_state(args.session_id)
+
+    # Check convergence first
+    if orch.check_convergence():
+        print(json.dumps({
+            "converged": True,
+            "reason": "All dimensions converged or max questions reached"
+        }))
+        return
+
+    dimension, question = orch.select_next_question()
+
+    if dimension is None:
+        print(json.dumps({
+            "converged": True,
+            "reason": "No accessible dimensions (all blocked by prerequisites)"
+        }))
+        return
+
+    # Get dimension metadata
+    dim_config = orch.config["dimensions"][dimension]
+
+    print(json.dumps({
+        "converged": False,
+        "dimension": dimension,
+        "dimension_name": dim_config["name"],
+        "question": question,
+    }))
+
+
+def cmd_update(args: argparse.Namespace) -> None:
+    """Update beliefs with user answer."""
+    orch = load_session_state(args.session_id)
+
+    result = orch.update_beliefs(args.dimension, args.question, args.answer)
+
+    # Save updated state
+    save_session_state(args.session_id, orch)
+
+    print(json.dumps({
+        "information_gain": round(result["information_gain"], 3),
+        "entropy_before": round(result["entropy_before"], 2),
+        "entropy_after": round(result["entropy_after"], 2),
+        "dimension": result["dimension"],
+    }))
+
+
+def cmd_status(args: argparse.Namespace) -> None:
+    """Display current session state."""
+    orch = load_session_state(args.session_id)
+
+    state = orch.get_current_state()
+
+    # Format for display
+    output: dict[str, Any] = {
+        "session_id": state["session_id"],
+        "question_count": state["question_count"],
+        "all_converged": state["all_converged"],
+        "dimensions": {},
+    }
+
+    for dim_id, dim_data in state["dimensions"].items():
+        output["dimensions"][dim_id] = {
+            "name": dim_data["name"],
+            "entropy": round(dim_data["entropy"], 2),
+            "confidence": round(dim_data["confidence"], 2),
+            "converged": dim_data["converged"],
+            "blocked": dim_data["blocked"],
+            "blocked_by": dim_data["blocked_by"],
+            "most_likely": dim_data["most_likely"],
+        }
+
+    print(json.dumps(output, indent=2))
+
+
+def cmd_complete(args: argparse.Namespace) -> None:
+    """Complete session and generate summary."""
+    orch = load_session_state(args.session_id)
+
+    summary = orch.complete_session()
+
+    # Clean up session file
+    session_file = get_session_dir() / f"{args.session_id}.json"
+    if session_file.exists():
+        session_file.unlink()
+
+    print(json.dumps({
+        "session_id": args.session_id,
+        "total_questions": summary.get("total_questions", 0),
+        "total_info_gain": round(summary.get("total_info_gain", 0.0), 2),
+        "status": "completed",
+    }))
+
+
+def main() -> None:
+    """CLI entry point."""
+    parser = argparse.ArgumentParser(
+        description="Good Question session management CLI"
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # init command
+    subparsers.add_parser("init", help="Initialize new session")
+
+    # next-question command
+    next_parser = subparsers.add_parser("next-question", help="Get next question")
+    next_parser.add_argument("--session-id", required=True, help="Session ID")
+
+    # update command
+    update_parser = subparsers.add_parser("update", help="Update beliefs with answer")
+    update_parser.add_argument("--session-id", required=True, help="Session ID")
+    update_parser.add_argument("--dimension", required=True, help="Dimension ID")
+    update_parser.add_argument("--question", required=True, help="Question asked")
+    update_parser.add_argument("--answer", required=True, help="User's answer")
+
+    # status command
+    status_parser = subparsers.add_parser("status", help="Display session state")
+    status_parser.add_argument("--session-id", required=True, help="Session ID")
+
+    # complete command
+    complete_parser = subparsers.add_parser("complete", help="Complete session")
+    complete_parser.add_argument("--session-id", required=True, help="Session ID")
+
+    args = parser.parse_args()
+
+    # Dispatch to command handler
+    if args.command == "init":
+        cmd_init(args)
+    elif args.command == "next-question":
+        cmd_next_question(args)
+    elif args.command == "update":
+        cmd_update(args)
+    elif args.command == "status":
+        cmd_status(args)
+    elif args.command == "complete":
+        cmd_complete(args)
+
+
+if __name__ == "__main__":
+    main()

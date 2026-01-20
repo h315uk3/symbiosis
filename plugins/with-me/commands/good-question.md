@@ -13,214 +13,189 @@ When requirements are unclear, this command systematically reduces uncertainty t
 
 ---
 
-## Quick Start
+## Execution Protocol
 
-1. Run `/with-me:good-question`
-2. Answer adaptive questions about your requirements
-3. Questions adapt based on your responses using Bayesian belief updating
-4. Session ends when all dimensions converge or you signal clarity
-5. Structured requirement specification generated automatically
+### 1. Initialize Session
 
-**Configuration:** See `config/dimensions.json` for dimension definitions and thresholds
-
----
-
-## Execution
-
-Initialize session and run orchestrator:
+Execute the session CLI to initialize:
 
 ```bash
-python3 <<'EOF'
-from with_me.lib.session_orchestrator import SessionOrchestrator
-import json
-
-# Initialize orchestrator
-orch = SessionOrchestrator()
-session_id = orch.initialize_session()
-
-# Output session ID for tracking
-print(json.dumps({
-    "session_id": session_id,
-    "status": "initialized"
-}))
-EOF
+python3 -m with_me.cli.session init
 ```
 
-### Main Questioning Loop
+Expected output:
+```json
+{"session_id": "2026-01-20T12:34:56.789012", "status": "initialized"}
+```
 
-The orchestrator manages the adaptive questioning process:
+Store the `session_id` for subsequent commands.
 
-**For each iteration:**
+### 2. Question Loop
 
-1. **Check convergence:**
-   ```bash
-   python3 <<'EOF'
-   from with_me.lib.session_orchestrator import SessionOrchestrator
-   orch = SessionOrchestrator()
-   # ... restore session state ...
-   converged = orch.check_convergence()
-   print("converged" if converged else "continue")
-   EOF
-   ```
+Repeat until convergence:
 
-2. **Select next question:**
-   ```bash
-   python3 <<'EOF'
-   from with_me.lib.session_orchestrator import SessionOrchestrator
-   orch = SessionOrchestrator()
-   # ... restore session state ...
-   dimension, question = orch.select_next_question()
-   print(f"{dimension}:{question}")
-   EOF
-   ```
-
-3. **Ask user via AskUserQuestion:**
-   ```
-   Question: <question from orchestrator>
-   Header: <dimension short_name>
-   multiSelect: false
-   Options:
-     - "Provide detailed answer"
-     - "Provide brief answer"
-     - "Skip this question"
-     - "End session (clarity achieved)"
-   ```
-
-4. **Update beliefs:**
-   ```bash
-   python3 <<'EOF'
-   from with_me.lib.session_orchestrator import SessionOrchestrator
-   orch = SessionOrchestrator()
-   # ... restore session state ...
-   result = orch.update_beliefs(dimension, question, answer)
-   print(f"Information gained: {result['information_gain']:.3f} bits")
-   EOF
-   ```
-
-5. **Display current state:**
-   ```bash
-   python3 <<'EOF'
-   from with_me.lib.session_orchestrator import SessionOrchestrator
-   orch = SessionOrchestrator()
-   # ... restore session state ...
-   state = orch.get_current_state()
-
-   print("\nCurrent Uncertainty (bits):")
-   for dim_id, dim_data in state['dimensions'].items():
-       status = "✓" if dim_data['converged'] else ""
-       blocked = f"  [BLOCKED: needs {', '.join(dim_data['blocked_by'])}]" if dim_data['blocked'] else ""
-       bar_length = int(dim_data['entropy'] / 2.0 * 10)
-       bar = "█" * bar_length + "░" * (10 - bar_length)
-       print(f"  {dim_data['name']:12} {dim_data['entropy']:.2f} {bar}  ({dim_data['confidence']:.0%} confidence) {status}{blocked}")
-   EOF
-   ```
-
-**Repeat until convergence or user signals completion.**
-
----
-
-### Post-Convergence Analysis
-
-After convergence, complete session and generate specification:
+#### 2.1. Get Next Question
 
 ```bash
-python3 <<'EOF'
-from with_me.lib.session_orchestrator import SessionOrchestrator
-orch = SessionOrchestrator()
-# ... restore session state ...
-summary = orch.complete_session()
-print(f"Session complete: {summary['total_questions']} questions asked")
-print(f"Total information gained: {summary['total_info_gain']:.2f} bits")
-EOF
+python3 -m with_me.cli.session next-question --session-id <SESSION_ID>
 ```
 
-Then invoke requirement-analysis skill:
+Output (if not converged):
+```json
+{
+  "converged": false,
+  "dimension": "purpose",
+  "dimension_name": "Purpose",
+  "question": "What is the core value you're providing?"
+}
+```
+
+Output (if converged):
+```json
+{
+  "converged": true,
+  "reason": "All dimensions converged or max questions reached"
+}
+```
+
+If `converged` is `true`, skip to step 3.
+
+#### 2.2. Ask User
+
+Use the `AskUserQuestion` tool with the question from step 2.1:
+
+- **Question**: Use the `question` field from CLI output
+- **Header**: Use the `dimension_name` field
+- **Options**:
+  - "Provide detailed answer"
+  - "Provide brief answer"
+  - "Skip this question"
+  - "End session (clarity achieved)"
+- **multiSelect**: false
+
+If user chooses "End session", skip to step 3.
+
+If user chooses "Skip", return to step 2.1.
+
+Otherwise, capture the user's answer and proceed to step 2.3.
+
+#### 2.3. Update Beliefs
+
+```bash
+python3 -m with_me.cli.session update \
+  --session-id <SESSION_ID> \
+  --dimension <DIMENSION> \
+  --question <QUESTION> \
+  --answer <USER_ANSWER>
+```
+
+Output:
+```json
+{
+  "information_gain": 1.234,
+  "entropy_before": 2.0,
+  "entropy_after": 0.766,
+  "dimension": "purpose"
+}
+```
+
+#### 2.4. Display Progress (Optional)
+
+Show entropy reduction to user:
+
+```bash
+python3 -m with_me.cli.session status --session-id <SESSION_ID>
+```
+
+Output:
+```json
+{
+  "session_id": "...",
+  "question_count": 5,
+  "all_converged": false,
+  "dimensions": {
+    "purpose": {
+      "name": "Purpose",
+      "entropy": 1.23,
+      "confidence": 0.38,
+      "converged": false,
+      "blocked": false,
+      "most_likely": null
+    },
+    ...
+  }
+}
+```
+
+Format dimensions for user display (entropy bars, confidence percentages, convergence status).
+
+Return to step 2.1.
+
+### 3. Complete Session
+
+```bash
+python3 -m with_me.cli.session complete --session-id <SESSION_ID>
+```
+
+Output:
+```json
+{
+  "session_id": "...",
+  "total_questions": 12,
+  "total_info_gain": 8.45,
+  "status": "completed"
+}
+```
+
+### 4. Generate Requirements Specification
+
+Invoke the requirement-analysis skill:
 
 ```
 /with-me:requirement-analysis
 ```
 
-The skill will:
-- Analyze all collected answers
-- Detect ambiguities and gaps
-- Generate structured requirement specification
-- Suggest implementation approach
-- Produce acceptance criteria
-
----
-
-## Best Practices
-
-### For Users
-
-1. **Be specific in answers:** More detail enables better belief updates
-2. **Provide examples:** Helps likelihood estimation understand context
-3. **Ask for clarification:** If a question is unclear, request rephrasing
-4. **Signal when done:** Don't wait for all 50 questions if clarity is achieved
-
-### For Implementation
-
-1. **Persist session state:** Store session_id and beliefs between questions
-2. **Handle user interruption:** Allow "Skip" and "End session" options
-3. **Display progress:** Show entropy display after each answer
-4. **Validate prerequisites:** Orchestrator automatically checks DAG constraints
-5. **Record all interactions:** Feedback manager tracks full session history
-
----
-
-## Error Handling
-
-### No Accessible Dimensions
-
-If `select_next_dimension()` returns `None`:
-- All dimensions either converged or blocked by unmet prerequisites
-- Force termination and proceed to analysis
-
-**Recovery:** Call `complete_session()` and invoke requirement-analysis
-
-### Session State Loss
-
-If session state is lost mid-session:
-- Cannot resume (beliefs cannot be reconstructed)
-- Start new session with `/with-me:good-question`
-
-**Prevention:** Persist session_id and beliefs dictionary to temporary file
-
-### Invalid Answers
-
-If user provides off-topic or unclear answer:
-- Bayesian update will show minimal information gain
-- Question may be repeated or rephrased
-- Orchestrator adapts based on posterior distribution
-
-**No explicit handling needed** - Bayesian framework naturally handles noisy data
+The skill will analyze all collected answers and generate a structured requirement specification.
 
 ---
 
 ## Configuration
 
-Adjust parameters in `config/dimensions.json`:
+Adjust thresholds in `config/dimensions.json`:
 
-```json
-{
-  "session_config": {
-    "convergence_threshold": 0.3,      // Entropy threshold for clarity
-    "prerequisite_threshold": 1.5,     // Threshold for prerequisite satisfaction
-    "max_questions": 50,                // Safety limit to prevent infinite loops
-    "min_questions": 5                  // Minimum before allowing early termination
-  }
-}
-```
+- **convergence_threshold**: Entropy threshold for clarity (default: 0.3)
+- **prerequisite_threshold**: Threshold for prerequisite satisfaction (default: 1.5)
+- **max_questions**: Safety limit (default: 50)
+- **min_questions**: Minimum before early termination (default: 5)
 
-For custom dimensions and DAG structure, see theory document section on "Dimension Customization".
+---
+
+## Error Handling
+
+### Session Not Found
+
+If CLI returns error "Session not found":
+- Session state was lost or deleted
+- Initialize new session with step 1
+
+### No Accessible Dimensions
+
+If CLI returns `{"converged": true, "reason": "No accessible dimensions"}`:
+- All dimensions blocked by unmet prerequisites
+- Proceed to step 3 (complete session)
+
+### Invalid Answers
+
+If user provides unclear or off-topic answers:
+- Bayesian update will show minimal information gain
+- Continue questioning (framework handles noisy data naturally)
 
 ---
 
 ## References
 
-- **Theory:** `docs/good-question-theory.md` - Mathematical foundation and algorithms
-- **Orchestrator:** `with_me/lib/session_orchestrator.py` - Session coordination logic
-- **Beliefs:** `with_me/lib/dimension_belief.py` - Bayesian belief updating
-- **Rewards:** `with_me/lib/question_reward_calculator.py` - EIG calculation
-- **Feedback:** `with_me/lib/question_feedback_manager.py` - Session persistence
-- **Analysis Skill:** `skills/requirement-analysis/SKILL.md` - Post-session specification generation
+- **Theory**: `theory/good-question-theory.md` - Mathematical foundation
+- **CLI**: `with_me/cli/session.py` - Session management commands
+- **Orchestrator**: `with_me/lib/session_orchestrator.py` - Core logic
+- **Beliefs**: `with_me/lib/dimension_belief.py` - Bayesian updating
+- **Analysis Skill**: `skills/requirement-analysis/SKILL.md` - Post-session specification
