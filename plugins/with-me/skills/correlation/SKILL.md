@@ -1,3 +1,28 @@
+---
+description: "Calculate Pearson correlation coefficient to measure linear relationships between variables"
+context: fork
+allowed-tools: [Read]
+---
+
+# Pearson Correlation Coefficient
+
+Measure linear relationship between two variables.
+
+---
+
+## When to Use This Skill
+
+Use this skill to calculate correlation when:
+- Analyzing relationships between question metrics (e.g., entropy vs. information gain)
+- Evaluating parameter correlations in tuning experiments
+- Detecting linear dependencies between dimensions
+
+**Do not use this skill:**
+- For non-linear relationships (correlation only measures linear association)
+- For statistical measures of single variables (use `/with-me:statistical-measures`)
+
+---
+
 # Pearson Correlation Coefficient
 
 Measure linear relationship between two variables.

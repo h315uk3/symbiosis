@@ -1,6 +1,27 @@
-# Shannon Entropy
+---
+description: "Calculate Shannon entropy to measure uncertainty in probability distributions"
+context: fork
+allowed-tools: [Read]
+---
 
-Calculate uncertainty in posterior distribution.
+# Shannon Entropy Calculation
+
+Calculate uncertainty in posterior distribution using information theory.
+
+---
+
+## When to Use This Skill
+
+Use this skill to calculate Shannon entropy H(h) = -Σ p(h) log₂ p(h) when:
+- Measuring uncertainty in belief distributions
+- Evaluating information content before/after observations
+- Computing convergence metrics for requirement elicitation
+
+**Do not use this skill:**
+- For statistical variance or standard deviation (use `/with-me:statistical-measures`)
+- For correlation analysis (use `/with-me:correlation`)
+
+---
 
 ## Formula
 
@@ -10,6 +31,8 @@ Where:
 - h: hypothesis (any key in the posterior distribution)
 - p(h): probability of hypothesis h
 - Σ: sum over all hypotheses in the distribution
+
+---
 
 ## Algorithm
 
@@ -24,6 +47,8 @@ Where:
 
 **Output:** Entropy value (float, rounded to 4 decimal places)
 
+---
+
 ## Logarithm Calculation
 
 log₂(x) = ln(x) / ln(2)
@@ -31,6 +56,8 @@ log₂(x) = ln(x) / ln(2)
 Where:
 - ln(x): natural logarithm
 - ln(2) ≈ 0.693147
+
+---
 
 ## Examples
 
@@ -105,9 +132,18 @@ Where:
 
 **Output:** 1.2955 bits
 
+---
+
 ## Properties
 
 - **Minimum entropy:** H = 0 (complete certainty, one hypothesis has p = 1.0)
 - **Maximum entropy:** H = log₂(N) (uniform distribution over N hypotheses)
 - **Range:** 0 ≤ H ≤ log₂(N) for N hypotheses
 - **Unit:** bits (base-2 logarithm)
+
+---
+
+## References
+
+- Shannon (1948): A Mathematical Theory of Communication
+- Cover & Thomas (2006): Elements of Information Theory

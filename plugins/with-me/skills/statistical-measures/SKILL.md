@@ -1,3 +1,28 @@
+---
+description: "Calculate mean, median, standard deviation, and variance for data analysis"
+context: fork
+allowed-tools: [Read]
+---
+
+# Statistical Measures
+
+Calculate descriptive statistics for data analysis.
+
+---
+
+## When to Use This Skill
+
+Use this skill to calculate statistical measures when:
+- Analyzing question effectiveness metrics
+- Computing summary statistics for session data
+- Evaluating distribution properties
+
+**Do not use this skill:**
+- For entropy or information gain (use `/with-me:entropy` or `/with-me:information-gain`)
+- For correlation analysis (use `/with-me:correlation`)
+
+---
+
 # Statistical Measures
 
 Calculate descriptive statistics for data analysis.

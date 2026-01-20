@@ -1,6 +1,27 @@
-# Information Gain
+---
+description: "Calculate information gain to measure uncertainty reduction from observations"
+context: fork
+allowed-tools: [Read]
+---
 
-Measure uncertainty reduction from question-answer observation.
+# Information Gain Calculation
+
+Measure uncertainty reduction from question-answer observations.
+
+---
+
+## When to Use This Skill
+
+Use this skill to calculate information gain IG = H_before - H_after when:
+- Measuring effectiveness of questions in requirement elicitation
+- Evaluating how much uncertainty was reduced by an observation
+- Computing reward scores for question evaluation
+
+**Do not use this skill:**
+- For entropy calculation itself (use `/with-me:entropy`)
+- For Expected Information Gain (EIG) prediction (not yet implemented)
+
+---
 
 ## Formula
 
@@ -10,6 +31,8 @@ Where:
 - H_before: Shannon entropy before observation
 - H_after: Shannon entropy after Bayesian update
 - IG: Information gained (in bits)
+
+---
 
 ## Algorithm
 
@@ -23,11 +46,15 @@ Where:
 
 **Output:** Information gain in bits (float, can be rounded to 4 decimal places)
 
+---
+
 ## Interpretation
 
 - **IG > 0:** Uncertainty reduced (typical case)
 - **IG = 0:** No information gained (observation didn't discriminate between hypotheses)
 - **IG < 0:** Should not occur (violates information theory, indicates calculation error)
+
+---
 
 ## Examples
 
@@ -91,6 +118,8 @@ Where:
 
 **Interpretation:** Question provided no discriminatory information
 
+---
+
 ## Relationship to Entropy
 
 **Maximum possible information gain:**
@@ -105,12 +134,16 @@ Where:
 - IG = 1.0 bits
 - Reduction = (1.0 / 2.0) × 100% = 50%
 
+---
+
 ## Properties
 
 - **Non-negative:** IG ≥ 0 (information never lost in Bayesian update)
 - **Upper bound:** IG ≤ H_before (cannot reduce more uncertainty than exists)
 - **Additive:** Total IG over sequence of questions = Σ IG_i
 - **Unit:** bits (consistent with entropy measurement)
+
+---
 
 ## Use in Question Selection
 
@@ -128,3 +161,10 @@ Where:
 - Can predict IG before asking question
 - EIG = Σ p(answer) × IG(answer) over possible answers
 - Used for optimal question selection
+
+---
+
+## References
+
+- Shannon (1948): A Mathematical Theory of Communication
+- MacKay (2003): Information Theory, Inference, and Learning Algorithms

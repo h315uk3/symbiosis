@@ -1,3 +1,28 @@
+---
+description: "Find optimal parameter values through exhaustive grid search"
+context: fork
+allowed-tools: [Read]
+---
+
+# Grid Search Optimization
+
+Find optimal parameter values by exhaustive search over parameter space.
+
+---
+
+## When to Use This Skill
+
+Use this skill to optimize parameters when:
+- Tuning convergence thresholds or importance weights
+- Finding best configuration for question effectiveness metrics
+- Exploring parameter combinations systematically
+
+**Do not use this skill:**
+- For continuous optimization (grid search is for discrete values)
+- When parameter space is too large (use random search or Bayesian optimization)
+
+---
+
 # Grid Search Optimization
 
 Find optimal parameter values by exhaustive search over parameter space.

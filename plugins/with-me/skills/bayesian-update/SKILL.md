@@ -1,6 +1,28 @@
+---
+description: "Perform Bayesian belief updating given prior beliefs and observation likelihoods"
+context: fork
+allowed-tools: [Read]
+---
+
 # Bayesian Belief Updating
 
-Update posterior distribution given new evidence.
+Update posterior distribution given new evidence using Bayes' rule.
+
+---
+
+## When to Use This Skill
+
+Use this skill to update probability distributions when:
+- Incorporating new observations into existing beliefs
+- Calculating posterior probabilities after receiving evidence
+- Performing sequential belief updates in requirement elicitation
+
+**Do not use this skill:**
+- For initial uniform prior setup (just assign equal probabilities)
+- For entropy calculation (use `/with-me:entropy`)
+- For information gain calculation (use `/with-me:information-gain`)
+
+---
 
 ## Formula
 
@@ -15,6 +37,8 @@ Where:
 - L(obs|h): likelihood of observation given hypothesis
 - p₁(h): posterior belief after update
 - Σ: sum over all hypotheses
+
+---
 
 ## Algorithm
 
@@ -31,6 +55,8 @@ Where:
 4. Return posterior distribution
 
 **Output:** Updated posterior distribution {hypothesis_id: posterior_probability, ...}
+
+---
 
 ## Examples
 
@@ -132,12 +158,16 @@ Where:
 {"h1": 0.8, "h2": 0.2, "h3": 0.0}
 ```
 
+---
+
 ## Properties
 
 - **Conservation:** Σ p₁(h) = 1.0 (probabilities sum to 1)
 - **Influence:** Higher likelihood → higher posterior probability
 - **Zero evidence:** If L(obs|h) = 0, then p₁(h) = 0 (hypothesis ruled out)
 - **Weak evidence:** If likelihoods are uniform, posterior equals prior (no information gained)
+
+---
 
 ## Edge Cases
 
@@ -149,3 +179,10 @@ Where:
 - This is expected and normal
 - Likelihoods are P(observation|hypothesis), not probabilities over hypotheses
 - Normalization step ensures posterior sums to 1.0
+
+---
+
+## References
+
+- Bayes, Thomas (1763): An Essay towards solving a Problem in the Doctrine of Chances
+- Jaynes, E. T. (2003): Probability Theory: The Logic of Science
