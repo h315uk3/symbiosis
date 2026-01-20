@@ -166,8 +166,9 @@ def extract_contexts_for_pattern(
 
                             if len(contexts) >= max_contexts:
                                 return contexts
-    except Exception:
-        pass
+    except Exception as e:
+        # Defensive: log unexpected errors during archive scanning without raising.
+        print(f"Warning: failed to extract contexts from '{archive_dir}': {e}", file=sys.stderr)
 
     return contexts
 
