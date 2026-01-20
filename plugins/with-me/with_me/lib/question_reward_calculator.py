@@ -97,9 +97,12 @@ class RewardResponse:
 
         Examples:
             >>> response = RewardResponse(
-            ...     reward_score=1.5, eig=1.2, clarity=0.9,
-            ...     importance=0.8, confidence=0.85,
-            ...     reasoning="Test"
+            ...     reward_score=1.5,
+            ...     eig=1.2,
+            ...     clarity=0.9,
+            ...     importance=0.8,
+            ...     confidence=0.85,
+            ...     reasoning="Test",
             ... )
             >>> data = response.to_dict()
             >>> "reward_score" in data
@@ -136,7 +139,7 @@ class RewardResponse:
 #    - Output: EIG in bits
 #
 # 4. Hybrid Reward:
-#    - Calculate: reward = EIG + 0.1 × clarity + 0.05 × importance
+#    - Calculate: reward = EIG + 0.1 * clarity + 0.05 * importance
 #    - Return: RewardResponse with all components
 
 

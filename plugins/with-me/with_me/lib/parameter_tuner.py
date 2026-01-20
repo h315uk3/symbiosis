@@ -14,7 +14,6 @@ Related: #37
 """
 
 import sys
-from pathlib import Path
 from typing import Any
 
 from .question_feedback_manager import QuestionFeedbackManager, WithMeConfig
@@ -120,6 +119,7 @@ def main():
         # Collect data for optimization
         data = collect_parameter_data()
         import json
+
         print(json.dumps(data, indent=2))
         return
 

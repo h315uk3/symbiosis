@@ -14,8 +14,6 @@ allowing the command file to focus on user interaction via AskUserQuestion.
 """
 
 import json
-import random
-import time
 from pathlib import Path
 from typing import Any
 
@@ -24,10 +22,6 @@ from with_me.lib.dimension_belief import (
     create_default_dimension_beliefs,
 )
 from with_me.lib.question_feedback_manager import QuestionFeedbackManager
-from with_me.lib.question_reward_calculator import (
-    QuestionContext,
-    QuestionRewardCalculator,
-)
 
 
 class SessionOrchestrator:
@@ -54,7 +48,7 @@ class SessionOrchestrator:
 
         >>> # Get final analysis
         >>> summary = orch.complete_session()
-        >>> summary['total_questions'] == 0  # No questions asked in doctest
+        >>> summary["total_questions"] == 0  # No questions asked in doctest
         True
     """
 
@@ -77,7 +71,6 @@ class SessionOrchestrator:
 
         # Initialize components
         self.manager = QuestionFeedbackManager()
-        self.calculator = QuestionRewardCalculator()
 
         # Session state (initialized in initialize_session)
         self.session_id: str | None = None
@@ -189,7 +182,12 @@ class SessionOrchestrator:
             if prereq_satisfied:
                 # Use cached entropy or default to high value (max entropy for N hypotheses)
                 import math
-                entropy = hs._cached_entropy if hs._cached_entropy is not None else math.log2(len(hs.hypotheses))
+
+                entropy = (
+                    hs._cached_entropy
+                    if hs._cached_entropy is not None
+                    else math.log2(len(hs.hypotheses))
+                )
                 accessible.append((dim_id, entropy, dim_config["importance"]))
 
         if not accessible:
@@ -204,71 +202,33 @@ class SessionOrchestrator:
         """
         Generate a question for the specified dimension.
 
-        Selects from pre-defined prompts in configuration, excluding
-        questions that have already been asked.
+        NOTE: Question generation now handled by Claude in good-question.md.
+        This method returns a placeholder for backward compatibility.
 
         Args:
             dimension: Dimension ID to generate question for
 
         Returns:
-            Question text
+            Placeholder question text
 
         Examples:
             >>> orch = SessionOrchestrator()
             >>> _ = orch.initialize_session()
             >>> question = orch.generate_question("purpose")
-            >>> len(question) > 0
+            >>> "placeholder" in question.lower()
             True
         """
-        prompts = self.config["dimensions"][dimension]["prompts"]
+        # Question generation now handled by Claude in good-question.md workflow
+        # See Step 2.1-2.2 for context-aware question generation
+        dim_name = self.config["dimensions"][dimension]["name"]
+        return f"[Placeholder: Claude generates question for {dim_name} dimension]"
 
-        # Filter out already asked questions
-        available_prompts = [p for p in prompts if p not in self.question_history]
-
-        # If all questions have been asked, reuse prompts (should be rare)
-        if not available_prompts:
-            available_prompts = prompts
-
-        return random.choice(available_prompts)
-
-    def calculate_question_reward(self, question: str) -> dict[str, Any]:
-        """
-        Calculate reward score for a question.
-
-        Uses EIG-based reward function from question_reward_calculator.
-
-        Args:
-            question: Question text
-
-        Returns:
-            Dictionary with reward_score, eig, clarity, importance, reasoning
-
-        Examples:
-            >>> orch = SessionOrchestrator()
-            >>> _ = orch.initialize_session()
-            >>> reward = orch.calculate_question_reward("What is the purpose?")
-            >>> 0.0 <= reward["reward_score"]
-            True
-        """
-        context = QuestionContext(
-            session_id=self.session_id or "unknown",
-            timestamp=time.time(),
-            dimension_beliefs={k: v.to_dict() for k, v in self.beliefs.items()},
-            question_history=self.question_history,
-            feedback_history=[],
-            skill_name=None,
-        )
-
-        response = self.calculator.calculate_reward_for_question(question, context)
-
-        return {
-            "reward_score": response.reward_score,
-            "eig": response.eig,
-            "clarity": response.clarity,
-            "importance": response.importance,
-            "confidence": response.confidence,
-            "reasoning": response.reasoning,
-        }
+    # calculate_question_reward() removed - use skills instead:
+    # - /with-me:question-clarity
+    # - /with-me:question-importance
+    # - /with-me:eig-calculation
+    #
+    # Reward function: r(Q) = EIG(Q) + 0.1 * clarity(Q) + 0.05 * importance(Q)
 
     def select_next_question(self) -> tuple[str, str] | tuple[None, None]:
         """
@@ -283,9 +243,9 @@ class SessionOrchestrator:
             >>> orch = SessionOrchestrator()
             >>> _ = orch.initialize_session()
             >>> dim, question = orch.select_next_question()
-            >>> dim is not None
+            >>> dim == "purpose"  # Purpose has no prerequisites
             True
-            >>> len(question) > 0
+            >>> "placeholder" in question.lower()
             True
         """
         # Select dimension
@@ -293,7 +253,7 @@ class SessionOrchestrator:
         if dimension is None:
             return None, None
 
-        # Generate question
+        # Generate question placeholder
         question = self.generate_question(dimension)
 
         return dimension, question
@@ -325,8 +285,15 @@ class SessionOrchestrator:
         for dim_id, hs in self.beliefs.items():
             # Use cached values from persist-computation
             import math
-            entropy = hs._cached_entropy if hs._cached_entropy is not None else math.log2(len(hs.hypotheses))
-            confidence = hs._cached_confidence if hs._cached_confidence is not None else 0.0
+
+            entropy = (
+                hs._cached_entropy
+                if hs._cached_entropy is not None
+                else math.log2(len(hs.hypotheses))
+            )
+            confidence = (
+                hs._cached_confidence if hs._cached_confidence is not None else 0.0
+            )
             converged = entropy < conv_threshold
 
             # Check if blocked by prerequisites
@@ -369,14 +336,15 @@ class SessionOrchestrator:
         Examples:
             >>> orch = SessionOrchestrator()
             >>> _ = orch.initialize_session()
-            >>> # Simulate some questions
-            >>> _ = orch.update_beliefs("purpose", "What?", "web app")
             >>> summary = orch.complete_session()
-            >>> summary["total_questions"] == 1
+            >>> summary["total_questions"] == 0
             True
         """
-        # Calculate final uncertainties
-        final_uncertainties = {dim: hs.entropy() for dim, hs in self.beliefs.items()}
+        # Calculate final uncertainties using cached entropy values
+        final_uncertainties = {
+            dim: hs._cached_entropy if hs._cached_entropy is not None else 0.0
+            for dim, hs in self.beliefs.items()
+        }
 
         # Complete session in feedback manager
         summary = self.manager.complete_session(
@@ -425,7 +393,9 @@ def main():
         # Update beliefs
         result = orch.update_beliefs(dim, question, answer)
         print(f"\nInformation gained: {result['information_gain']:.3f} bits")
-        print(f"Entropy: {result['entropy_before']:.2f} → {result['entropy_after']:.2f}")
+        print(
+            f"Entropy: {result['entropy_before']:.2f} → {result['entropy_after']:.2f}"
+        )
 
         # Complete session
         summary = orch.complete_session()

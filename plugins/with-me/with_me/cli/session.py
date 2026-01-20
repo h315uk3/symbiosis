@@ -58,7 +58,9 @@ def load_session_state(session_id: str) -> SessionOrchestrator:
     session_file = get_session_dir() / f"{session_id}.json"
 
     if not session_file.exists():
-        print(json.dumps({"error": f"Session not found: {session_id}"}), file=sys.stderr)
+        print(
+            json.dumps({"error": f"Session not found: {session_id}"}), file=sys.stderr
+        )
         sys.exit(1)
 
     with open(session_file) as f:
@@ -85,10 +87,14 @@ def cmd_init(args: argparse.Namespace) -> None:
     save_session_state(session_id, orch)
 
     # Output JSON
-    print(json.dumps({
-        "session_id": session_id,
-        "status": "initialized",
-    }))
+    print(
+        json.dumps(
+            {
+                "session_id": session_id,
+                "status": "initialized",
+            }
+        )
+    )
 
 
 def cmd_next_question(args: argparse.Namespace) -> None:
@@ -97,30 +103,42 @@ def cmd_next_question(args: argparse.Namespace) -> None:
 
     # Check convergence first
     if orch.check_convergence():
-        print(json.dumps({
-            "converged": True,
-            "reason": "All dimensions converged or max questions reached"
-        }))
+        print(
+            json.dumps(
+                {
+                    "converged": True,
+                    "reason": "All dimensions converged or max questions reached",
+                }
+            )
+        )
         return
 
     dimension, question = orch.select_next_question()
 
     if dimension is None:
-        print(json.dumps({
-            "converged": True,
-            "reason": "No accessible dimensions (all blocked by prerequisites)"
-        }))
+        print(
+            json.dumps(
+                {
+                    "converged": True,
+                    "reason": "No accessible dimensions (all blocked by prerequisites)",
+                }
+            )
+        )
         return
 
     # Get dimension metadata
     dim_config = orch.config["dimensions"][dimension]
 
-    print(json.dumps({
-        "converged": False,
-        "dimension": dimension,
-        "dimension_name": dim_config["name"],
-        "question": question,
-    }))
+    print(
+        json.dumps(
+            {
+                "converged": False,
+                "dimension": dimension,
+                "dimension_name": dim_config["name"],
+                "question": question,
+            }
+        )
+    )
 
 
 def cmd_update(args: argparse.Namespace) -> None:
@@ -133,12 +151,14 @@ def cmd_update(args: argparse.Namespace) -> None:
         hypotheses = []
 
         for hyp_id, hyp_data in dim_config.get("hypotheses", {}).items():
-            hypotheses.append({
-                "id": hyp_id,
-                "name": hyp_data["name"],
-                "description": hyp_data["description"],
-                "focus_areas": hyp_data["focus_areas"],
-            })
+            hypotheses.append(
+                {
+                    "id": hyp_id,
+                    "name": hyp_data["name"],
+                    "description": hyp_data["description"],
+                    "focus_areas": hyp_data["focus_areas"],
+                }
+            )
 
         evaluation_request = {
             "evaluation_request": True,
@@ -151,7 +171,7 @@ def cmd_update(args: argparse.Namespace) -> None:
                 "Based on the question and answer, estimate the likelihood (0.0-1.0) "
                 "that each hypothesis is true. Consider the hypothesis descriptions and "
                 "focus areas. Return JSON with format: "
-                "{\"likelihoods\": {\"hypothesis_id\": probability, ...}}. "
+                '{"likelihoods": {"hypothesis_id": probability, ...}}. '
                 "Likelihoods should sum to approximately 1.0."
             ),
         }
@@ -162,10 +182,12 @@ def cmd_update(args: argparse.Namespace) -> None:
     # Parse likelihoods (required)
     if not getattr(args, "likelihoods", None):
         print(
-            json.dumps({
-                "error": "Missing required --likelihoods argument. "
-                "Use --enable-semantic-evaluation to get evaluation request first."
-            }),
+            json.dumps(
+                {
+                    "error": "Missing required --likelihoods argument. "
+                    "Use --enable-semantic-evaluation to get evaluation request first."
+                }
+            ),
             file=sys.stderr,
         )
         sys.exit(1)
@@ -186,12 +208,16 @@ def cmd_update(args: argparse.Namespace) -> None:
     # Save updated state
     save_session_state(args.session_id, orch)
 
-    print(json.dumps({
-        "information_gain": round(result["information_gain"], 3),
-        "entropy_before": round(result["entropy_before"], 2),
-        "entropy_after": round(result["entropy_after"], 2),
-        "dimension": result["dimension"],
-    }))
+    print(
+        json.dumps(
+            {
+                "information_gain": round(result["information_gain"], 3),
+                "entropy_before": round(result["entropy_before"], 2),
+                "entropy_after": round(result["entropy_after"], 2),
+                "dimension": result["dimension"],
+            }
+        )
+    )
 
 
 def cmd_status(args: argparse.Namespace) -> None:
@@ -233,12 +259,16 @@ def cmd_complete(args: argparse.Namespace) -> None:
     if session_file.exists():
         session_file.unlink()
 
-    print(json.dumps({
-        "session_id": args.session_id,
-        "total_questions": summary.get("total_questions", 0),
-        "total_info_gain": round(summary.get("total_info_gain", 0.0), 2),
-        "status": "completed",
-    }))
+    print(
+        json.dumps(
+            {
+                "session_id": args.session_id,
+                "total_questions": summary.get("total_questions", 0),
+                "total_info_gain": round(summary.get("total_info_gain", 0.0), 2),
+                "status": "completed",
+            }
+        )
+    )
 
 
 def cmd_compute_entropy(args: argparse.Namespace) -> None:
@@ -247,17 +277,22 @@ def cmd_compute_entropy(args: argparse.Namespace) -> None:
     posterior = orch.beliefs[args.dimension].posterior
 
     # Output computation request for Claude
-    print(json.dumps({
-        "computation_request": "entropy",
-        "dimension": args.dimension,
-        "posterior": posterior,
-        "theory_file": "plugins/with-me/theory/algorithms/entropy.md",
-        "instruction": (
-            "Read the theory file and calculate Shannon entropy H(h) = -Σ p(h) log₂ p(h) "
-            "for the given posterior distribution. Return the entropy value in bits, "
-            "rounded to 4 decimal places."
-        ),
-    }, indent=2))
+    print(
+        json.dumps(
+            {
+                "computation_request": "entropy",
+                "dimension": args.dimension,
+                "posterior": posterior,
+                "theory_file": "plugins/with-me/theory/algorithms/entropy.md",
+                "instruction": (
+                    "Read the theory file and calculate Shannon entropy H(h) = -Σ p(h) log₂ p(h) "
+                    "for the given posterior distribution. Return the entropy value in bits, "
+                    "rounded to 4 decimal places."
+                ),
+            },
+            indent=2,
+        )
+    )
 
 
 def cmd_bayesian_update(args: argparse.Namespace) -> None:
@@ -267,33 +302,43 @@ def cmd_bayesian_update(args: argparse.Namespace) -> None:
     likelihoods = json.loads(args.likelihoods)
 
     # Output computation request for Claude
-    print(json.dumps({
-        "computation_request": "bayesian_update",
-        "dimension": args.dimension,
-        "prior": prior,
-        "likelihoods": likelihoods,
-        "theory_file": "plugins/with-me/theory/algorithms/bayesian_update.md",
-        "instruction": (
-            "Read the theory file and perform Bayesian belief updating: "
-            "p₁(h) = [p₀(h) × L(obs|h)] / Σ[p₀(h) × L(obs|h)]. "
-            "Return the normalized posterior distribution."
-        ),
-    }, indent=2))
+    print(
+        json.dumps(
+            {
+                "computation_request": "bayesian_update",
+                "dimension": args.dimension,
+                "prior": prior,
+                "likelihoods": likelihoods,
+                "theory_file": "plugins/with-me/theory/algorithms/bayesian_update.md",
+                "instruction": (
+                    "Read the theory file and perform Bayesian belief updating: "
+                    "p₁(h) = [p₀(h) * L(obs|h)] / Σ[p₀(h) * L(obs|h)]. "
+                    "Return the normalized posterior distribution."
+                ),
+            },
+            indent=2,
+        )
+    )
 
 
 def cmd_information_gain(args: argparse.Namespace) -> None:
     """Output computation request for Claude to calculate information gain."""
     # Information gain doesn't need session state
-    print(json.dumps({
-        "computation_request": "information_gain",
-        "entropy_before": args.entropy_before,
-        "entropy_after": args.entropy_after,
-        "theory_file": "plugins/with-me/theory/algorithms/information_gain.md",
-        "instruction": (
-            "Read the theory file and calculate information gain: "
-            "IG = H_before - H_after. Return the information gain in bits."
-        ),
-    }, indent=2))
+    print(
+        json.dumps(
+            {
+                "computation_request": "information_gain",
+                "entropy_before": args.entropy_before,
+                "entropy_after": args.entropy_after,
+                "theory_file": "plugins/with-me/theory/algorithms/information_gain.md",
+                "instruction": (
+                    "Read the theory file and calculate information gain: "
+                    "IG = H_before - H_after. Return the information gain in bits."
+                ),
+            },
+            indent=2,
+        )
+    )
 
 
 def cmd_persist_computation(args: argparse.Namespace) -> None:
@@ -310,21 +355,26 @@ def cmd_persist_computation(args: argparse.Namespace) -> None:
     orch.beliefs[args.dimension]._cached_entropy = args.entropy_after
     # Confidence = 1 - (H / H_max) where H_max = log₂(N)
     import math
+
     h_max = math.log2(len(orch.beliefs[args.dimension].hypotheses))
     if h_max > 0:
-        orch.beliefs[args.dimension]._cached_confidence = 1.0 - (args.entropy_after / h_max)
+        orch.beliefs[args.dimension]._cached_confidence = 1.0 - (
+            args.entropy_after / h_max
+        )
     else:
         orch.beliefs[args.dimension]._cached_confidence = 1.0
 
     # Record question-answer in history
-    orch.question_history.append({
-        "dimension": args.dimension,
-        "question": args.question,
-        "answer": args.answer,
-        "entropy_before": args.entropy_before,
-        "entropy_after": args.entropy_after,
-        "information_gain": args.information_gain,
-    })
+    orch.question_history.append(
+        {
+            "dimension": args.dimension,
+            "question": args.question,
+            "answer": args.answer,
+            "entropy_before": args.entropy_before,
+            "entropy_after": args.entropy_after,
+            "information_gain": args.information_gain,
+        }
+    )
 
     orch.question_count += 1
 
@@ -332,21 +382,23 @@ def cmd_persist_computation(args: argparse.Namespace) -> None:
     save_session_state(args.session_id, orch)
 
     # Output confirmation
-    print(json.dumps({
-        "status": "persisted",
-        "dimension": args.dimension,
-        "entropy_before": round(args.entropy_before, 4),
-        "entropy_after": round(args.entropy_after, 4),
-        "information_gain": round(args.information_gain, 4),
-        "question_count": orch.question_count,
-    }))
+    print(
+        json.dumps(
+            {
+                "status": "persisted",
+                "dimension": args.dimension,
+                "entropy_before": round(args.entropy_before, 4),
+                "entropy_after": round(args.entropy_after, 4),
+                "information_gain": round(args.information_gain, 4),
+                "question_count": orch.question_count,
+            }
+        )
+    )
 
 
 def main() -> None:
     """CLI entry point."""
-    parser = argparse.ArgumentParser(
-        description="Good Question session management CLI"
-    )
+    parser = argparse.ArgumentParser(description="Good Question session management CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # init command
@@ -398,7 +450,7 @@ def main() -> None:
         "--likelihoods",
         type=str,
         required=True,
-        help='Likelihoods as JSON: \'{"hyp1": 0.5, ...}\'',
+        help="Likelihoods as JSON: '{\"hyp1\": 0.5, ...}'",
     )
 
     # information-gain command
@@ -433,7 +485,7 @@ def main() -> None:
         "--updated-posterior",
         type=str,
         required=True,
-        help='Claude-computed posterior as JSON: \'{"hyp1": 0.7, ...}\'',
+        help="Claude-computed posterior as JSON: '{\"hyp1\": 0.7, ...}'",
     )
 
     args = parser.parse_args()

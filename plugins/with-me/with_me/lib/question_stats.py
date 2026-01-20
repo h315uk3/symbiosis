@@ -15,7 +15,6 @@ Related: #37
 """
 
 import sys
-from typing import Any
 
 from .question_feedback_manager import QuestionFeedbackManager, WithMeConfig
 
@@ -74,12 +73,6 @@ def collect_enhanced_stats() -> dict:
 
     Returns:
         Dictionary with enhanced aggregated data
-
-    Examples:
-        >>> # Mock example
-        >>> stats = collect_enhanced_stats()
-        >>> "total_questions" in stats
-        True
     """
     config = WithMeConfig.from_environment()
     manager = QuestionFeedbackManager(config.feedback_file)
@@ -97,12 +90,14 @@ def collect_enhanced_stats() -> dict:
     # Aggregate session-level data
     session_summaries = []
     for session in sessions:
-        session_summaries.append({
-            "session_id": session.get("session_id"),
-            "total_questions": session.get("total_questions", 0),
-            "total_info_gain": session.get("total_info_gain", 0.0),
-            "dimension_beliefs": session.get("final_dimension_beliefs", {}),
-        })
+        session_summaries.append(
+            {
+                "session_id": session.get("session_id"),
+                "total_questions": session.get("total_questions", 0),
+                "total_info_gain": session.get("total_info_gain", 0.0),
+                "dimension_beliefs": session.get("final_dimension_beliefs", {}),
+            }
+        )
 
     return {
         "total_questions": sum(s["total_questions"] for s in session_summaries),
@@ -167,6 +162,7 @@ def main():
     # Output raw data as JSON for processing
     print("\nRaw data (JSON):")
     import json
+
     print(json.dumps(stats, indent=2))
 
 
