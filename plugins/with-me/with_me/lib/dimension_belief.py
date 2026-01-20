@@ -46,13 +46,14 @@ class HypothesisSet:
         True
 
         >>> # Update belief based on observation
+        >>> h_before = hs.entropy()
         >>> ig = hs.update(
-        ...     observation="user mentioned REST API", answer="Yes, REST API"
+        ...     observation="user mentioned web browser", answer="Yes, browser based"
         ... )
         >>> ig > 0  # Information gained
         True
         >>> # Entropy should decrease after learning
-        >>> hs.entropy() < 1.58
+        >>> hs.entropy() < h_before
         True
 
         >>> # Get most likely hypothesis
@@ -372,9 +373,13 @@ class HypothesisSet:
             "library": {
                 "import": 2.0,
                 "package": 2.0,
+                "extension": 2.0,
+                "plugin": 2.0,
                 "library": 1.5,
                 "module": 1.5,
                 "reusable": 1.5,
+                "addon": 1.5,
+                "integration": 1.0,
                 "api": 0.5,  # Generic: also appears in web_app, service
             },
             "service": {
@@ -424,10 +429,16 @@ class HypothesisSet:
             },
             "interactive": {
                 "interactive": 2.0,
+                "button": 2.0,
+                "click": 2.0,
+                "user": 1.5,
                 "prompt": 1.5,
                 "dialog": 1.5,
+                "press": 1.5,
+                "manual": 1.5,
                 "input": 1.0,
                 "response": 1.0,
+                "launch": 1.0,
             },
             "batch": {
                 "batch": 2.0,
