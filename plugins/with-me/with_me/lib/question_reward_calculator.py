@@ -33,6 +33,7 @@ References:
 """
 
 import json
+import logging
 import re
 import sys
 import time
@@ -41,21 +42,32 @@ from typing import Any, TypedDict
 
 from .dimension_belief import HypothesisSet, create_default_dimension_beliefs
 
+# Configure logger
+logger = logging.getLogger(__name__)
 
-class QuestionContext(TypedDict, total=False):
+
+class CalculatorUnavailable(Exception):
+    """Raised when reward calculator cannot be initialized or is incompatible."""
+
+    pass
+
+
+class QuestionContext(TypedDict):
     """
     Context information for reward calculation.
 
     This is the input contract for reward calculation, enabling as-you plugin
     to call with-me's reward calculator without knowing internal implementation.
+
+    All fields are required. Early-stage project, backward compatibility not needed.
     """
 
     session_id: str
-    skill_name: str | None
     timestamp: float
     dimension_beliefs: dict[str, dict]  # Serialized HypothesisSet instances
     question_history: list[str]
     feedback_history: list[dict]
+    skill_name: str | None  # Nullable but required field
 
 
 @dataclass
@@ -162,14 +174,15 @@ class QuestionRewardCalculator:
         Args:
             question: User's question text
             context: Session and skill context with dimension beliefs
-            timeout_seconds: Maximum computation time (default: 2s)
+            timeout_seconds: Advisory timeout (not strictly enforced).
+                            Calculations are designed to complete in <1s.
+                            Provided for API compatibility.
 
         Returns:
             RewardResponse with score, EIG, clarity, importance, confidence, reasoning
 
         Raises:
             ValueError: If question format is invalid
-            TimeoutError: If calculation exceeds timeout_seconds
 
         Examples:
             >>> calc = QuestionRewardCalculator()
@@ -205,7 +218,7 @@ class QuestionRewardCalculator:
 
         # Calculate quality adjustments
         clarity = self._score_clarity(question)
-        importance = self._calculate_importance(question, context)
+        importance = self._calculate_importance(question)
 
         # Hybrid reward function
         reward = (
@@ -249,9 +262,11 @@ class QuestionRewardCalculator:
             >>> beliefs = create_default_dimension_beliefs()
             >>> context = QuestionContext(
             ...     session_id="test",
+            ...     timestamp=time.time(),
             ...     dimension_beliefs={k: v.to_dict() for k, v in beliefs.items()},
             ...     question_history=[],
             ...     feedback_history=[],
+            ...     skill_name=None,
             ... )
             >>> # On-topic questions have positive EIG
             >>> eig_purpose = calc._calculate_eig("Why is this needed?", context)
@@ -315,19 +330,24 @@ class QuestionRewardCalculator:
             >>> calc = QuestionRewardCalculator()
             >>> beliefs = create_default_dimension_beliefs()
             >>> context = QuestionContext(
-            ...     dimension_beliefs={k: v.to_dict() for k, v in beliefs.items()}
+            ...     session_id="test",
+            ...     timestamp=time.time(),
+            ...     dimension_beliefs={k: v.to_dict() for k, v in beliefs.items()},
+            ...     question_history=[],
+            ...     feedback_history=[],
+            ...     skill_name=None,
             ... )
             >>> loaded = calc._load_dimension_beliefs(context)
             >>> "purpose" in loaded
             True
         """
-        if context.get("dimension_beliefs"):
+        if context["dimension_beliefs"]:
             return {
                 dim: HypothesisSet.from_dict(data)
                 for dim, data in context["dimension_beliefs"].items()
             }
         else:
-            # No beliefs provided: use default uniform priors
+            # Empty beliefs: use default uniform priors
             return create_default_dimension_beliefs()
 
     def _score_clarity(self, question: str) -> float:
@@ -359,7 +379,7 @@ class QuestionRewardCalculator:
 
         return max(0.0, min(1.0, score))
 
-    def _calculate_importance(self, question: str, context: QuestionContext) -> float:
+    def _calculate_importance(self, question: str) -> float:
         """
         Calculate strategic importance of question (0.0-1.0).
 
@@ -368,16 +388,14 @@ class QuestionRewardCalculator:
 
         Args:
             question: Question text
-            context: Question context
 
         Returns:
             Importance score in [0.0, 1.0]
 
         Examples:
             >>> calc = QuestionRewardCalculator()
-            >>> context = QuestionContext(question_history=[])
             >>> # Purpose questions have high importance
-            >>> calc._calculate_importance("What is the purpose?", context) >= 0.8
+            >>> calc._calculate_importance("What is the purpose?") >= 0.8
             True
         """
         target_dim = self._extract_target_dimension(question)
@@ -631,8 +649,12 @@ class QuestionRewardCalculator:
             >>> # With beliefs: high confidence
             >>> beliefs = create_default_dimension_beliefs()
             >>> context = QuestionContext(
+            ...     session_id="test",
+            ...     timestamp=time.time(),
             ...     dimension_beliefs={k: v.to_dict() for k, v in beliefs.items()},
             ...     question_history=["Q1", "Q2", "Q3"],
+            ...     feedback_history=[],
+            ...     skill_name=None,
             ... )
             >>> calc._estimate_confidence(context) > 0.7
             True
@@ -640,11 +662,11 @@ class QuestionRewardCalculator:
         confidence = 0.5  # Baseline
 
         # Increase confidence if dimension beliefs available
-        if context.get("dimension_beliefs"):
+        if context["dimension_beliefs"]:
             confidence += 0.3
 
         # Increase confidence with question history
-        history_len = len(context.get("question_history", []))
+        history_len = len(context["question_history"])
         if history_len > 5:
             confidence += 0.2
         elif history_len > 0:
@@ -676,7 +698,7 @@ class QuestionRewardCalculator:
 
     # Legacy API (backward compatibility with v0.2.x)
     def calculate_reward(
-        self, question: str, context: dict[str, Any], answer: str | None = None
+        self, question: str, context: dict[str, Any], _answer: str | None = None
     ) -> dict[str, float]:
         """
         Calculate reward using legacy v0.2.x interface.
@@ -687,7 +709,7 @@ class QuestionRewardCalculator:
         Args:
             question: Question text
             context: Legacy context format
-            answer: User's answer (optional)
+            _answer: User's answer (unused, kept for API compatibility)
 
         Returns:
             Legacy format: {
@@ -754,7 +776,17 @@ def calculate_reward_with_fallback(
         RewardResponse (neutral score if calculator fails)
 
     Examples:
-        >>> context = QuestionContext(session_id="test", question_history=[])
+        >>> import time
+        >>> from with_me.lib.dimension_belief import create_default_dimension_beliefs
+        >>> beliefs = create_default_dimension_beliefs()
+        >>> context = QuestionContext(
+        ...     session_id="test",
+        ...     timestamp=time.time(),
+        ...     dimension_beliefs={k: v.to_dict() for k, v in beliefs.items()},
+        ...     question_history=[],
+        ...     feedback_history=[],
+        ...     skill_name=None,
+        ... )
         >>> response = calculate_reward_with_fallback(
         ...     "Should I use async here?", context
         ... )
@@ -766,16 +798,24 @@ def calculate_reward_with_fallback(
     try:
         calculator = QuestionRewardCalculator()
         return calculator.calculate_reward_for_question(question, context)
-    except Exception as e:
-        # Fallback: return neutral score
+    except (CalculatorUnavailable, TimeoutError) as e:
+        # Expected failures - graceful degradation
+        logger.warning(f"Using fallback reward calculation: {e}")
         return RewardResponse(
             reward_score=0.5,  # Neutral score
             eig=0.0,
             clarity=0.0,
             importance=0.5,
             confidence=0.0,  # No confidence in fallback
-            reasoning=f"Fallback (error: {type(e).__name__})",
+            reasoning=f"Fallback: {type(e).__name__}: {e}",
         )
+    except Exception as e:
+        # Unexpected failures - log and re-raise for debugging
+        logger.error(
+            f"Unexpected error in reward calculator: {e}",
+            exc_info=True,
+        )
+        raise
 
 
 # CLI interface
