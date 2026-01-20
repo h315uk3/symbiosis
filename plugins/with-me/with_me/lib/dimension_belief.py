@@ -358,6 +358,32 @@ class HypothesisSet:
             return 1.0
         return 1.0 - (self.entropy() / h_max)
 
+    def copy(self) -> "HypothesisSet":
+        """
+        Create independent copy for counterfactual simulation.
+
+        Used in EIG calculation to simulate belief updates for multiple
+        hypothetical answers without modifying the original belief state.
+
+        Returns:
+            Independent HypothesisSet with same state
+
+        Examples:
+            >>> hs = HypothesisSet("purpose", ["web_app", "cli_tool"])
+            >>> hs.posterior = {"web_app": 0.7, "cli_tool": 0.3}
+            >>> hs_copy = hs.copy()
+            >>> hs_copy.posterior["web_app"]
+            0.7
+            >>> # Modifying copy doesn't affect original
+            >>> _ = hs_copy.update("test", "browser interface")
+            >>> hs.posterior["web_app"]
+            0.7
+        """
+        hs_copy = HypothesisSet(self.dimension, self.hypotheses)
+        hs_copy.posterior = dict(self.posterior)
+        hs_copy.observation_history = [dict(obs) for obs in self.observation_history]
+        return hs_copy
+
     def to_dict(self) -> dict[str, Any]:
         """
         Serialize to dictionary for JSON storage.

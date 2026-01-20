@@ -116,12 +116,12 @@ class QuestionRewardCalculator:
         >>> response.eig > 0  # Information gain is positive
         True
 
-        >>> # High clarity question gets bonus
-        >>> clear_q = "What specific problem does this solve?"
-        >>> vague_q = "What?"
-        >>> r_clear = calculator.calculate_reward_for_question(clear_q, context)
+        >>> # Specific question has higher reward than vague question
+        >>> specific_q = "Which specific type: web application or CLI tool?"
+        >>> vague_q = "What about purpose?"
+        >>> r_specific = calculator.calculate_reward_for_question(specific_q, context)
         >>> r_vague = calculator.calculate_reward_for_question(vague_q, context)
-        >>> r_clear.reward_score > r_vague.reward_score
+        >>> r_specific.reward_score > r_vague.reward_score
         True
     """
 
@@ -226,10 +226,11 @@ class QuestionRewardCalculator:
         """
         Calculate Expected Information Gain for a question.
 
-        EIG = E[H_before - H_after] = Expected reduction in entropy
+        True EIG calculation: EIG = Σ_a P(a|Q) × [H_before - H_after(a)]
 
-        For simplified calculation (without sampling all possible answers):
-        EIG ≈ H_current × P(question addresses high-entropy dimension)
+        This samples plausible answer templates, simulates belief updates,
+        and computes the expected entropy reduction weighted by answer
+        probabilities.
 
         Args:
             question: Question text
@@ -247,9 +248,15 @@ class QuestionRewardCalculator:
             ...     question_history=[],
             ...     feedback_history=[],
             ... )
-            >>> # Question targeting high-entropy dimension
-            >>> eig = calc._calculate_eig("What is the purpose?", context)
-            >>> eig > 0
+            >>> # Specific question has higher EIG than vague question
+            >>> eig_specific = calc._calculate_eig(
+            ...     "Which specific type: web app or CLI tool?", context
+            ... )
+            >>> eig_vague = calc._calculate_eig("What about purpose?", context)
+            >>> eig_specific > eig_vague
+            True
+            >>> # EIG should be positive
+            >>> eig_specific > 0
             True
         """
         # Reconstruct dimension beliefs from context
@@ -258,15 +265,32 @@ class QuestionRewardCalculator:
         # Identify target dimension
         target_dim = self._extract_target_dimension(question)
 
-        if target_dim and target_dim in beliefs:
-            # EIG approximation: current entropy of target dimension
-            # This assumes the question will significantly reduce uncertainty
-            # A more sophisticated approach would sample possible answers
-            hs = beliefs[target_dim]
-            return hs.entropy()
-        else:
+        if not target_dim or target_dim not in beliefs:
             # Question doesn't target specific dimension: low EIG
             return 0.2  # Baseline small value
+
+        # Get current belief state
+        hs = beliefs[target_dim]
+        h_before = hs.entropy()
+
+        # Generate plausible answer templates with probabilities
+        answer_templates = self._generate_answer_templates(target_dim, question)
+
+        # Calculate expected information gain: Sigma P(a|Q) * [H_before - H_after(a)]
+        eig = 0.0
+        for answer_text, prob in answer_templates:
+            # Create copy for counterfactual simulation
+            hs_copy = hs.copy()
+
+            # Simulate belief update with this answer
+            hs_copy.update(question, answer_text)
+            h_after = hs_copy.entropy()
+
+            # Add weighted information gain
+            info_gain = h_before - h_after
+            eig += prob * info_gain
+
+        return eig
 
     def _load_dimension_beliefs(
         self, context: QuestionContext
@@ -394,6 +418,195 @@ class QuestionRewardCalculator:
             return "quality"
 
         return None
+
+    def _is_specific_question(self, question: str) -> bool:
+        """
+        Check if question is specific enough to expect focused answers.
+
+        Specific questions have higher probability of concentrated answers,
+        resulting in higher EIG. Vague questions lead to dispersed answers
+        with lower information gain.
+
+        Args:
+            question: Question text
+
+        Returns:
+            True if question is specific, False if vague
+
+        Examples:
+            >>> calc = QuestionRewardCalculator()
+            >>> # Specific questions
+            >>> calc._is_specific_question("What specific data format do you need?")
+            True
+            >>> calc._is_specific_question("Which type of API do you want?")
+            True
+            >>> # Vague questions
+            >>> calc._is_specific_question("What about data?")
+            False
+            >>> calc._is_specific_question("Thoughts on architecture?")
+            False
+        """
+        specificity_markers = [
+            r'\bspecific(ally)?\b',
+            r'\bexact(ly)?\b',
+            r'\bprecise(ly)?\b',
+            r'\bwhich (one|type|kind)\b',
+            r'\b(describe|explain|list|name)\b',
+            r'\d+',  # Numbers indicate specificity
+        ]
+
+        q_lower = question.lower()
+        return any(re.search(marker, q_lower) for marker in specificity_markers)
+
+    def _generate_answer_templates(
+        self, dimension: str, question: str
+    ) -> list[tuple[str, float]]:
+        """
+        Generate plausible answer templates with probabilities.
+
+        For each dimension, we define typical answer patterns that users
+        might provide. These templates are used to calculate expected
+        information gain by simulating belief updates.
+
+        Args:
+            dimension: Target dimension (e.g., "purpose", "data")
+            question: Question text (used to adjust probabilities)
+
+        Returns:
+            List of (answer_text, probability) tuples summing to 1.0
+
+        Examples:
+            >>> calc = QuestionRewardCalculator()
+            >>> templates = calc._generate_answer_templates("purpose", "What is this?")
+            >>> len(templates) > 0
+            True
+            >>> sum(prob for _, prob in templates) == 1.0
+            True
+            >>> # Specific questions have more concentrated probabilities
+            >>> specific = calc._generate_answer_templates(
+            ...     "purpose", "Which specific type: web app or CLI?"
+            ... )
+            >>> vague = calc._generate_answer_templates("purpose", "What about purpose?")
+            >>> max(p for _, p in specific) > max(p for _, p in vague)
+            True
+        """
+        # Base answer templates per dimension
+        base_templates = {
+            "purpose": [
+                ("web application for users", 0.25),
+                ("command-line tool for automation", 0.25),
+                ("library for developers", 0.25),
+                ("background service for processing", 0.25),
+            ],
+            "data": [
+                ("structured JSON or XML data", 0.3),
+                ("unstructured text documents", 0.3),
+                ("streaming real-time data", 0.2),
+                ("binary files or blobs", 0.2),
+            ],
+            "behavior": [
+                ("synchronous request-response", 0.3),
+                ("asynchronous event-driven", 0.3),
+                ("interactive user sessions", 0.2),
+                ("batch processing jobs", 0.2),
+            ],
+            "constraints": [
+                ("high performance requirements", 0.3),
+                ("scalability to many users", 0.25),
+                ("reliability and fault tolerance", 0.25),
+                ("security and authentication", 0.2),
+            ],
+            "quality": [
+                ("functional correctness", 0.3),
+                ("usability and user experience", 0.3),
+                ("maintainability and code quality", 0.2),
+                ("comprehensive test coverage", 0.2),
+            ],
+        }
+
+        # Get base templates for this dimension
+        templates = base_templates.get(
+            dimension, [("generic answer", 1.0)]
+        )
+
+        # Adjust probabilities based on question specificity
+        if self._is_specific_question(question):
+            # Specific questions → sharpen distribution (higher EIG)
+            return self._sharpen_distribution(templates)
+        else:
+            # Vague questions → uniform distribution (lower EIG)
+            return self._uniformize_distribution(templates)
+
+    def _sharpen_distribution(
+        self, templates: list[tuple[str, float]]
+    ) -> list[tuple[str, float]]:
+        """
+        Sharpen probability distribution for specific questions.
+
+        Increases the probability of the most likely answer and decreases
+        others, simulating focused responses to specific questions.
+
+        Args:
+            templates: Base answer templates
+
+        Returns:
+            Sharpened distribution
+
+        Examples:
+            >>> calc = QuestionRewardCalculator()
+            >>> base = [("A", 0.25), ("B", 0.25), ("C", 0.25), ("D", 0.25)]
+            >>> sharpened = calc._sharpen_distribution(base)
+            >>> max(p for _, p in sharpened) > 0.25
+            True
+        """
+        # Increase highest probability, decrease others
+        answers, probs = zip(*templates, strict=True)
+        max_idx = probs.index(max(probs))
+
+        new_probs = []
+        for i, prob in enumerate(probs):
+            if i == max_idx:
+                new_probs.append(prob * 1.5)  # Increase most likely
+            else:
+                new_probs.append(prob * 0.7)  # Decrease others
+
+        # Normalize
+        total = sum(new_probs)
+        new_probs = [p / total for p in new_probs]
+
+        return list(zip(answers, new_probs, strict=True))
+
+    def _uniformize_distribution(
+        self, templates: list[tuple[str, float]]
+    ) -> list[tuple[str, float]]:
+        """
+        Make probability distribution more uniform for vague questions.
+
+        Vague questions receive dispersed answers, resulting in uniform
+        probabilities and lower EIG.
+
+        Args:
+            templates: Base answer templates
+
+        Returns:
+            More uniform distribution
+
+        Examples:
+            >>> calc = QuestionRewardCalculator()
+            >>> base = [("A", 0.4), ("B", 0.3), ("C", 0.2), ("D", 0.1)]
+            >>> uniform = calc._uniformize_distribution(base)
+            >>> max(p for _, p in uniform) < 0.4
+            True
+        """
+        # Move towards uniform distribution
+        answers, _ = zip(*templates, strict=True)
+        n = len(answers)
+        uniform_prob = 1.0 / n
+
+        # Average with uniform: 50% original, 50% uniform
+        new_probs = [(p + uniform_prob) / 2 for _, p in templates]
+
+        return list(zip(answers, new_probs, strict=True))
 
     def _estimate_confidence(self, context: QuestionContext) -> float:
         """
