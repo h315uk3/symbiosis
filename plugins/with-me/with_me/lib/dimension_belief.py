@@ -218,6 +218,14 @@ class HypothesisSet:
         This is a simplified approximation suitable for stdlib-only constraint.
         More sophisticated approaches (NLP, embeddings) would require external libs.
 
+        **Known Limitations (see Issue #37):**
+        - Does not handle negations ("I don't want X" still increases likelihood for X)
+        - Uniform keyword weighting (no TF-IDF or discriminative weights)
+        - Not calibrated against real question-answer data
+        - English-only keywords (breaks on translated responses)
+
+        Phase 2 will address these with empirical calibration and negation detection.
+
         Args:
             hypothesis: Hypothesis identifier
             observation: Question context
@@ -237,6 +245,14 @@ class HypothesisSet:
             ... )
             >>> l_web > l_cli
             True
+
+            >>> # Known limitation: negation not handled (Issue #37)
+            >>> # "Not a CLI" should DECREASE cli_tool likelihood, but doesn't
+            >>> l_cli_neg = hs._estimate_likelihood(
+            ...     "cli_tool", "interface type", "Not a CLI, want web interface"
+            ... )
+            >>> # FIXME: This currently increases likelihood for cli_tool due to "CLI" match
+            >>> # Future: Implement negation detection to handle this correctly
         """
         # Define keywords for each hypothesis (dimension-specific)
         keywords = self._get_hypothesis_keywords(hypothesis)
