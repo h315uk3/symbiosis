@@ -5,6 +5,7 @@ Replaces detect-cooccurrence.sh with optimized Python implementation.
 Uses itertools.combinations for efficient pair generation.
 """
 
+import contextlib
 import os
 import re
 import sys
@@ -105,7 +106,7 @@ def detect_cooccurrences(archive_dir: Path, top_n: int = 20) -> list[dict]:
             if not md_file.is_file():
                 continue
 
-            try:
+            with contextlib.suppress(OSError, UnicodeDecodeError):
                 with open(md_file, encoding="utf-8") as f:
                     for line in f:
                         # Remove timestamps [HH:MM]
@@ -120,9 +121,6 @@ def detect_cooccurrences(archive_dir: Path, top_n: int = 20) -> list[dict]:
                         # Count pairs
                         for pair in pairs:
                             pair_counter[pair] += 1
-
-            except (OSError, UnicodeDecodeError):
-                continue
 
     except Exception as e:
         print(f"Error while detecting cooccurrences in '{archive_dir}': {e}", file=sys.stderr)
