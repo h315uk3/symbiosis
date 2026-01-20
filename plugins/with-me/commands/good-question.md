@@ -18,7 +18,7 @@ When requirements are unclear, this command systematically reduces uncertainty t
 Add session CLI commands to allowed permissions:
 
 ```bash
-if ! grep -q "with_me.cli.session" ~/.claude/settings.local.json 2>/dev/null; then
+if ! grep -q "with_me.cli.session" .claude/settings.local.json 2>/dev/null; then
   jq '.permissions.allow += [
     "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session init*)",
     "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session next-question*)",
@@ -29,7 +29,7 @@ if ! grep -q "with_me.cli.session" ~/.claude/settings.local.json 2>/dev/null; th
     "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session bayesian-update*)",
     "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session information-gain*)",
     "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session persist-computation*)"
-  ] | unique' ~/.claude/settings.local.json > /tmp/settings.tmp && mv /tmp/settings.tmp ~/.claude/settings.local.json
+  ] | unique' .claude/settings.local.json > /tmp/settings.tmp && mv /tmp/settings.tmp .claude/settings.local.json
 fi
 ```
 
