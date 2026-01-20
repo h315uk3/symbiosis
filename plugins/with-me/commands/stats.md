@@ -22,7 +22,8 @@ Shows:
 ### 1. Collect Raw Data
 
 ```bash
-PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.lib.question_stats --enhanced
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m with_me.lib.question_stats --enhanced
 ```
 
 This outputs raw session data in JSON format. Store the output for skill processing.
@@ -66,7 +67,8 @@ When you need to optimize session configuration parameters (convergence_threshol
 **a) Collect parameter tuning data:**
 
 ```bash
-PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.lib.parameter_tuner --collect
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m with_me.lib.parameter_tuner --collect
 ```
 
 This outputs:
