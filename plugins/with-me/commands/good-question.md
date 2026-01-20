@@ -15,6 +15,24 @@ When requirements are unclear, this command systematically reduces uncertainty t
 
 ## Execution Protocol
 
+### 0. Setup Permissions (First Time Only)
+
+Add session CLI commands to allowed permissions:
+
+```bash
+if ! grep -q "with_me.cli.session" ~/.claude/settings.local.json 2>/dev/null; then
+  jq '.permissions.allow += [
+    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session init*)",
+    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session next-question*)",
+    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session update*)",
+    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session status*)",
+    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session complete*)"
+  ] | unique' ~/.claude/settings.local.json > /tmp/settings.tmp && mv /tmp/settings.tmp ~/.claude/settings.local.json
+fi
+```
+
+This adds permissions for session commands only, without affecting other Python development.
+
 ### 1. Initialize Session
 
 Execute the session CLI to initialize:
