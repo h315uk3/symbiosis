@@ -6,6 +6,7 @@ Replaces extract-contexts.sh with testable Python implementation.
 """
 
 import sys
+from contextlib import suppress
 from pathlib import Path
 
 from as_you.lib.common import AsYouConfig, load_tracker
@@ -135,17 +136,15 @@ def extract_contexts_for_pattern(
 
     contexts = []
 
-    try:
-        # Search all .md files in archive
-        for md_file in archive_dir.glob("*.md"):
-            if not md_file.is_file():
-                continue
+    # Search all .md files in archive
+    for md_file in archive_dir.glob("*.md"):
+        if not md_file.is_file():
+            continue
 
-            try:
-                with open(md_file, encoding="utf-8") as f:
-                    lines = f.readlines()
-            except (OSError, UnicodeDecodeError):
-                continue
+        # Use contextlib.suppress for expected file-level errors
+        with suppress(OSError, UnicodeDecodeError):
+            with open(md_file, encoding="utf-8") as f:
+                lines = f.readlines()
 
             # Search for pattern (case-insensitive)
             pattern_lower = pattern.lower()
@@ -166,9 +165,6 @@ def extract_contexts_for_pattern(
 
                             if len(contexts) >= max_contexts:
                                 return contexts
-    except Exception as e:
-        # Defensive: log unexpected errors during archive scanning without raising.
-        print(f"Warning: failed to extract contexts from '{archive_dir}': {e}", file=sys.stderr)
 
     return contexts
 
