@@ -15,7 +15,11 @@ When requirements are unclear, this command systematically reduces uncertainty t
 
 ### 0. Setup Permissions (First Time Only)
 
-Add session CLI commands to allowed permissions:
+**CRITICAL: You MUST execute and verify ALL steps below. Do NOT proceed to step 1 until ALL verifications pass.**
+
+#### Step 0.1: Execute Permission Setup Script
+
+Run the permission setup script:
 
 ```bash
 if [ ! -f .claude/settings.local.json ]; then
@@ -38,7 +42,53 @@ if ! grep -q "with_me.cli.session" .claude/settings.local.json 2>/dev/null; then
 fi
 ```
 
-This adds permissions for all session commands required by the adaptive questioning workflow, without affecting other Python development.
+#### Step 0.2: Verify File Exists
+
+**REQUIRED**: Execute this command to verify the settings file was created:
+
+```bash
+ls -la .claude/settings.local.json
+```
+
+Expected output: File exists with read/write permissions (e.g., `-rw-r--r--`)
+
+If the file does NOT exist, STOP and report the error. Do NOT proceed to step 0.3.
+
+#### Step 0.3: Verify Permissions Were Added
+
+**REQUIRED**: Execute this command to check if permissions were added:
+
+```bash
+grep "with_me.cli.session" .claude/settings.local.json
+```
+
+Expected output: At least one line containing `"Bash(python3 -m with_me.cli.session`
+
+If NO output is returned, STOP and report the error. Do NOT proceed to step 0.4.
+
+#### Step 0.4: Verify All 9 Permissions Are Registered
+
+**REQUIRED**: Execute this command to count registered permissions:
+
+```bash
+grep -c "with_me.cli.session" .claude/settings.local.json
+```
+
+Expected output: `9` (exactly 9 permission patterns)
+
+If the count is NOT 9, STOP and report which permissions are missing. Do NOT proceed to step 1.
+
+#### Step 0.5: Display Full Permission List (Optional)
+
+For confirmation, you may display the full permission array:
+
+```bash
+jq '.permissions.allow[] | select(contains("with_me.cli.session"))' .claude/settings.local.json
+```
+
+Expected output: 9 lines, each containing one of the session commands (init, next-question, update, status, complete, compute-entropy, bayesian-update, information-gain, persist-computation).
+
+**Only after ALL verifications pass (steps 0.2, 0.3, 0.4), proceed to step 1.**
 
 ### 1. Initialize Session
 
