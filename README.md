@@ -1,5 +1,9 @@
 # Symbiosis
 
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue)](https://www.python.org/downloads/)
+[![Tests](https://github.com/h315uk3/symbiosis/actions/workflows/test.yml/badge.svg)](https://github.com/h315uk3/symbiosis/actions/workflows/test.yml)
+[![CodeQL](https://github.com/h315uk3/symbiosis/actions/workflows/codeql.yml/badge.svg)](https://github.com/h315uk3/symbiosis/actions/workflows/codeql.yml)
+
 **Human-AI symbiotic development tools**
 
 A Claude Code plugin marketplace exploring the philosophical relationship between developers and AI through complementary capabilities.
