@@ -507,5 +507,3 @@ class QuestionFeedbackManager:
             "best_questions": best_questions[:10],  # Top 10
             "dimension_stats": dimension_stats,
         }
-
-

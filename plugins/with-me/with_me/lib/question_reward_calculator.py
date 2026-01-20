@@ -33,7 +33,6 @@ References:
 """
 
 import json
-import math
 import re
 import sys
 import time
@@ -107,11 +106,10 @@ class QuestionRewardCalculator:
         ...     timestamp=time.time(),
         ...     dimension_beliefs={k: v.to_dict() for k, v in beliefs.items()},
         ...     question_history=[],
-        ...     feedback_history=[]
+        ...     feedback_history=[],
         ... )
         >>> response = calculator.calculate_reward_for_question(
-        ...     "What is the main purpose of this project?",
-        ...     context
+        ...     "What is the main purpose of this project?", context
         ... )
         >>> response.reward_score > 0  # Positive reward
         True
@@ -177,11 +175,10 @@ class QuestionRewardCalculator:
             ...     timestamp=time.time(),
             ...     dimension_beliefs={k: v.to_dict() for k, v in beliefs.items()},
             ...     question_history=[],
-            ...     feedback_history=[]
+            ...     feedback_history=[],
             ... )
             >>> response = calc.calculate_reward_for_question(
-            ...     "What is the main use case?",
-            ...     context
+            ...     "What is the main use case?", context
             ... )
             >>> 0.0 <= response.reward_score
             True
@@ -206,7 +203,9 @@ class QuestionRewardCalculator:
         importance = self._calculate_importance(question, context)
 
         # Hybrid reward function
-        reward = eig + self.clarity_weight * clarity + self.importance_weight * importance
+        reward = (
+            eig + self.clarity_weight * clarity + self.importance_weight * importance
+        )
 
         # Confidence estimation
         confidence = self._estimate_confidence(context)
@@ -246,7 +245,7 @@ class QuestionRewardCalculator:
             ...     session_id="test",
             ...     dimension_beliefs={k: v.to_dict() for k, v in beliefs.items()},
             ...     question_history=[],
-            ...     feedback_history=[]
+            ...     feedback_history=[],
             ... )
             >>> # Question targeting high-entropy dimension
             >>> eig = calc._calculate_eig("What is the purpose?", context)
@@ -291,7 +290,7 @@ class QuestionRewardCalculator:
             >>> "purpose" in loaded
             True
         """
-        if "dimension_beliefs" in context and context["dimension_beliefs"]:
+        if context.get("dimension_beliefs"):
             return {
                 dim: HypothesisSet.from_dict(data)
                 for dim, data in context["dimension_beliefs"].items()
@@ -413,7 +412,7 @@ class QuestionRewardCalculator:
             >>> beliefs = create_default_dimension_beliefs()
             >>> context = QuestionContext(
             ...     dimension_beliefs={k: v.to_dict() for k, v in beliefs.items()},
-            ...     question_history=["Q1", "Q2", "Q3"]
+            ...     question_history=["Q1", "Q2", "Q3"],
             ... )
             >>> calc._estimate_confidence(context) > 0.7
             True
@@ -421,7 +420,7 @@ class QuestionRewardCalculator:
         confidence = 0.5  # Baseline
 
         # Increase confidence if dimension beliefs available
-        if "dimension_beliefs" in context and context["dimension_beliefs"]:
+        if context.get("dimension_beliefs"):
             confidence += 0.3
 
         # Increase confidence with question history
@@ -442,8 +441,7 @@ class QuestionRewardCalculator:
         Examples:
             >>> calc = QuestionRewardCalculator()
             >>> reasoning = calc._generate_reasoning(
-            ...     "What is the purpose?",
-            ...     1.5, 0.9, 1.0
+            ...     "What is the purpose?", 1.5, 0.9, 1.0
             ... )
             >>> "EIG" in reasoning
             True
@@ -483,7 +481,7 @@ class QuestionRewardCalculator:
             >>> context = {
             ...     "uncertainties": {"purpose": 0.9},
             ...     "answered_dimensions": [],
-            ...     "question_history": []
+            ...     "question_history": [],
             ... }
             >>> result = calc.calculate_reward("What is the purpose?", context)
             >>> "total_reward" in result
@@ -536,13 +534,9 @@ def calculate_reward_with_fallback(
         RewardResponse (neutral score if calculator fails)
 
     Examples:
-        >>> context = QuestionContext(
-        ...     session_id="test",
-        ...     question_history=[]
-        ... )
+        >>> context = QuestionContext(session_id="test", question_history=[])
         >>> response = calculate_reward_with_fallback(
-        ...     "Should I use async here?",
-        ...     context
+        ...     "Should I use async here?", context
         ... )
         >>> 0.0 <= response.reward_score
         True
@@ -585,7 +579,9 @@ def main():
         return
 
     if len(sys.argv) < 3:
-        print("Usage: python question_reward_calculator.py '<question>' '<context_json>'")
+        print(
+            "Usage: python question_reward_calculator.py '<question>' '<context_json>'"
+        )
         print("\nExample (v0.3.0 format):")
         print('  python question_reward_calculator.py "What is the purpose?" \\')
         print('    \'{"session_id": "test", "question_history": []}\'')

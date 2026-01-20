@@ -25,9 +25,7 @@ References:
 - Shannon (1948): A Mathematical Theory of Communication
 """
 
-import json
 import math
-import re
 from typing import Any
 
 
@@ -41,14 +39,15 @@ class HypothesisSet:
     Examples:
         >>> # Initialize with uniform prior
         >>> hs = HypothesisSet(
-        ...     dimension="purpose",
-        ...     hypotheses=["web_app", "cli_tool", "library"]
+        ...     dimension="purpose", hypotheses=["web_app", "cli_tool", "library"]
         ... )
         >>> hs.entropy() > 1.0  # log₂(3) ≈ 1.58 bits
         True
 
         >>> # Update belief based on observation
-        >>> ig = hs.update(observation="user mentioned REST API", answer="Yes, REST API")
+        >>> ig = hs.update(
+        ...     observation="user mentioned REST API", answer="Yes, REST API"
+        ... )
         >>> ig > 0  # Information gained
         True
         >>> # Entropy should decrease after learning
@@ -85,7 +84,7 @@ class HypothesisSet:
             >>> hs = HypothesisSet(
             ...     "purpose",
             ...     ["web_app", "cli_tool"],
-            ...     prior={"web_app": 0.7, "cli_tool": 0.3}
+            ...     prior={"web_app": 0.7, "cli_tool": 0.3},
             ... )
             >>> hs.posterior["web_app"]
             0.7
@@ -165,7 +164,7 @@ class HypothesisSet:
             >>> # Strong evidence for "web_app"
             >>> ig = hs.update(
             ...     observation="Asked about user interface",
-            ...     answer="Yes, users will interact via browser"
+            ...     answer="Yes, users will interact via browser",
             ... )
             >>> ig > 0  # Information was gained
             True
@@ -181,10 +180,8 @@ class HypothesisSet:
                 hypothesis, observation, answer
             )
 
-        # Bayesian update: p₁(h) ∝ p₀(h) × L(obs|h)
-        unnormalized = {
-            h: self.posterior[h] * likelihoods[h] for h in self.hypotheses
-        }
+        # Bayesian update: p1(h) proportional to p0(h) * L(obs|h)
+        unnormalized = {h: self.posterior[h] * likelihoods[h] for h in self.hypotheses}
 
         # Normalize to get valid probability distribution
         total = sum(unnormalized.values())
@@ -233,14 +230,10 @@ class HypothesisSet:
             >>> hs = HypothesisSet("purpose", ["web_app", "cli_tool"])
             >>> # "web_app" should have higher likelihood for browser mention
             >>> l_web = hs._estimate_likelihood(
-            ...     "web_app",
-            ...     "user interface",
-            ...     "browser interaction"
+            ...     "web_app", "user interface", "browser interaction"
             ... )
             >>> l_cli = hs._estimate_likelihood(
-            ...     "cli_tool",
-            ...     "user interface",
-            ...     "browser interaction"
+            ...     "cli_tool", "user interface", "browser interaction"
             ... )
             >>> l_web > l_cli
             True
@@ -254,10 +247,12 @@ class HypothesisSet:
         # Count keyword matches
         match_count = sum(1 for keyword in keywords if keyword in text)
 
-        # Laplace smoothing: L(obs|h) = (match_count + α) / (total_keywords + α*N)
-        # α = 1.0 (add-one smoothing), N = number of hypotheses
+        # Laplace smoothing: L(obs|h) = (match_count + alpha) / (total_keywords + alpha*N)
+        # alpha = 1.0 (add-one smoothing), N = number of hypotheses
         alpha = 1.0
-        likelihood = (match_count + alpha) / (len(keywords) + alpha * len(self.hypotheses))
+        likelihood = (match_count + alpha) / (
+            len(keywords) + alpha * len(self.hypotheses)
+        )
 
         return likelihood
 
@@ -286,28 +281,32 @@ class HypothesisSet:
         # TODO: Move to external configuration file in future
         keyword_db = {
             # Purpose dimension
-            "web_app": ["web", "browser", "http", "html", "ui", "user interface", "frontend"],
+            "web_app": [
+                "web",
+                "browser",
+                "http",
+                "html",
+                "ui",
+                "user interface",
+                "frontend",
+            ],
             "cli_tool": ["command", "terminal", "cli", "shell", "script", "console"],
             "library": ["library", "package", "module", "api", "import", "reusable"],
             "service": ["service", "daemon", "background", "api", "server", "endpoint"],
-
             # Data dimension
             "structured": ["json", "xml", "csv", "table", "database", "schema"],
             "unstructured": ["text", "document", "file", "content", "raw"],
             "streaming": ["stream", "real-time", "live", "continuous", "flow"],
-
             # Behavior dimension
             "synchronous": ["sync", "sequential", "blocking", "wait", "order"],
             "asynchronous": ["async", "concurrent", "parallel", "non-blocking"],
             "interactive": ["interactive", "prompt", "input", "response", "dialog"],
             "batch": ["batch", "bulk", "automated", "scheduled", "background"],
-
             # Constraints dimension
             "performance": ["fast", "performance", "speed", "latency", "throughput"],
             "scalability": ["scale", "load", "capacity", "volume", "concurrent"],
             "reliability": ["reliable", "stable", "robust", "fault", "error"],
             "security": ["secure", "authentication", "authorization", "encrypt"],
-
             # Quality dimension
             "functional": ["feature", "function", "capability", "requirement"],
             "usability": ["usable", "user-friendly", "intuitive", "experience"],
@@ -398,7 +397,7 @@ class HypothesisSet:
             >>> data = {
             ...     "dimension": "purpose",
             ...     "hypotheses": ["web_app", "cli_tool"],
-            ...     "posterior": {"web_app": 0.6, "cli_tool": 0.4}
+            ...     "posterior": {"web_app": 0.6, "cli_tool": 0.4},
             ... }
             >>> hs = HypothesisSet.from_dict(data)
             >>> hs.dimension
@@ -485,6 +484,7 @@ def main():
 
     elif command == "test":
         import doctest
+
         print("Running doctests...")
         result = doctest.testmod()
         if result.failed == 0:
