@@ -241,6 +241,97 @@ def cmd_complete(args: argparse.Namespace) -> None:
     }))
 
 
+def cmd_compute_entropy(args: argparse.Namespace) -> None:
+    """Output computation request for Claude to calculate entropy."""
+    orch = load_session_state(args.session_id)
+    posterior = orch.beliefs[args.dimension].posterior
+
+    # Output computation request for Claude
+    print(json.dumps({
+        "computation_request": "entropy",
+        "dimension": args.dimension,
+        "posterior": posterior,
+        "theory_file": "plugins/with-me/theory/algorithms/entropy.md",
+        "instruction": (
+            "Read the theory file and calculate Shannon entropy H(h) = -Σ p(h) log₂ p(h) "
+            "for the given posterior distribution. Return the entropy value in bits, "
+            "rounded to 4 decimal places."
+        ),
+    }, indent=2))
+
+
+def cmd_bayesian_update(args: argparse.Namespace) -> None:
+    """Output computation request for Claude to perform Bayesian update."""
+    orch = load_session_state(args.session_id)
+    prior = orch.beliefs[args.dimension].posterior
+    likelihoods = json.loads(args.likelihoods)
+
+    # Output computation request for Claude
+    print(json.dumps({
+        "computation_request": "bayesian_update",
+        "dimension": args.dimension,
+        "prior": prior,
+        "likelihoods": likelihoods,
+        "theory_file": "plugins/with-me/theory/algorithms/bayesian_update.md",
+        "instruction": (
+            "Read the theory file and perform Bayesian belief updating: "
+            "p₁(h) = [p₀(h) × L(obs|h)] / Σ[p₀(h) × L(obs|h)]. "
+            "Return the normalized posterior distribution."
+        ),
+    }, indent=2))
+
+
+def cmd_information_gain(args: argparse.Namespace) -> None:
+    """Output computation request for Claude to calculate information gain."""
+    # Information gain doesn't need session state
+    print(json.dumps({
+        "computation_request": "information_gain",
+        "entropy_before": args.entropy_before,
+        "entropy_after": args.entropy_after,
+        "theory_file": "plugins/with-me/theory/algorithms/information_gain.md",
+        "instruction": (
+            "Read the theory file and calculate information gain: "
+            "IG = H_before - H_after. Return the information gain in bits."
+        ),
+    }, indent=2))
+
+
+def cmd_persist_computation(args: argparse.Namespace) -> None:
+    """Persist Claude-computed results to session state."""
+    orch = load_session_state(args.session_id)
+
+    # Parse computed values
+    updated_posterior = json.loads(args.updated_posterior)
+
+    # Update belief state with Claude-computed posterior
+    orch.beliefs[args.dimension].posterior = updated_posterior
+
+    # Record question-answer in history
+    orch.question_history.append({
+        "dimension": args.dimension,
+        "question": args.question,
+        "answer": args.answer,
+        "entropy_before": args.entropy_before,
+        "entropy_after": args.entropy_after,
+        "information_gain": args.information_gain,
+    })
+
+    orch.question_count += 1
+
+    # Save updated state
+    save_session_state(args.session_id, orch)
+
+    # Output confirmation
+    print(json.dumps({
+        "status": "persisted",
+        "dimension": args.dimension,
+        "entropy_before": round(args.entropy_before, 4),
+        "entropy_after": round(args.entropy_after, 4),
+        "information_gain": round(args.information_gain, 4),
+        "question_count": orch.question_count,
+    }))
+
+
 def main() -> None:
     """CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -280,6 +371,61 @@ def main() -> None:
     complete_parser = subparsers.add_parser("complete", help="Complete session")
     complete_parser.add_argument("--session-id", required=True, help="Session ID")
 
+    # compute-entropy command
+    entropy_parser = subparsers.add_parser(
+        "compute-entropy", help="Request Claude to calculate entropy"
+    )
+    entropy_parser.add_argument("--session-id", required=True, help="Session ID")
+    entropy_parser.add_argument("--dimension", required=True, help="Dimension ID")
+
+    # bayesian-update command
+    bayes_parser = subparsers.add_parser(
+        "bayesian-update", help="Request Claude to perform Bayesian update"
+    )
+    bayes_parser.add_argument("--session-id", required=True, help="Session ID")
+    bayes_parser.add_argument("--dimension", required=True, help="Dimension ID")
+    bayes_parser.add_argument(
+        "--likelihoods",
+        type=str,
+        required=True,
+        help='Likelihoods as JSON: \'{"hyp1": 0.5, ...}\'',
+    )
+
+    # information-gain command
+    ig_parser = subparsers.add_parser(
+        "information-gain", help="Request Claude to calculate information gain"
+    )
+    ig_parser.add_argument(
+        "--entropy-before", type=float, required=True, help="Entropy before update"
+    )
+    ig_parser.add_argument(
+        "--entropy-after", type=float, required=True, help="Entropy after update"
+    )
+
+    # persist-computation command
+    persist_parser = subparsers.add_parser(
+        "persist-computation", help="Persist Claude-computed results to session"
+    )
+    persist_parser.add_argument("--session-id", required=True, help="Session ID")
+    persist_parser.add_argument("--dimension", required=True, help="Dimension ID")
+    persist_parser.add_argument("--question", required=True, help="Question asked")
+    persist_parser.add_argument("--answer", required=True, help="User's answer")
+    persist_parser.add_argument(
+        "--entropy-before", type=float, required=True, help="Claude-computed H_before"
+    )
+    persist_parser.add_argument(
+        "--entropy-after", type=float, required=True, help="Claude-computed H_after"
+    )
+    persist_parser.add_argument(
+        "--information-gain", type=float, required=True, help="Claude-computed IG"
+    )
+    persist_parser.add_argument(
+        "--updated-posterior",
+        type=str,
+        required=True,
+        help='Claude-computed posterior as JSON: \'{"hyp1": 0.7, ...}\'',
+    )
+
     args = parser.parse_args()
 
     # Dispatch to command handler
@@ -293,6 +439,14 @@ def main() -> None:
         cmd_status(args)
     elif args.command == "complete":
         cmd_complete(args)
+    elif args.command == "compute-entropy":
+        cmd_compute_entropy(args)
+    elif args.command == "bayesian-update":
+        cmd_bayesian_update(args)
+    elif args.command == "information-gain":
+        cmd_information_gain(args)
+    elif args.command == "persist-computation":
+        cmd_persist_computation(args)
 
 
 if __name__ == "__main__":
