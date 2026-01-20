@@ -31,25 +31,31 @@ View statistics about question effectiveness from past sessions.
 
 ---
 
-## Question Effectiveness System
+## Question Effectiveness System (v0.3.0)
 
-The with-me plugin includes an AI reward function-based question evaluation system:
+The with-me plugin uses an information-theoretically grounded question evaluation system based on Bayesian belief updating:
 
-**Composite Reward Function:**
+**EIG-based Reward Function:**
 ```
-r = 0.40*info_gain + 0.20*clarity + 0.15*specificity +
-    0.15*actionability + 0.10*relevance - 0.02*question_anomaly
+r(Q) = EIG(Q) + 0.1×clarity(Q) + 0.05×importance(Q)
 ```
 
-**Evaluation Dimensions:**
-1. **Information Gain** (40%): Estimated uncertainty reduction (simplified proxy)
-2. **Clarity** (20%): Question understandability
-3. **Specificity** (15%): Explicit dimension targeting
-4. **Actionability** (15%): User's ability to answer
-5. **Context Relevance** (10%): Focus on highest uncertainty
-6. **Question Anomaly Penalty**: Redundancy detection (heuristic checks)
+**Key Components:**
+1. **Expected Information Gain (EIG)**: Primary metric - measures expected reduction in Shannon entropy (bits of uncertainty)
+2. **Clarity** (10% adjustment): Ensures questions are well-formed and understandable
+3. **Importance** (5% adjustment): Strategic weighting by dimension priority
 
-**Note**: This is a simplified approximation model inspired by information theory, not a strict information-theoretic implementation. Uses Python stdlib only (no NumPy/SciPy).
+**Theoretical Foundation:**
+- **Bayesian Belief Updating**: Maintains explicit posterior distributions over hypotheses for each requirement dimension
+- **Shannon Entropy**: H(h) = -Σ p(h) log₂ p(h) quantifies uncertainty in bits
+- **Information Gain**: Measures actual reduction in entropy after receiving an answer
+- **Stdlib-only**: Pure Python 3.11+ implementation (no NumPy/SciPy)
+
+**v0.3.0 Benefits:**
+- Principled information-theoretic foundation (replaces heuristic proxies)
+- Formal confidence estimation based on posterior distributions
+- API contract for as-you plugin integration (QuestionContext/RewardResponse)
+- Backward compatible with v0.2.x feedback data
 
 This system helps identify which questions are most effective at eliciting requirements, enabling continuous improvement of the interview process.
 
