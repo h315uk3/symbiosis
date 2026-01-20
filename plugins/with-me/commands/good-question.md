@@ -20,15 +20,15 @@ Add session CLI commands to allowed permissions:
 ```bash
 if ! grep -q "with_me.cli.session" .claude/settings.local.json 2>/dev/null; then
   jq '.permissions.allow += [
-    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session init*)",
-    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session next-question*)",
-    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session update*)",
-    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session status*)",
-    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session complete*)",
-    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session compute-entropy*)",
-    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session bayesian-update*)",
-    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session information-gain*)",
-    "Bash(PYTHONPATH=\"plugins/with-me:${PYTHONPATH:-}\" python3 -m with_me.cli.session persist-computation*)"
+    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session init*)",
+    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session next-question*)",
+    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session update*)",
+    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session status*)",
+    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session complete*)",
+    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session compute-entropy*)",
+    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session bayesian-update*)",
+    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session information-gain*)",
+    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session persist-computation*)"
   ] | unique' .claude/settings.local.json > /tmp/settings.tmp && mv /tmp/settings.tmp .claude/settings.local.json
 fi
 ```
