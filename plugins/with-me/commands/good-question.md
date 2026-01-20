@@ -25,15 +25,15 @@ fi
 
 if ! grep -q "with_me.cli.session" .claude/settings.local.json 2>/dev/null; then
   jq '.permissions.allow += [
-    "Bash(export PYTHONPATH*python3 -m with_me.cli.session init*)",
-    "Bash(export PYTHONPATH*python3 -m with_me.cli.session next-question*)",
-    "Bash(export PYTHONPATH*python3 -m with_me.cli.session update*)",
-    "Bash(export PYTHONPATH*python3 -m with_me.cli.session status*)",
-    "Bash(export PYTHONPATH*python3 -m with_me.cli.session complete*)",
-    "Bash(export PYTHONPATH*python3 -m with_me.cli.session compute-entropy*)",
-    "Bash(export PYTHONPATH*python3 -m with_me.cli.session bayesian-update*)",
-    "Bash(export PYTHONPATH*python3 -m with_me.cli.session information-gain*)",
-    "Bash(export PYTHONPATH*python3 -m with_me.cli.session persist-computation*)"
+    "Bash(python3 -m with_me.cli.session init*)",
+    "Bash(python3 -m with_me.cli.session next-question*)",
+    "Bash(python3 -m with_me.cli.session update*)",
+    "Bash(python3 -m with_me.cli.session status*)",
+    "Bash(python3 -m with_me.cli.session complete*)",
+    "Bash(python3 -m with_me.cli.session compute-entropy*)",
+    "Bash(python3 -m with_me.cli.session bayesian-update*)",
+    "Bash(python3 -m with_me.cli.session information-gain*)",
+    "Bash(python3 -m with_me.cli.session persist-computation*)"
   ] | unique' .claude/settings.local.json > /tmp/settings.tmp && mv /tmp/settings.tmp .claude/settings.local.json
 fi
 ```
