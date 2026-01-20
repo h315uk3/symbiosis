@@ -9,6 +9,7 @@ Enhanced with BasicStats class for statistical analysis using Python standard li
 import math
 import statistics
 import sys
+from collections import Counter
 from typing import Any
 
 from .question_feedback_manager import QuestionFeedbackManager, WithMeConfig
@@ -77,7 +78,7 @@ class BasicStats:
 
     def _create_histogram(self, bins: int) -> dict[str, int]:
         """
-        Create histogram with specified number of bins.
+        Create histogram with specified number of bins using collections.Counter.
 
         Args:
             bins: Number of bins (default 5)
@@ -102,8 +103,9 @@ class BasicStats:
             return {f"{min_val:.1f}": len(self.values)}
 
         bin_width = (max_val - min_val) / bins
-        histogram: dict[str, int] = {}
 
+        # Assign each value to a bin label using collections.Counter
+        bin_labels = []
         for value in self.values:
             # Determine which bin this value belongs to
             bin_index = min(int((value - min_val) / bin_width), bins - 1)
@@ -116,9 +118,13 @@ class BasicStats:
             else:
                 label = f"{bin_start:.1f}-{bin_end:.1f}"
 
-            histogram[label] = histogram.get(label, 0) + 1
+            bin_labels.append(label)
 
-        return histogram
+        # Use Counter to count occurrences (Issue #40 specification)
+        histogram = Counter(bin_labels)
+
+        # Convert Counter to dict for consistent return type
+        return dict(histogram)
 
 
 def calculate_pearson_correlation(x_values: list[float], y_values: list[float]) -> dict[str, Any]:
