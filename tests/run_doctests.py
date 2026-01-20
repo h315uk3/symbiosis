@@ -17,7 +17,6 @@ Examples:
 import doctest
 import importlib.util
 import sys
-from contextlib import suppress
 from pathlib import Path
 
 
