@@ -20,7 +20,7 @@ When requirements are unclear, this command systematically reduces uncertainty t
 Execute the session CLI to initialize:
 
 ```bash
-python3 -m with_me.cli.session init
+PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session init
 ```
 
 Expected output:
@@ -37,7 +37,7 @@ Repeat until convergence:
 #### 2.1. Get Next Question
 
 ```bash
-python3 -m with_me.cli.session next-question --session-id <SESSION_ID>
+PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session next-question --session-id <SESSION_ID>
 ```
 
 Output (if not converged):
@@ -82,7 +82,7 @@ Otherwise, capture the user's answer and proceed to step 2.3.
 #### 2.3. Update Beliefs
 
 ```bash
-python3 -m with_me.cli.session update \
+PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session update \
   --session-id <SESSION_ID> \
   --dimension <DIMENSION> \
   --question <QUESTION> \
@@ -104,7 +104,7 @@ Output:
 Show entropy reduction to user:
 
 ```bash
-python3 -m with_me.cli.session status --session-id <SESSION_ID>
+PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session status --session-id <SESSION_ID>
 ```
 
 Output:
@@ -134,7 +134,7 @@ Return to step 2.1.
 ### 3. Complete Session
 
 ```bash
-python3 -m with_me.cli.session complete --session-id <SESSION_ID>
+PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session complete --session-id <SESSION_ID>
 ```
 
 Output:
