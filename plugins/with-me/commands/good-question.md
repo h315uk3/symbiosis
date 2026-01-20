@@ -62,23 +62,20 @@ If `converged` is `true`, skip to step 3.
 
 #### 2.2. Ask User
 
-Use the `AskUserQuestion` tool with the question from step 2.1:
+Use the `AskUserQuestion` tool to present the question from step 2.1:
 
 - **Question**: Use the `question` field from CLI output
 - **Header**: Use the `dimension_name` field
 - **Options** (translate to system prompt language):
-  - "Provide detailed answer" / Description: "I'll give a comprehensive explanation"
-  - "Provide brief answer" / Description: "I'll give a concise summary"
   - "Skip this question" / Description: "Move to the next question without answering"
   - "End session (clarity achieved)" / Description: "I have sufficient clarity now"
 - **multiSelect**: false
 - **IMPORTANT**: Translate all labels and descriptions according to the language specified in your system prompt
 
-If user chooses "End session", skip to step 3.
-
-If user chooses "Skip", return to step 2.1.
-
-Otherwise, capture the user's answer and proceed to step 2.3.
+**User Response Handling:**
+- If user selects "Other" option: This contains the user's answer. Proceed to step 2.3.
+- If user selects "Skip this question": Return to step 2.1.
+- If user selects "End session": Skip to step 3.
 
 #### 2.3. Update Beliefs
 
