@@ -66,12 +66,13 @@ Use the `AskUserQuestion` tool with the question from step 2.1:
 
 - **Question**: Use the `question` field from CLI output
 - **Header**: Use the `dimension_name` field
-- **Options**:
-  - "Provide detailed answer"
-  - "Provide brief answer"
-  - "Skip this question"
-  - "End session (clarity achieved)"
+- **Options** (translate to system prompt language):
+  - "Provide detailed answer" / Description: "I'll give a comprehensive explanation"
+  - "Provide brief answer" / Description: "I'll give a concise summary"
+  - "Skip this question" / Description: "Move to the next question without answering"
+  - "End session (clarity achieved)" / Description: "I have sufficient clarity now"
 - **multiSelect**: false
+- **IMPORTANT**: Translate all labels and descriptions according to the language specified in your system prompt
 
 If user chooses "End session", skip to step 3.
 
