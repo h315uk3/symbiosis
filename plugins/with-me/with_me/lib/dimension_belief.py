@@ -25,9 +25,45 @@ References:
 - Shannon (1948): A Mathematical Theory of Communication
 """
 
+import json
 import math
 import re
+from pathlib import Path
 from typing import Any
+
+# Load keyword database from config file
+_KEYWORD_DB_CACHE: dict[str, dict[str, dict[str, float]]] | None = None
+
+
+def _load_keyword_database() -> dict[str, dict[str, dict[str, float]]]:
+    """
+    Load keyword database from config/keywords.json.
+
+    Uses module-level cache to avoid repeated file I/O.
+
+    Returns:
+        Dictionary mapping dimension -> hypothesis -> {keyword: weight}
+    """
+    global _KEYWORD_DB_CACHE
+
+    if _KEYWORD_DB_CACHE is not None:
+        return _KEYWORD_DB_CACHE
+
+    # Find keywords.json relative to this module
+    # __file__ = plugins/with-me/with_me/lib/dimension_belief.py
+    # .parent.parent.parent = plugins/with-me/
+    module_root = Path(__file__).parent.parent.parent
+    keywords_file = module_root / "config" / "keywords.json"
+
+    if not keywords_file.exists():
+        # Fallback to empty database
+        _KEYWORD_DB_CACHE = {}
+        return _KEYWORD_DB_CACHE
+
+    with open(keywords_file) as f:
+        _KEYWORD_DB_CACHE = json.load(f)
+
+    return _KEYWORD_DB_CACHE
 
 
 class HypothesisSet:
@@ -330,6 +366,9 @@ class HypothesisSet:
         """
         Get weighted keywords associated with a hypothesis.
 
+        Loads keywords from config/keywords.json rather than hardcoded database.
+        This allows users to customize keywords without modifying code.
+
         Returns dictionary mapping keywords to discriminative weights:
         - High weight (1.5-2.0): Highly discriminative terms (e.g., "browser" for web_app)
         - Medium weight (1.0): Moderately discriminative terms
@@ -349,154 +388,15 @@ class HypothesisSet:
             >>> keywords["browser"] >= 1.5  # High discriminative weight
             True
         """
-        # Weighted keyword database (dimension-specific)
-        # Weights: 2.0=highly discriminative, 1.0=moderate, 0.5=generic
-        keyword_db = {
-            # Purpose dimension
-            "web_app": {
-                "browser": 2.0,
-                "frontend": 2.0,
-                "html": 1.5,
-                "web": 1.5,
-                "ui": 1.0,
-                "user interface": 1.0,
-                "http": 1.0,
-            },
-            "cli_tool": {
-                "terminal": 2.0,
-                "cli": 2.0,
-                "command": 1.5,
-                "shell": 1.5,
-                "console": 1.5,
-                "script": 1.0,
-            },
-            "library": {
-                "import": 2.0,
-                "package": 2.0,
-                "extension": 2.0,
-                "plugin": 2.0,
-                "library": 1.5,
-                "module": 1.5,
-                "reusable": 1.5,
-                "addon": 1.5,
-                "integration": 1.0,
-                "api": 0.5,  # Generic: also appears in web_app, service
-            },
-            "service": {
-                "daemon": 2.0,
-                "service": 1.5,
-                "endpoint": 1.5,
-                "server": 1.0,
-                "background": 1.0,
-                "api": 0.5,  # Generic
-            },
-            # Data dimension
-            "structured": {
-                "json": 2.0,
-                "xml": 2.0,
-                "csv": 2.0,
-                "schema": 1.5,
-                "table": 1.5,
-                "database": 1.0,
-            },
-            "unstructured": {
-                "document": 1.5,
-                "text": 1.0,
-                "content": 1.0,
-                "raw": 1.0,
-                "file": 0.5,  # Generic
-            },
-            "streaming": {
-                "stream": 2.0,
-                "real-time": 2.0,
-                "live": 1.5,
-                "continuous": 1.5,
-                "flow": 1.0,
-            },
-            # Behavior dimension
-            "synchronous": {
-                "sync": 2.0,
-                "sequential": 1.5,
-                "blocking": 1.5,
-                "wait": 1.0,
-                "order": 1.0,
-            },
-            "asynchronous": {
-                "async": 2.0,
-                "concurrent": 1.5,
-                "parallel": 1.5,
-                "non-blocking": 1.5,
-            },
-            "interactive": {
-                "interactive": 2.0,
-                "button": 2.0,
-                "click": 2.0,
-                "user": 1.5,
-                "prompt": 1.5,
-                "dialog": 1.5,
-                "press": 1.5,
-                "manual": 1.5,
-                "input": 1.0,
-                "response": 1.0,
-                "launch": 1.0,
-            },
-            "batch": {
-                "batch": 2.0,
-                "bulk": 1.5,
-                "scheduled": 1.5,
-                "automated": 1.0,
-                "background": 1.0,
-            },
-            # Constraints dimension
-            "performance": {
-                "fast": 1.5,
-                "performance": 1.5,
-                "speed": 1.5,
-                "latency": 1.5,
-                "throughput": 1.5,
-            },
-            "scalability": {
-                "scale": 2.0,
-                "load": 1.5,
-                "capacity": 1.5,
-                "volume": 1.0,
-                "concurrent": 1.0,
-            },
-            "reliability": {
-                "reliable": 1.5,
-                "stable": 1.5,
-                "robust": 1.5,
-                "fault": 1.0,
-                "error": 0.5,  # Generic
-            },
-            "security": {
-                "authentication": 2.0,
-                "authorization": 2.0,
-                "secure": 1.5,
-                "encrypt": 1.5,
-            },
-            # Quality dimension
-            "functional": {
-                "feature": 1.5,
-                "function": 1.5,
-                "capability": 1.5,
-                "requirement": 1.0,
-            },
-            "usability": {
-                "user-friendly": 2.0,
-                "usable": 1.5,
-                "intuitive": 1.5,
-                "experience": 1.0,
-            },
-            "maintainability": {
-                "maintainable": 2.0,
-                "readable": 1.5,
-                "documented": 1.5,
-                "testable": 1.5,
-            },
-        }
+        # Load keyword database from config file
+        keyword_db = _load_keyword_database()
 
-        return keyword_db.get(hypothesis, {})
+        # Find keywords for this hypothesis in its dimension
+        if self.dimension in keyword_db:
+            dimension_keywords = keyword_db[self.dimension]
+            return dimension_keywords.get(hypothesis, {})
+
+        return {}
 
     def get_most_likely(self) -> str:
         """

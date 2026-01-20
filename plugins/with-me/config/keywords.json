@@ -1,0 +1,149 @@
+{
+  "purpose": {
+    "web_app": {
+      "browser": 2.0,
+      "frontend": 2.0,
+      "html": 1.5,
+      "web": 1.5,
+      "ui": 1.0,
+      "user interface": 1.0,
+      "http": 1.0
+    },
+    "cli_tool": {
+      "terminal": 2.0,
+      "cli": 2.0,
+      "command": 1.5,
+      "shell": 1.5,
+      "console": 1.5,
+      "script": 1.0
+    },
+    "library": {
+      "import": 2.0,
+      "package": 2.0,
+      "extension": 2.0,
+      "plugin": 2.0,
+      "library": 1.5,
+      "module": 1.5,
+      "reusable": 1.5,
+      "addon": 1.5,
+      "integration": 1.0,
+      "api": 0.5
+    },
+    "service": {
+      "daemon": 2.0,
+      "service": 1.5,
+      "endpoint": 1.5,
+      "server": 1.0,
+      "background": 1.0,
+      "api": 0.5
+    }
+  },
+  "data": {
+    "structured": {
+      "json": 2.0,
+      "xml": 2.0,
+      "csv": 2.0,
+      "schema": 1.5,
+      "table": 1.5,
+      "database": 1.0
+    },
+    "unstructured": {
+      "document": 1.5,
+      "text": 1.0,
+      "content": 1.0,
+      "raw": 1.0,
+      "file": 0.5
+    },
+    "streaming": {
+      "stream": 2.0,
+      "real-time": 2.0,
+      "live": 1.5,
+      "continuous": 1.5,
+      "flow": 1.0
+    }
+  },
+  "behavior": {
+    "synchronous": {
+      "sync": 2.0,
+      "sequential": 1.5,
+      "blocking": 1.5,
+      "wait": 1.0,
+      "order": 1.0
+    },
+    "asynchronous": {
+      "async": 2.0,
+      "concurrent": 1.5,
+      "parallel": 1.5,
+      "non-blocking": 1.5
+    },
+    "interactive": {
+      "interactive": 2.0,
+      "button": 2.0,
+      "click": 2.0,
+      "user": 1.5,
+      "prompt": 1.5,
+      "dialog": 1.5,
+      "press": 1.5,
+      "manual": 1.5,
+      "input": 1.0,
+      "response": 1.0,
+      "launch": 1.0
+    },
+    "batch": {
+      "batch": 2.0,
+      "bulk": 1.5,
+      "scheduled": 1.5,
+      "automated": 1.0,
+      "background": 1.0
+    }
+  },
+  "constraints": {
+    "performance": {
+      "fast": 1.5,
+      "performance": 1.5,
+      "speed": 1.5,
+      "latency": 1.5,
+      "throughput": 1.5
+    },
+    "scalability": {
+      "scale": 2.0,
+      "load": 1.5,
+      "capacity": 1.5,
+      "volume": 1.0,
+      "concurrent": 1.0
+    },
+    "reliability": {
+      "reliable": 1.5,
+      "stable": 1.5,
+      "robust": 1.5,
+      "fault": 1.0,
+      "error": 0.5
+    },
+    "security": {
+      "authentication": 2.0,
+      "authorization": 2.0,
+      "secure": 1.5,
+      "encrypt": 1.5
+    }
+  },
+  "quality": {
+    "functional": {
+      "feature": 1.5,
+      "function": 1.5,
+      "capability": 1.5,
+      "requirement": 1.0
+    },
+    "usability": {
+      "user-friendly": 2.0,
+      "usable": 1.5,
+      "intuitive": 1.5,
+      "experience": 1.0
+    },
+    "maintainability": {
+      "maintainable": 2.0,
+      "readable": 1.5,
+      "documented": 1.5,
+      "testable": 1.5
+    }
+  }
+}
