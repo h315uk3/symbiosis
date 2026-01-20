@@ -176,27 +176,19 @@ Output (evaluation request):
 }
 ```
 
-**Step 2: Perform Semantic Evaluation**
+**Step 2: Evaluate Likelihoods**
 
-Read the evaluation request and estimate likelihoods based on:
-- Hypothesis descriptions
-- Focus areas
-- Question-answer alignment
-- Semantic understanding
+Estimate P(answer | hypothesis) for each hypothesis based on:
+- Hypothesis description and focus_areas
+- Semantic alignment with question-answer pair
+- Likelihoods must sum to ~1.0
 
-Return likelihoods as JSON:
+Format:
 ```json
-{
-  "likelihoods": {
-    "web_app": 0.35,
-    "cli_tool": 0.40,
-    "library": 0.15,
-    "service": 0.10
-  }
-}
+{"web_app": 0.35, "cli_tool": 0.40, "library": 0.15, "service": 0.10}
 ```
 
-**Step 3: Update Beliefs with Likelihoods**
+**Step 3: Update Beliefs**
 
 ```bash
 PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session update \
@@ -204,7 +196,7 @@ PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session upda
   --dimension <DIMENSION> \
   --question <QUESTION> \
   --answer <ANSWER> \
-  --likelihoods '{"web_app": 0.35, "cli_tool": 0.40, "library": 0.15, "service": 0.10}'
+  --likelihoods '<CALCULATED_LIKELIHOODS_FROM_STEP_2>'
 ```
 
 Output:
@@ -216,12 +208,6 @@ Output:
   "dimension": "purpose"
 }
 ```
-
-**Benefits of Semantic Evaluation:**
-- Context-aware understanding
-- Works with any language
-- Higher information gain for natural responses
-- No keyword dependency
 
 #### 2.4. Display Progress (Optional)
 
