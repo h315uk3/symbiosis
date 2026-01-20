@@ -18,17 +18,22 @@ When requirements are unclear, this command systematically reduces uncertainty t
 Add session CLI commands to allowed permissions:
 
 ```bash
+if [ ! -f .claude/settings.local.json ]; then
+  mkdir -p .claude
+  echo '{"permissions":{"allow":[]}}' > .claude/settings.local.json
+fi
+
 if ! grep -q "with_me.cli.session" .claude/settings.local.json 2>/dev/null; then
   jq '.permissions.allow += [
-    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session init*)",
-    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session next-question*)",
-    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session update*)",
-    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session status*)",
-    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session complete*)",
-    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session compute-entropy*)",
-    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session bayesian-update*)",
-    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session information-gain*)",
-    "Bash(PYTHONPATH=\"${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}\" python3 -m with_me.cli.session persist-computation*)"
+    "Bash(python3 -m with_me.cli.session init*)",
+    "Bash(python3 -m with_me.cli.session next-question*)",
+    "Bash(python3 -m with_me.cli.session update*)",
+    "Bash(python3 -m with_me.cli.session status*)",
+    "Bash(python3 -m with_me.cli.session complete*)",
+    "Bash(python3 -m with_me.cli.session compute-entropy*)",
+    "Bash(python3 -m with_me.cli.session bayesian-update*)",
+    "Bash(python3 -m with_me.cli.session information-gain*)",
+    "Bash(python3 -m with_me.cli.session persist-computation*)"
   ] | unique' .claude/settings.local.json > /tmp/settings.tmp && mv /tmp/settings.tmp .claude/settings.local.json
 fi
 ```
@@ -40,7 +45,8 @@ This adds permissions for all session commands required by the adaptive question
 Execute the session CLI to initialize:
 
 ```bash
-PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session init
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m with_me.cli.session init
 ```
 
 Expected output:
@@ -59,7 +65,8 @@ Repeat until convergence:
 Get next dimension to query:
 
 ```bash
-PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session next-question --session-id <SESSION_ID>
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m with_me.cli.session next-question --session-id <SESSION_ID>
 ```
 
 If output shows `"converged": true`, skip to step 3. Otherwise, note the `dimension` and `dimension_name`.
@@ -67,7 +74,8 @@ If output shows `"converged": true`, skip to step 3. Otherwise, note the `dimens
 Get current session state:
 
 ```bash
-PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session status --session-id <SESSION_ID>
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m with_me.cli.session status --session-id <SESSION_ID>
 ```
 
 Read dimension configuration from `config/dimensions.json` for the selected dimension.
@@ -102,7 +110,8 @@ MUST invoke `/with-me:question-importance` skill:
 
 First, get current beliefs from session status:
 ```bash
-PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session status --session-id <SESSION_ID>
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m with_me.cli.session status --session-id <SESSION_ID>
 ```
 
 Extract the posterior distribution for the selected dimension from the status output.
@@ -159,7 +168,8 @@ Handle user response:
 MUST execute this CLI command using Bash tool:
 
 ```bash
-PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session update \
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m with_me.cli.session update \
   --session-id <SESSION_ID> \
   --dimension <DIMENSION> \
   --question <QUESTION> \
@@ -180,7 +190,8 @@ The likelihoods should sum to approximately 1.0.
 MUST execute this CLI command using Bash tool:
 
 ```bash
-PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session compute-entropy \
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m with_me.cli.session compute-entropy \
   --session-id <SESSION_ID> \
   --dimension <DIMENSION>
 ```
@@ -199,7 +210,8 @@ Then, MUST invoke `/with-me:entropy` skill with:
 MUST execute this CLI command using Bash tool:
 
 ```bash
-PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session bayesian-update \
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m with_me.cli.session bayesian-update \
   --session-id <SESSION_ID> \
   --dimension <DIMENSION> \
   --likelihoods "$LIKELIHOODS"
@@ -233,7 +245,8 @@ MUST invoke `/with-me:information-gain` skill with:
 MUST execute this CLI command using Bash tool:
 
 ```bash
-PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session persist-computation \
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m with_me.cli.session persist-computation \
   --session-id <SESSION_ID> \
   --dimension <DIMENSION> \
   --question <QUESTION> \
@@ -251,7 +264,8 @@ The CLI will confirm persistence and increment the question count.
 Show entropy reduction to user:
 
 ```bash
-PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session status --session-id <SESSION_ID>
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m with_me.cli.session status --session-id <SESSION_ID>
 ```
 
 Output:
@@ -281,7 +295,8 @@ Return to step 2.1-2.2.
 ### 3. Complete Session
 
 ```bash
-PYTHONPATH="${CLAUDE_PLUGIN_ROOT}:${PYTHONPATH:-}" python3 -m with_me.cli.session complete --session-id <SESSION_ID>
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m with_me.cli.session complete --session-id <SESSION_ID>
 ```
 
 Output:
