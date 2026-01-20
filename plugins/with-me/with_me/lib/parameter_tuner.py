@@ -2,22 +2,22 @@
 """
 Parameter Optimization via Grid Search
 
-Implements Grid Search parameter optimization to find optimal log_base
-and other tunable parameters for the Bayesian belief system.
+MIGRATION NOTE: Grid search algorithm has been moved to skill.
+This module now serves as I/O proxy and orchestration layer only.
 
-Theoretical Foundation:
-- Grid Search: Exhaustive search over parameter space
-- Cross-validation: Session-level evaluation with train/test splits
-- Metric: Average information gain per question (bits)
+Computation is delegated to:
+- /with-me:grid-search skill: Exhaustive parameter space search
+- /with-me:statistical-measures skill: Mean, median, std dev calculation
+- /with-me:correlation skill: Cross-validation scoring
 
 Design Constraints:
 - Pure stdlib implementation (no scikit-learn or scipy.optimize)
-- Brute-force acceptable for small parameter spaces
 - Text-based reporting (no matplotlib)
 
 References:
+- Issue #37: Claude Computational Engine architecture
 - Issue #41: Phase 2-B (Grid Search parameter optimization)
-- Issue #40: Phase 2-A (Statistical analysis integration)
+- Skills: plugins/with-me/skills/{grid-search,statistical-measures,correlation}
 """
 
 import json

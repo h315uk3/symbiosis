@@ -2,23 +2,18 @@
 """
 Question Reward Calculator for with-me plugin (v0.3.0)
 
-EIG-based (Expected Information Gain) reward model with quality adjustments.
+MIGRATION NOTE: Computational algorithms have been moved to skills.
+This module now serves as I/O proxy and orchestration layer only.
 
 Reward Function:
     r(Q) = EIG(Q) + 0.1×clarity(Q) + 0.05×importance(Q)
 
-Design Philosophy:
-- Primary: EIG (Expected Information Gain) measures uncertainty reduction
-- Secondary: clarity ensures question quality
-- Tertiary: importance enables strategic weighting
-
-This replaces the v0.2.x linear additive model with theoretically grounded
-information-theoretic approach using Bayesian belief updating.
-
-Theoretical Foundation:
-- EIG: Expected reduction in Shannon entropy before question is asked
-- Bayesian: Uses HypothesisSet posterior distributions
-- Stdlib-only: No external dependencies (NumPy, SciPy, etc.)
+Computation is delegated to:
+- /with-me:eig-calculation skill: EIG(Q) = Σ P(a|Q) × [H_before - H_after(a)]
+- /with-me:question-clarity skill: clarity(Q) evaluation
+- /with-me:question-importance skill: importance(Q) scoring
+- /with-me:entropy skill: H(h) = -Σ p(h) log₂ p(h)
+- /with-me:bayesian-update skill: p₁(h) ∝ p₀(h) × L(obs|h)
 
 API Contract (Issue #54):
 - Standardized interface for as-you plugin integration
@@ -27,9 +22,10 @@ API Contract (Issue #54):
 - Version compatibility tracking
 
 References:
+- Issue #37: Claude Computational Engine architecture
 - Issue #44: EIG-based reward function design
 - Issue #54: API contract interface specification
-- Issue #38: Phase 1-B implementation
+- Skills: plugins/with-me/skills/{eig-calculation,question-clarity,question-importance}
 """
 
 import json
@@ -244,6 +240,9 @@ class QuestionRewardCalculator:
         """
         Calculate Expected Information Gain for a question.
 
+        COMPUTATION MIGRATED: Use /with-me:eig-calculation skill instead.
+        This method remains for backward compatibility only.
+
         True EIG calculation: EIG = Σ_a P(a|Q) × [H_before - H_after(a)]
 
         This samples plausible answer templates, simulates belief updates,
@@ -354,6 +353,9 @@ class QuestionRewardCalculator:
         """
         Score question clarity (0.0-1.0).
 
+        COMPUTATION MIGRATED: Use /with-me:question-clarity skill instead.
+        This method remains for backward compatibility only.
+
         Examples:
             >>> calc = QuestionRewardCalculator()
             >>> calc._score_clarity("What is the purpose?") > 0.8
@@ -382,6 +384,9 @@ class QuestionRewardCalculator:
     def _calculate_importance(self, question: str) -> float:
         """
         Calculate strategic importance of question (0.0-1.0).
+
+        COMPUTATION MIGRATED: Use /with-me:question-importance skill instead.
+        This method remains for backward compatibility only.
 
         Some dimensions are more important than others in requirement elicitation.
         Default priorities: purpose > behavior > data > constraints > quality

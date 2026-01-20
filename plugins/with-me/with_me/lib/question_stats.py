@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
 """
 Question statistics collector for with-me plugin.
-Collects and outputs JSON statistics about question effectiveness.
 
-Enhanced with BasicStats class for statistical analysis using Python standard library.
+MIGRATION NOTE: Statistical computations have been moved to skills.
+This module now serves as I/O proxy and aggregation layer only.
+
+Computation is delegated to:
+- /with-me:statistical-measures skill: Mean, median, std dev, variance
+- /with-me:correlation skill: Pearson correlation coefficient
+- /with-me:entropy skill: Shannon entropy calculation
+- /with-me:information-gain skill: IG = H_before - H_after
+
+References:
+- Issue #37: Claude Computational Engine architecture
+- Skills: plugins/with-me/skills/{statistical-measures,correlation,entropy,information-gain}
 """
 
 import math

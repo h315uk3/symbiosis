@@ -5,8 +5,6 @@ allowed-tools: [AskUserQuestion, Bash, Skill]
 
 # Good Question
 
-@theory/good-question-theory.md
-
 **Adaptive requirement elicitation using Bayesian belief updating and information theory.**
 
 When requirements are unclear, this command systematically reduces uncertainty through targeted questioning. Each question maximizes expected information gain, adapting to your answers in real-time.
