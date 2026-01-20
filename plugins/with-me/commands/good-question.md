@@ -54,95 +54,48 @@ Repeat until convergence:
 
 #### 2.1-2.2. Generate and Ask Question
 
-**Step A: Get Dimension Context**
+Get next dimension to query:
 
 ```bash
 PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session next-question --session-id <SESSION_ID>
 ```
 
-Output (if not converged):
-```json
-{
-  "converged": false,
-  "dimension": "purpose",
-  "dimension_name": "Purpose",
-  "question": "What is the core value you're providing?"
-}
-```
+If output shows `"converged": true`, skip to step 3. Otherwise, note the `dimension` and `dimension_name`.
 
-Output (if converged):
-```json
-{
-  "converged": true,
-  "reason": "All dimensions converged or max questions reached"
-}
-```
-
-If `converged` is `true`, skip to step 3.
-
-**Step B: Get Session State for Context**
+Get current session state:
 
 ```bash
 PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session status --session-id <SESSION_ID>
 ```
 
-This provides current entropy levels and previous answers for contextual question generation.
+Read dimension configuration from `config/dimensions.json` for the selected dimension. Use `focus_areas` and `question_guidelines` to understand what to ask.
 
-**Step C: Generate Contextual Question and Options**
+Generate a contextual question based on:
+- Dimension's focus areas
+- Current entropy level (broad if >1.0, specific if ≤1.0)
+- Previous answers from status output
+- Follow-up opportunities
 
-Based on the dimension context from CLI, generate a contextual question and quick answer options:
+Generate 2-4 quick answer options relevant to your question, plus standard options:
+- "Skip this question" / "Move to the next question without answering"
+- "End session (clarity achieved)" / "I have sufficient clarity now"
 
-**Generation Guidelines:**
+Translate all text to the language specified in your system prompt.
 
-1. **Load dimension configuration** from `config/dimensions.json`:
-   - Use `focus_areas` to understand what aspects to explore
-   - Use `question_guidelines.when_high_entropy` if entropy > 1.0 (broad, exploratory)
-   - Use `question_guidelines.when_converging` if entropy ≤ 1.0 (specific, validation)
-   - Use `question_guidelines.follow_up_triggers` to detect opportunities for follow-up
+Ask user using `AskUserQuestion` tool:
+- Question: Your generated question
+- Header: Use `dimension_name` from CLI
+- Options: Your options (translated)
+- multiSelect: false
 
-2. **Consider conversation context**:
-   - Review previous answers (from status output) to avoid repetition
-   - Look for follow-up opportunities based on what user mentioned
-   - Adapt question depth based on current entropy level
-
-3. **Generate question**: Create a contextual question that:
-   - Aligns with dimension's focus areas
-   - Matches entropy level (broad vs. specific)
-   - Follows up on previous answers when appropriate
-   - Is clear and answerable
-
-4. **Generate 2-4 quick answer options** that:
-   - Are relevant to the specific question
-   - Cover common answer patterns for this dimension
-   - Are mutually exclusive
-   - Are brief (1-5 words)
-
-5. **Add standard options**:
-   - "Skip this question" / "Move to the next question without answering"
-   - "End session (clarity achieved)" / "I have sufficient clarity now"
-
-**Translation**: Translate all questions, options, labels, and descriptions according to the language specified in your system prompt.
-
-**Step D: Ask User with AskUserQuestion**
-
-Use the `AskUserQuestion` tool:
-
-- **Question**: Your generated contextual question
-- **Header**: Use the `dimension_name` field from CLI
-- **Options**: Your generated quick answers + standard options (all translated)
-- **multiSelect**: false
-
-**User Response Handling:**
-- If user selects a quick answer option: Use that as the answer. Proceed to step 2.3.
-- If user selects "Other" option: This contains the user's detailed answer. Proceed to step 2.3.
-- If user selects "Skip this question": Return to step 2.1-2.2.
-- If user selects "End session": Skip to step 3.
+Handle user response:
+- Quick answer or "Other": Proceed to step 2.3 with the answer
+- "Skip": Return to step 2.1-2.2
+- "End session": Skip to step 3
 
 #### 2.3. Update Beliefs
 
-Uses Claude-based semantic evaluation for likelihood estimation.
-
-**Step 1: Request Evaluation Context**
+Execute CLI to get evaluation request:
 
 ```bash
 PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session update \
@@ -153,42 +106,15 @@ PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session upda
   --enable-semantic-evaluation
 ```
 
-**Note:** Use the original answer in any language (no translation required).
+The CLI outputs evaluation request JSON with hypothesis definitions. Read this output.
 
-Output (evaluation request):
-```json
-{
-  "evaluation_request": true,
-  "dimension": "purpose",
-  "dimension_name": "Purpose",
-  "hypotheses": [
-    {
-      "id": "web_app",
-      "name": "Web Application",
-      "description": "Browser-based applications with user interfaces...",
-      "focus_areas": ["user interface design...", ...]
-    },
-    ...
-  ],
-  "question": "What problem are you trying to solve?",
-  "answer": "新機能の開発",
-  "instruction": "Based on the question and answer, estimate the likelihood..."
-}
-```
+Calculate likelihoods P(answer | hypothesis) for each hypothesis:
+- Use hypothesis `description` and `focus_areas` for context
+- Evaluate semantic alignment between question-answer pair and each hypothesis
+- Ensure likelihoods sum to approximately 1.0
+- Format as JSON object: `{"hyp1": 0.x, "hyp2": 0.y, ...}`
 
-**Step 2: Evaluate Likelihoods**
-
-Estimate P(answer | hypothesis) for each hypothesis based on:
-- Hypothesis description and focus_areas
-- Semantic alignment with question-answer pair
-- Likelihoods must sum to ~1.0
-
-Format:
-```json
-{"web_app": 0.35, "cli_tool": 0.40, "library": 0.15, "service": 0.10}
-```
-
-**Step 3: Update Beliefs**
+Execute CLI to update beliefs with your calculated likelihoods:
 
 ```bash
 PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session update \
@@ -196,18 +122,10 @@ PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session upda
   --dimension <DIMENSION> \
   --question <QUESTION> \
   --answer <ANSWER> \
-  --likelihoods '<CALCULATED_LIKELIHOODS_FROM_STEP_2>'
+  --likelihoods '<YOUR_CALCULATED_LIKELIHOODS>'
 ```
 
-Output:
-```json
-{
-  "information_gain": 0.08,
-  "entropy_before": 2.0,
-  "entropy_after": 1.92,
-  "dimension": "purpose"
-}
-```
+The CLI outputs information gain and updated entropy values.
 
 #### 2.4. Display Progress (Optional)
 
