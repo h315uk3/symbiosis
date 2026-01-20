@@ -95,7 +95,7 @@ Handle user response:
 
 #### 2.3. Update Beliefs
 
-Execute CLI to get evaluation request:
+**a) Get evaluation request and calculate likelihoods:**
 
 ```bash
 PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session update \
@@ -106,26 +106,52 @@ PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session upda
   --enable-semantic-evaluation
 ```
 
-The CLI outputs evaluation request JSON with hypothesis definitions. Read this output.
+CLI outputs hypothesis definitions. Estimate P(answer | hypothesis) for each hypothesis using semantic evaluation. Store as: `LIKELIHOODS='{"hyp1": 0.x, ...}'`
 
-Calculate likelihoods P(answer | hypothesis) for each hypothesis:
-- Use hypothesis `description` and `focus_areas` for context
-- Evaluate semantic alignment between question-answer pair and each hypothesis
-- Ensure likelihoods sum to approximately 1.0
-- Format as JSON object: `{"hyp1": 0.x, "hyp2": 0.y, ...}`
-
-Execute CLI to update beliefs with your calculated likelihoods:
+**b) Calculate entropy before update:**
 
 ```bash
-PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session update \
+PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session compute-entropy \
+  --session-id <SESSION_ID> \
+  --dimension <DIMENSION>
+```
+
+CLI outputs posterior. Use `/with-me:entropy` skill to calculate H(h) = -Σ p(h) log₂ p(h). Store as: `H_BEFORE`
+
+**c) Perform Bayesian update:**
+
+```bash
+PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session bayesian-update \
+  --session-id <SESSION_ID> \
+  --dimension <DIMENSION> \
+  --likelihoods "$LIKELIHOODS"
+```
+
+CLI outputs prior and likelihoods. Use `/with-me:bayesian-update` skill to calculate updated posterior. Store as: `UPDATED_POSTERIOR='{"hyp1": 0.x, ...}'`
+
+**d) Calculate entropy after update:**
+
+Use `/with-me:entropy` skill with `UPDATED_POSTERIOR`. Store as: `H_AFTER`
+
+**e) Calculate information gain:**
+
+Use `/with-me:information-gain` skill with `H_BEFORE` and `H_AFTER`. Store as: `INFORMATION_GAIN`
+
+**f) Persist results:**
+
+```bash
+PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session persist-computation \
   --session-id <SESSION_ID> \
   --dimension <DIMENSION> \
   --question <QUESTION> \
   --answer <ANSWER> \
-  --likelihoods '<YOUR_CALCULATED_LIKELIHOODS>'
+  --entropy-before $H_BEFORE \
+  --entropy-after $H_AFTER \
+  --information-gain $INFORMATION_GAIN \
+  --updated-posterior "$UPDATED_POSTERIOR"
 ```
 
-The CLI outputs information gain and updated entropy values.
+CLI confirms persistence.
 
 #### 2.4. Display Progress (Optional)
 
