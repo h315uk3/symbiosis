@@ -140,13 +140,16 @@ class SessionOrchestrator:
         if self.question_count >= max_questions:
             return True
 
-        # Check entropy thresholds
+        # Check entropy thresholds (use cached values from persist-computation)
         conv_threshold = self.config["session_config"]["convergence_threshold"]
-        all_converged = all(
-            hs.entropy() < conv_threshold for hs in self.beliefs.values()
-        )
+        for hs in self.beliefs.values():
+            if hs._cached_entropy is None:
+                # No cached entropy - session just started, not converged
+                return False
+            if hs._cached_entropy >= conv_threshold:
+                return False
 
-        return all_converged
+        return True
 
     def select_next_dimension(self) -> str | None:
         """
@@ -175,11 +178,19 @@ class SessionOrchestrator:
             prereqs = dim_config["prerequisites"]
             prereq_threshold = dim_config.get("prerequisite_threshold", 1.5)
 
-            # All prerequisites must be below threshold
-            if all(
-                self.beliefs[prereq].entropy() < prereq_threshold for prereq in prereqs
-            ):
-                accessible.append((dim_id, hs.entropy(), dim_config["importance"]))
+            # Get cached entropy (use large value if not cached)
+            prereq_satisfied = True
+            for prereq in prereqs:
+                prereq_entropy = self.beliefs[prereq]._cached_entropy
+                if prereq_entropy is None or prereq_entropy >= prereq_threshold:
+                    prereq_satisfied = False
+                    break
+
+            if prereq_satisfied:
+                # Use cached entropy or default to high value (max entropy for N hypotheses)
+                import math
+                entropy = hs._cached_entropy if hs._cached_entropy is not None else math.log2(len(hs.hypotheses))
+                accessible.append((dim_id, entropy, dim_config["importance"]))
 
         if not accessible:
             return None  # No accessible dimensions
@@ -287,77 +298,12 @@ class SessionOrchestrator:
 
         return dimension, question
 
-    def update_beliefs(
-        self,
-        dimension: str,
-        question: str,
-        answer: str,
-        likelihoods: dict[str, float],
-    ) -> dict[str, Any]:
-        """
-        Update beliefs after receiving user's answer.
-
-        Performs:
-        1. Bayesian update on dimension's posterior distribution
-        2. Calculate information gain
-        3. Record in feedback manager
-
-        Args:
-            dimension: Dimension that was queried
-            question: Question that was asked
-            answer: User's answer
-            likelihoods: Pre-computed likelihoods for hypotheses from
-                        semantic evaluation. Must contain all hypotheses.
-
-        Returns:
-            Dictionary with information_gain, entropy_before, entropy_after
-
-        Examples:
-            >>> orch = SessionOrchestrator()
-            >>> _ = orch.initialize_session()
-            >>> result = orch.update_beliefs(
-            ...     "purpose", "What is the purpose?", "browser app",
-            ...     likelihoods={"web_app": 0.7, "cli_tool": 0.2, "library": 0.1, "service": 0.0}
-            ... )
-            >>> result["information_gain"] >= 0.0
-            True
-        """
-        # Capture beliefs before update
-        beliefs_before = {k: v.to_dict() for k, v in self.beliefs.items()}
-        h_before = self.beliefs[dimension].entropy()
-
-        # Perform Bayesian update
-        information_gain = self.beliefs[dimension].update(question, answer, likelihoods)
-
-        # Capture beliefs after update
-        beliefs_after = {k: v.to_dict() for k, v in self.beliefs.items()}
-        h_after = self.beliefs[dimension].entropy()
-
-        # Record in feedback manager
-        self.manager.record_question(
-            session_id=self.session_id or "unknown",
-            question=question,
-            dimension=dimension,
-            context={"question": question, "dimension": dimension},
-            answer={"text": answer, "word_count": len(answer.split())},
-            reward_scores={
-                "total_reward": 0.0,  # Can be calculated if needed
-                "eig": information_gain,
-            },
-            dimension_beliefs_before=beliefs_before,
-            dimension_beliefs_after=beliefs_after,
-        )
-
-        # Update tracking
-        self.question_history.append(question)
-        self.question_count += 1
-
-        return {
-            "information_gain": information_gain,
-            "entropy_before": h_before,
-            "entropy_after": h_after,
-            "dimension": dimension,
-        }
+    # update_beliefs() removed - use CLI workflow instead:
+    # 1. compute-entropy to get H_before
+    # 2. bayesian-update with Claude skill
+    # 3. persist-computation to save results
+    #
+    # See commands/good-question.md Step 2.3 for new workflow
 
     def get_current_state(self) -> dict[str, Any]:
         """
@@ -377,8 +323,10 @@ class SessionOrchestrator:
 
         dimensions = {}
         for dim_id, hs in self.beliefs.items():
-            entropy = hs.entropy()
-            confidence = hs.get_confidence()
+            # Use cached values from persist-computation
+            import math
+            entropy = hs._cached_entropy if hs._cached_entropy is not None else math.log2(len(hs.hypotheses))
+            confidence = hs._cached_confidence if hs._cached_confidence is not None else 0.0
             converged = entropy < conv_threshold
 
             # Check if blocked by prerequisites
@@ -386,11 +334,11 @@ class SessionOrchestrator:
             prereqs = dim_config["prerequisites"]
             prereq_threshold = dim_config.get("prerequisite_threshold", 1.5)
 
-            blocked_by = [
-                prereq
-                for prereq in prereqs
-                if self.beliefs[prereq].entropy() >= prereq_threshold
-            ]
+            blocked_by = []
+            for prereq in prereqs:
+                prereq_entropy = self.beliefs[prereq]._cached_entropy
+                if prereq_entropy is None or prereq_entropy >= prereq_threshold:
+                    blocked_by.append(prereq)
 
             dimensions[dim_id] = {
                 "name": dim_config["name"],

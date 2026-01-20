@@ -98,6 +98,10 @@ class HypothesisSet:
         # History of observations (for debugging/analysis)
         self.observation_history: list[dict[str, Any]] = []
 
+        # Cached computation results (set by persist-computation CLI)
+        self._cached_entropy: float | None = None
+        self._cached_confidence: float | None = None
+
     # Computation methods removed - use skills instead:
     # - /with-me:entropy for H(h) calculation
     # - /with-me:bayesian-update for posterior updating

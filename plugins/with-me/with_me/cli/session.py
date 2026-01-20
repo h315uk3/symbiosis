@@ -306,6 +306,16 @@ def cmd_persist_computation(args: argparse.Namespace) -> None:
     # Update belief state with Claude-computed posterior
     orch.beliefs[args.dimension].posterior = updated_posterior
 
+    # Cache entropy and confidence for session_orchestrator methods
+    orch.beliefs[args.dimension]._cached_entropy = args.entropy_after
+    # Confidence = 1 - (H / H_max) where H_max = log₂(N)
+    import math
+    h_max = math.log2(len(orch.beliefs[args.dimension].hypotheses))
+    if h_max > 0:
+        orch.beliefs[args.dimension]._cached_confidence = 1.0 - (args.entropy_after / h_max)
+    else:
+        orch.beliefs[args.dimension]._cached_confidence = 1.0
+
     # Record question-answer in history
     orch.question_history.append({
         "dimension": args.dimension,
