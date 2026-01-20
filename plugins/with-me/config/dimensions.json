@@ -1,0 +1,163 @@
+{
+  "dimensions": {
+    "purpose": {
+      "id": "purpose",
+      "name": "Purpose",
+      "short_name": "Why",
+      "description": "Core problem, target users, and value proposition",
+      "color": "#2d5016",
+      "importance": 1.0,
+      "prerequisites": [],
+      "convergence_threshold": 0.3,
+      "prompts": [
+        "What problem are you trying to solve?",
+        "Who will benefit from this solution?",
+        "What is the core value you're providing?",
+        "Why is this needed?",
+        "What gap does this fill?"
+      ],
+      "keywords": [
+        "why",
+        "purpose",
+        "goal",
+        "problem",
+        "need",
+        "user",
+        "benefit",
+        "value",
+        "solve"
+      ]
+    },
+    "data": {
+      "id": "data",
+      "name": "Data",
+      "short_name": "What",
+      "description": "Information inputs, outputs, and transformations",
+      "color": "#5d4a1f",
+      "importance": 0.7,
+      "prerequisites": ["purpose"],
+      "prerequisite_threshold": 1.5,
+      "convergence_threshold": 0.3,
+      "prompts": [
+        "What information will this work with?",
+        "What are the inputs and outputs?",
+        "What data structures are involved?",
+        "What transformations happen to the data?",
+        "What format is the data in?"
+      ],
+      "keywords": [
+        "data",
+        "input",
+        "output",
+        "information",
+        "file",
+        "format",
+        "structure",
+        "json",
+        "database"
+      ]
+    },
+    "behavior": {
+      "id": "behavior",
+      "name": "Behavior",
+      "short_name": "How",
+      "description": "Operational flow, actions, and interactions",
+      "color": "#5d4a1f",
+      "importance": 0.8,
+      "prerequisites": ["purpose"],
+      "prerequisite_threshold": 1.5,
+      "convergence_threshold": 0.3,
+      "prompts": [
+        "How does this work step-by-step?",
+        "What triggers the functionality?",
+        "What actions take place?",
+        "How do components interact?",
+        "What is the processing flow?"
+      ],
+      "keywords": [
+        "how",
+        "step",
+        "process",
+        "flow",
+        "action",
+        "trigger",
+        "happen",
+        "work",
+        "interact"
+      ]
+    },
+    "constraints": {
+      "id": "constraints",
+      "name": "Constraints",
+      "short_name": "Limits",
+      "description": "Technical limitations, performance, and compatibility",
+      "color": "#5c1f1f",
+      "importance": 0.6,
+      "prerequisites": ["behavior", "data"],
+      "prerequisite_threshold": 1.5,
+      "convergence_threshold": 0.3,
+      "prompts": [
+        "What are the technical limitations?",
+        "What performance requirements exist?",
+        "What compatibility needs are there?",
+        "What constraints must be respected?",
+        "What resources are limited?"
+      ],
+      "keywords": [
+        "constraint",
+        "limit",
+        "requirement",
+        "performance",
+        "speed",
+        "scale",
+        "secure",
+        "compatible"
+      ]
+    },
+    "quality": {
+      "id": "quality",
+      "name": "Quality",
+      "short_name": "Success",
+      "description": "Success criteria, edge cases, and testing",
+      "color": "#5c1f1f",
+      "importance": 0.5,
+      "prerequisites": ["behavior"],
+      "prerequisite_threshold": 1.5,
+      "convergence_threshold": 0.3,
+      "prompts": [
+        "How will you know this is working correctly?",
+        "What edge cases need to be handled?",
+        "What could go wrong?",
+        "How should this be tested?",
+        "What defines success?"
+      ],
+      "keywords": [
+        "test",
+        "success",
+        "quality",
+        "edge case",
+        "fail",
+        "error",
+        "validate",
+        "correct"
+      ]
+    }
+  },
+  "dag": {
+    "nodes": ["purpose", "data", "behavior", "constraints", "quality"],
+    "edges": [
+      {"from": "purpose", "to": "data"},
+      {"from": "purpose", "to": "behavior"},
+      {"from": "behavior", "to": "constraints"},
+      {"from": "data", "to": "constraints"},
+      {"from": "behavior", "to": "quality"}
+    ]
+  },
+  "session_config": {
+    "initial_entropy": 2.0,
+    "convergence_threshold": 0.3,
+    "max_questions": 50,
+    "min_questions": 5,
+    "priority_order": ["purpose", "behavior", "data", "constraints", "quality"]
+  }
+}
