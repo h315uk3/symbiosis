@@ -9,7 +9,7 @@ Theoretical Foundation:
 - Shannon Entropy: H(h) = -Σ p(h) log₂ p(h) measures uncertainty
 - Bayesian Update: p₁(h) ∝ p₀(h) × L(observation|h) updates beliefs
 - Expected Information Gain (EIG): Measures question value before asking
-- Stdlib-only: Uses Python 3.11+ standard library (math module only)
+- Stdlib-only: Uses Python 3.11+ standard library (math, re modules only)
 
 Design Rationale:
 This module replaces heuristic uncertainty proxies (e.g., word count)
@@ -26,6 +26,7 @@ References:
 """
 
 import math
+import re
 from typing import Any
 
 
@@ -210,21 +211,22 @@ class HypothesisSet:
         """
         Estimate likelihood L(observation, answer | hypothesis).
 
-        Uses keyword matching with Laplace smoothing:
-        - Match keywords associated with hypothesis
-        - Count matches in observation + answer
-        - Apply Laplace smoothing to avoid zero probabilities
+        Uses weighted keyword matching with improvements from Issue #37:
+        1. **Weighted keywords**: Discriminative terms (e.g., "browser") get higher
+           weights (1.5-2.0) than generic terms (0.5)
+        2. **Negation handling**: Detects negation cues (not/no/without/etc.) and
+           subtracts weight for keywords in negation scope (~5 words after cue)
+        3. **Likelihood clamping**: Result clamped to [0.05, 0.95] to avoid extremes
+        4. **Non-English fallback**: Returns conservative default (0.3) for text
+           with high non-ASCII ratio (>30%)
 
-        This is a simplified approximation suitable for stdlib-only constraint.
-        More sophisticated approaches (NLP, embeddings) would require external libs.
+        This is a stdlib-only approximation. More sophisticated approaches (NLP,
+        embeddings) would require external libraries.
 
-        **Known Limitations (see Issue #37):**
-        - Does not handle negations ("I don't want X" still increases likelihood for X)
-        - Uniform keyword weighting (no TF-IDF or discriminative weights)
-        - Not calibrated against real question-answer data
-        - English-only keywords (breaks on translated responses)
-
-        Phase 2 will address these with empirical calibration and negation detection.
+        **Remaining Limitations:**
+        - Negation scope is simple (5-word window, no parse tree)
+        - Keyword weights are manually assigned, not learned
+        - Non-English text gets conservative fallback instead of translation
 
         Args:
             hypothesis: Hypothesis identifier
@@ -232,11 +234,11 @@ class HypothesisSet:
             answer: User's answer
 
         Returns:
-            Likelihood value (unnormalized, will be normalized in update)
+            Likelihood value in [0.05, 0.95], will be normalized in update()
 
         Examples:
             >>> hs = HypothesisSet("purpose", ["web_app", "cli_tool"])
-            >>> # "web_app" should have higher likelihood for browser mention
+            >>> # "web_app" has higher likelihood due to "browser" (high weight)
             >>> l_web = hs._estimate_likelihood(
             ...     "web_app", "user interface", "browser interaction"
             ... )
@@ -246,90 +248,226 @@ class HypothesisSet:
             >>> l_web > l_cli
             True
 
-            >>> # Known limitation: negation not handled (Issue #37)
-            >>> # "Not a CLI" should DECREASE cli_tool likelihood, but doesn't
+            >>> # Negation handling: "Not a CLI" decreases cli_tool likelihood
             >>> l_cli_neg = hs._estimate_likelihood(
             ...     "cli_tool", "interface type", "Not a CLI, want web interface"
             ... )
-            >>> # FIXME: This currently increases likelihood for cli_tool due to "CLI" match
-            >>> # Future: Implement negation detection to handle this correctly
+            >>> l_cli_pos = hs._estimate_likelihood(
+            ...     "cli_tool", "interface type", "Yes, a CLI tool"
+            ... )
+            >>> l_cli_neg < l_cli_pos  # Negation decreases likelihood
+            True
         """
-        # Define keywords for each hypothesis (dimension-specific)
-        keywords = self._get_hypothesis_keywords(hypothesis)
-
         # Combine observation and answer for matching
         text = (observation + " " + answer).lower()
 
-        # Count keyword matches
-        match_count = sum(1 for keyword in keywords if keyword in text)
+        # Non-English fallback: detect high non-ASCII ratio
+        non_ascii_ratio = sum(1 for c in text if ord(c) > 127) / max(len(text), 1)
+        if non_ascii_ratio > 0.3:
+            # Conservative default for non-English text (Issue #37)
+            return 0.3
 
-        # Laplace smoothing: L(obs|h) = (match_count + alpha) / (total_keywords + alpha*N)
-        # alpha = 1.0 (add-one smoothing), N = number of hypotheses
+        # Get weighted keywords for hypothesis
+        keyword_weights = self._get_hypothesis_keywords(hypothesis)
+
+        # Detect negation cues and their scope
+        negation_pattern = r"\b(not|no|without|exclude|avoid|never|don't|doesn't)\b"
+        negated_spans = []
+        for match in re.finditer(negation_pattern, text):
+            # Negation scope: ~5 words after negation cue
+            start = match.start()
+            # Find next 5 word boundaries
+            words_after = text[start:].split()[:6]  # negation word + 5 after
+            negated_text = " ".join(words_after)
+            negated_spans.append(negated_text)
+
+        # Calculate weighted match score with negation handling
+        score = 0.0
+        for keyword, weight in keyword_weights.items():
+            if keyword in text:
+                # Check if keyword is in negation scope
+                is_negated = any(keyword in span for span in negated_spans)
+                if is_negated:
+                    # Subtract weight for negated keywords
+                    score -= weight
+                else:
+                    # Add weight for positive matches
+                    score += weight
+
+        # Clamp score to non-negative
+        score = max(0.0, score)
+
+        # Laplace smoothing with weighted score
         alpha = 1.0
-        likelihood = (match_count + alpha) / (
-            len(keywords) + alpha * len(self.hypotheses)
-        )
+        total_weight = sum(keyword_weights.values()) if keyword_weights else 1.0
+        likelihood = (score + alpha) / (total_weight + alpha * len(self.hypotheses))
+
+        # Clamp likelihood to [0.05, 0.95] to avoid extreme values
+        likelihood = max(0.05, min(0.95, likelihood))
 
         return likelihood
 
-    def _get_hypothesis_keywords(self, hypothesis: str) -> list[str]:
+    def _get_hypothesis_keywords(self, hypothesis: str) -> dict[str, float]:
         """
-        Get keywords associated with a hypothesis.
+        Get weighted keywords associated with a hypothesis.
 
-        This is a simplified keyword database. In production, this could be:
-        - Loaded from external configuration
-        - Learned from training data
-        - Enhanced with synonyms/embeddings
+        Returns dictionary mapping keywords to discriminative weights:
+        - High weight (1.5-2.0): Highly discriminative terms (e.g., "browser" for web_app)
+        - Medium weight (1.0): Moderately discriminative terms
+        - Low weight (0.5): Generic terms that appear in multiple contexts
 
         Args:
             hypothesis: Hypothesis identifier
 
         Returns:
-            List of keywords associated with hypothesis
+            Dictionary mapping keywords to weights
 
         Examples:
             >>> hs = HypothesisSet("purpose", ["web_app"])
             >>> keywords = hs._get_hypothesis_keywords("web_app")
-            >>> "browser" in keywords or "web" in keywords
+            >>> "browser" in keywords
+            True
+            >>> keywords["browser"] >= 1.5  # High discriminative weight
             True
         """
-        # Keyword database (dimension-specific)
-        # TODO: Move to external configuration file in future
+        # Weighted keyword database (dimension-specific)
+        # Weights: 2.0=highly discriminative, 1.0=moderate, 0.5=generic
         keyword_db = {
             # Purpose dimension
-            "web_app": [
-                "web",
-                "browser",
-                "http",
-                "html",
-                "ui",
-                "user interface",
-                "frontend",
-            ],
-            "cli_tool": ["command", "terminal", "cli", "shell", "script", "console"],
-            "library": ["library", "package", "module", "api", "import", "reusable"],
-            "service": ["service", "daemon", "background", "api", "server", "endpoint"],
+            "web_app": {
+                "browser": 2.0,
+                "frontend": 2.0,
+                "html": 1.5,
+                "web": 1.5,
+                "ui": 1.0,
+                "user interface": 1.0,
+                "http": 1.0,
+            },
+            "cli_tool": {
+                "terminal": 2.0,
+                "cli": 2.0,
+                "command": 1.5,
+                "shell": 1.5,
+                "console": 1.5,
+                "script": 1.0,
+            },
+            "library": {
+                "import": 2.0,
+                "package": 2.0,
+                "library": 1.5,
+                "module": 1.5,
+                "reusable": 1.5,
+                "api": 0.5,  # Generic: also appears in web_app, service
+            },
+            "service": {
+                "daemon": 2.0,
+                "service": 1.5,
+                "endpoint": 1.5,
+                "server": 1.0,
+                "background": 1.0,
+                "api": 0.5,  # Generic
+            },
             # Data dimension
-            "structured": ["json", "xml", "csv", "table", "database", "schema"],
-            "unstructured": ["text", "document", "file", "content", "raw"],
-            "streaming": ["stream", "real-time", "live", "continuous", "flow"],
+            "structured": {
+                "json": 2.0,
+                "xml": 2.0,
+                "csv": 2.0,
+                "schema": 1.5,
+                "table": 1.5,
+                "database": 1.0,
+            },
+            "unstructured": {
+                "document": 1.5,
+                "text": 1.0,
+                "content": 1.0,
+                "raw": 1.0,
+                "file": 0.5,  # Generic
+            },
+            "streaming": {
+                "stream": 2.0,
+                "real-time": 2.0,
+                "live": 1.5,
+                "continuous": 1.5,
+                "flow": 1.0,
+            },
             # Behavior dimension
-            "synchronous": ["sync", "sequential", "blocking", "wait", "order"],
-            "asynchronous": ["async", "concurrent", "parallel", "non-blocking"],
-            "interactive": ["interactive", "prompt", "input", "response", "dialog"],
-            "batch": ["batch", "bulk", "automated", "scheduled", "background"],
+            "synchronous": {
+                "sync": 2.0,
+                "sequential": 1.5,
+                "blocking": 1.5,
+                "wait": 1.0,
+                "order": 1.0,
+            },
+            "asynchronous": {
+                "async": 2.0,
+                "concurrent": 1.5,
+                "parallel": 1.5,
+                "non-blocking": 1.5,
+            },
+            "interactive": {
+                "interactive": 2.0,
+                "prompt": 1.5,
+                "dialog": 1.5,
+                "input": 1.0,
+                "response": 1.0,
+            },
+            "batch": {
+                "batch": 2.0,
+                "bulk": 1.5,
+                "scheduled": 1.5,
+                "automated": 1.0,
+                "background": 1.0,
+            },
             # Constraints dimension
-            "performance": ["fast", "performance", "speed", "latency", "throughput"],
-            "scalability": ["scale", "load", "capacity", "volume", "concurrent"],
-            "reliability": ["reliable", "stable", "robust", "fault", "error"],
-            "security": ["secure", "authentication", "authorization", "encrypt"],
+            "performance": {
+                "fast": 1.5,
+                "performance": 1.5,
+                "speed": 1.5,
+                "latency": 1.5,
+                "throughput": 1.5,
+            },
+            "scalability": {
+                "scale": 2.0,
+                "load": 1.5,
+                "capacity": 1.5,
+                "volume": 1.0,
+                "concurrent": 1.0,
+            },
+            "reliability": {
+                "reliable": 1.5,
+                "stable": 1.5,
+                "robust": 1.5,
+                "fault": 1.0,
+                "error": 0.5,  # Generic
+            },
+            "security": {
+                "authentication": 2.0,
+                "authorization": 2.0,
+                "secure": 1.5,
+                "encrypt": 1.5,
+            },
             # Quality dimension
-            "functional": ["feature", "function", "capability", "requirement"],
-            "usability": ["usable", "user-friendly", "intuitive", "experience"],
-            "maintainability": ["maintainable", "readable", "documented", "testable"],
+            "functional": {
+                "feature": 1.5,
+                "function": 1.5,
+                "capability": 1.5,
+                "requirement": 1.0,
+            },
+            "usability": {
+                "user-friendly": 2.0,
+                "usable": 1.5,
+                "intuitive": 1.5,
+                "experience": 1.0,
+            },
+            "maintainability": {
+                "maintainable": 2.0,
+                "readable": 1.5,
+                "documented": 1.5,
+                "testable": 1.5,
+            },
         }
 
-        return keyword_db.get(hypothesis, [])
+        return keyword_db.get(hypothesis, {})
 
     def get_most_likely(self) -> str:
         """
