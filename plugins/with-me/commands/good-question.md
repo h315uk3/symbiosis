@@ -140,33 +140,7 @@ Use the `AskUserQuestion` tool:
 
 #### 2.3. Update Beliefs
 
-**Two evaluation modes are supported:**
-
-##### Mode A: Keyword-Based Evaluation (Legacy)
-
-**IMPORTANT:** If the user's answer is in a non-English language, translate it to English first.
-
-```bash
-PYTHONPATH="plugins/with-me:${PYTHONPATH:-}" python3 -m with_me.cli.session update \
-  --session-id <SESSION_ID> \
-  --dimension <DIMENSION> \
-  --question <QUESTION> \
-  --answer <TRANSLATED_ANSWER>
-```
-
-Output:
-```json
-{
-  "information_gain": 0.247,
-  "entropy_before": 2.0,
-  "entropy_after": 1.753,
-  "dimension": "purpose"
-}
-```
-
-**Limitation:** Keyword matching often yields low information gain for natural language responses.
-
-##### Mode B: Semantic Evaluation (Recommended)
+Uses Claude-based semantic evaluation for likelihood estimation.
 
 **Step 1: Request Evaluation Context**
 

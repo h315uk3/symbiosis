@@ -9,7 +9,7 @@ Theoretical Foundation:
 - Shannon Entropy: H(h) = -Σ p(h) log₂ p(h) measures uncertainty
 - Bayesian Update: p₁(h) ∝ p₀(h) × L(observation|h) updates beliefs
 - Expected Information Gain (EIG): Measures question value before asking
-- Stdlib-only: Uses Python 3.11+ standard library (math, re modules only)
+- Likelihood Estimation: Uses Claude-based semantic evaluation (Issue #37)
 
 Design Rationale:
 This module replaces heuristic uncertainty proxies (e.g., word count)
@@ -25,45 +25,8 @@ References:
 - Shannon (1948): A Mathematical Theory of Communication
 """
 
-import json
 import math
-import re
-from pathlib import Path
 from typing import Any
-
-# Load keyword database from config file
-_KEYWORD_DB_CACHE: dict[str, dict[str, dict[str, float]]] | None = None
-
-
-def _load_keyword_database() -> dict[str, dict[str, dict[str, float]]]:
-    """
-    Load keyword database from config/keywords.json.
-
-    Uses module-level cache to avoid repeated file I/O.
-
-    Returns:
-        Dictionary mapping dimension -> hypothesis -> {keyword: weight}
-    """
-    global _KEYWORD_DB_CACHE
-
-    if _KEYWORD_DB_CACHE is not None:
-        return _KEYWORD_DB_CACHE
-
-    # Find keywords.json relative to this module
-    # __file__ = plugins/with-me/with_me/lib/dimension_belief.py
-    # .parent.parent.parent = plugins/with-me/
-    module_root = Path(__file__).parent.parent.parent
-    keywords_file = module_root / "config" / "keywords.json"
-
-    if not keywords_file.exists():
-        # Fallback to empty database
-        _KEYWORD_DB_CACHE = {}
-        return _KEYWORD_DB_CACHE
-
-    with open(keywords_file) as f:
-        _KEYWORD_DB_CACHE = json.load(f)
-
-    return _KEYWORD_DB_CACHE
 
 
 class HypothesisSet:
@@ -182,7 +145,7 @@ class HypothesisSet:
         self,
         observation: str,
         answer: str,
-        likelihoods: dict[str, float] | None = None,
+        likelihoods: dict[str, float],
     ) -> float:
         """
         Update posterior distribution using Bayesian rule.
@@ -197,53 +160,31 @@ class HypothesisSet:
         Args:
             observation: Context of the question asked
             answer: User's answer text
-            likelihoods: Optional pre-computed likelihoods for each hypothesis.
-                        If None, likelihoods are estimated using keyword matching.
-                        If provided, must contain entries for all hypotheses.
+            likelihoods: Pre-computed likelihoods for each hypothesis from
+                        semantic evaluation. Must contain entries for all hypotheses.
 
         Returns:
             Information gain in bits: ΔH = H_before - H_after
 
         Examples:
+            >>> # Using semantic evaluation likelihoods
             >>> hs = HypothesisSet("purpose", ["web_app", "cli_tool", "library"])
-            >>> h_before = hs.entropy()
-            >>> # Strong evidence for "web_app"
             >>> ig = hs.update(
-            ...     observation="Asked about user interface",
-            ...     answer="Yes, users will interact via browser",
-            ... )
-            >>> ig > 0  # Information was gained
-            True
-            >>> hs.entropy() < h_before  # Uncertainty decreased
-            True
-
-            >>> # Using pre-computed likelihoods (semantic evaluation)
-            >>> hs2 = HypothesisSet("purpose", ["web_app", "cli_tool", "library"])
-            >>> ig2 = hs2.update(
             ...     observation="Question about purpose",
             ...     answer="Browser-based application",
             ...     likelihoods={"web_app": 0.7, "cli_tool": 0.2, "library": 0.1},
             ... )
-            >>> ig2 > 0
+            >>> ig > 0
             True
         """
         h_before = self.entropy()
 
-        # Calculate or use provided likelihoods
-        if likelihoods is None:
-            # Calculate likelihood for each hypothesis using keyword matching
-            likelihoods = {}
-            for hypothesis in self.hypotheses:
-                likelihoods[hypothesis] = self._estimate_likelihood(
-                    hypothesis, observation, answer
-                )
-        else:
-            # Validate provided likelihoods
-            if set(likelihoods.keys()) != set(self.hypotheses):
-                raise ValueError(
-                    f"Provided likelihoods must contain all hypotheses. "
-                    f"Expected {set(self.hypotheses)}, got {set(likelihoods.keys())}"
-                )
+        # Validate provided likelihoods
+        if set(likelihoods.keys()) != set(self.hypotheses):
+            raise ValueError(
+                f"Provided likelihoods must contain all hypotheses. "
+                f"Expected {set(self.hypotheses)}, got {set(likelihoods.keys())}"
+            )
 
         # Bayesian update: p1(h) proportional to p0(h) * L(obs|h)
         unnormalized = {h: self.posterior[h] * likelihoods[h] for h in self.hypotheses}
@@ -268,162 +209,6 @@ class HypothesisSet:
         information_gain = h_before - h_after
 
         return information_gain
-
-    def _estimate_likelihood(
-        self, hypothesis: str, observation: str, answer: str
-    ) -> float:
-        """
-        Estimate likelihood L(observation, answer | hypothesis).
-
-        Uses weighted keyword matching with improvements from Issue #37:
-        1. **Weighted keywords**: Discriminative terms (e.g., "browser") get higher
-           weights (1.5-2.0) than generic terms (0.5)
-        2. **Negation handling**: Detects negation cues (not/no/without/etc.) and
-           subtracts weight for keywords in negation scope (~5 words after cue)
-        3. **Word boundary matching**: Uses regex word boundaries to avoid substring
-           collisions (e.g., "blocking" won't match "non-blocking")
-        4. **Likelihood clamping**: Result clamped to [0.05, 0.95] to avoid extremes
-        5. **Non-English fallback**: Returns conservative default (0.3) for text
-           with high non-ASCII ratio (>30%)
-
-        This is a stdlib-only approximation. More sophisticated approaches (NLP,
-        embeddings) would require external libraries.
-
-        **Remaining Limitations:**
-        - Negation scope is simple (5-word window, no parse tree)
-        - Keyword weights are manually assigned, not learned
-        - Non-English text gets conservative fallback instead of translation
-
-        Args:
-            hypothesis: Hypothesis identifier
-            observation: Question context
-            answer: User's answer
-
-        Returns:
-            Likelihood value in [0.05, 0.95], will be normalized in update()
-
-        Examples:
-            >>> hs = HypothesisSet("purpose", ["web_app", "cli_tool"])
-            >>> # "web_app" has higher likelihood due to "browser" (high weight)
-            >>> l_web = hs._estimate_likelihood(
-            ...     "web_app", "user interface", "browser interaction"
-            ... )
-            >>> l_cli = hs._estimate_likelihood(
-            ...     "cli_tool", "user interface", "browser interaction"
-            ... )
-            >>> l_web > l_cli
-            True
-
-            >>> # Negation handling: "Not a CLI" decreases cli_tool likelihood
-            >>> l_cli_neg = hs._estimate_likelihood(
-            ...     "cli_tool", "interface type", "Not a CLI, want web interface"
-            ... )
-            >>> l_cli_pos = hs._estimate_likelihood(
-            ...     "cli_tool", "interface type", "Yes, a CLI tool"
-            ... )
-            >>> l_cli_neg < l_cli_pos  # Negation decreases likelihood
-            True
-
-            >>> # Word boundary matching: "blocking" doesn't match "non-blocking"
-            >>> hs_behavior = HypothesisSet("behavior", ["synchronous", "asynchronous"])
-            >>> l_sync = hs_behavior._estimate_likelihood(
-            ...     "synchronous", "execution", "non-blocking operations"
-            ... )
-            >>> l_async = hs_behavior._estimate_likelihood(
-            ...     "asynchronous", "execution", "non-blocking operations"
-            ... )
-            >>> l_async > l_sync  # "non-blocking" matches async, not sync
-            True
-        """
-        # Combine observation and answer for matching
-        text = (observation + " " + answer).lower()
-
-        # Non-English fallback: detect high non-ASCII ratio
-        non_ascii_ratio = sum(1 for c in text if ord(c) > 127) / max(len(text), 1)
-        if non_ascii_ratio > 0.3:
-            # Conservative default for non-English text (Issue #37)
-            return 0.3
-
-        # Get weighted keywords for hypothesis
-        keyword_weights = self._get_hypothesis_keywords(hypothesis)
-
-        # Detect negation cues and their scope
-        negation_pattern = r"\b(not|no|without|exclude|avoid|never|don't|doesn't)\b"
-        negated_spans = []
-        for match in re.finditer(negation_pattern, text):
-            # Negation scope: ~5 words after negation cue
-            start = match.start()
-            # Find next 5 word boundaries
-            words_after = text[start:].split()[:6]  # negation word + 5 after
-            negated_text = " ".join(words_after)
-            negated_spans.append(negated_text)
-
-        # Calculate weighted match score with negation handling
-        score = 0.0
-        for keyword, weight in keyword_weights.items():
-            # Use word boundaries to avoid substring collisions (Issue #37)
-            # e.g., "blocking" should not match "non-blocking"
-            keyword_pattern = r"\b" + re.escape(keyword) + r"\b"
-            if re.search(keyword_pattern, text):
-                # Check if keyword is in negation scope (also use word boundaries)
-                is_negated = any(
-                    re.search(keyword_pattern, span) for span in negated_spans
-                )
-                if is_negated:
-                    # Subtract weight for negated keywords
-                    score -= weight
-                else:
-                    # Add weight for positive matches
-                    score += weight
-
-        # Clamp score to non-negative
-        score = max(0.0, score)
-
-        # Laplace smoothing with weighted score
-        alpha = 1.0
-        total_weight = sum(keyword_weights.values()) if keyword_weights else 1.0
-        likelihood = (score + alpha) / (total_weight + alpha * len(self.hypotheses))
-
-        # Clamp likelihood to [0.05, 0.95] to avoid extreme values
-        likelihood = max(0.05, min(0.95, likelihood))
-
-        return likelihood
-
-    def _get_hypothesis_keywords(self, hypothesis: str) -> dict[str, float]:
-        """
-        Get weighted keywords associated with a hypothesis.
-
-        Loads keywords from config/keywords.json rather than hardcoded database.
-        This allows users to customize keywords without modifying code.
-
-        Returns dictionary mapping keywords to discriminative weights:
-        - High weight (1.5-2.0): Highly discriminative terms (e.g., "browser" for web_app)
-        - Medium weight (1.0): Moderately discriminative terms
-        - Low weight (0.5): Generic terms that appear in multiple contexts
-
-        Args:
-            hypothesis: Hypothesis identifier
-
-        Returns:
-            Dictionary mapping keywords to weights
-
-        Examples:
-            >>> hs = HypothesisSet("purpose", ["web_app"])
-            >>> keywords = hs._get_hypothesis_keywords("web_app")
-            >>> "browser" in keywords
-            True
-            >>> keywords["browser"] >= 1.5  # High discriminative weight
-            True
-        """
-        # Load keyword database from config file
-        keyword_db = _load_keyword_database()
-
-        # Find keywords for this hypothesis in its dimension
-        if self.dimension in keyword_db:
-            dimension_keywords = keyword_db[self.dimension]
-            return dimension_keywords.get(hypothesis, {})
-
-        return {}
 
     def get_most_likely(self) -> str:
         """

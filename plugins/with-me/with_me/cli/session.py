@@ -159,17 +159,25 @@ def cmd_update(args: argparse.Namespace) -> None:
         print(json.dumps(evaluation_request, indent=2))
         return
 
-    # Parse likelihoods if provided
-    likelihoods = None
-    if getattr(args, "likelihoods", None):
-        try:
-            likelihoods = json.loads(args.likelihoods)
-        except json.JSONDecodeError as e:
-            print(
-                json.dumps({"error": f"Invalid JSON in --likelihoods: {e}"}),
-                file=sys.stderr,
-            )
-            sys.exit(1)
+    # Parse likelihoods (required)
+    if not getattr(args, "likelihoods", None):
+        print(
+            json.dumps({
+                "error": "Missing required --likelihoods argument. "
+                "Use --enable-semantic-evaluation to get evaluation request first."
+            }),
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    try:
+        likelihoods = json.loads(args.likelihoods)
+    except json.JSONDecodeError as e:
+        print(
+            json.dumps({"error": f"Invalid JSON in --likelihoods: {e}"}),
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     result = orch.update_beliefs(
         args.dimension, args.question, args.answer, likelihoods

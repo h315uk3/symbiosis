@@ -292,7 +292,7 @@ class SessionOrchestrator:
         dimension: str,
         question: str,
         answer: str,
-        likelihoods: dict[str, float] | None = None,
+        likelihoods: dict[str, float],
     ) -> dict[str, Any]:
         """
         Update beliefs after receiving user's answer.
@@ -306,8 +306,8 @@ class SessionOrchestrator:
             dimension: Dimension that was queried
             question: Question that was asked
             answer: User's answer
-            likelihoods: Optional pre-computed likelihoods for hypotheses.
-                        If None, keyword matching is used.
+            likelihoods: Pre-computed likelihoods for hypotheses from
+                        semantic evaluation. Must contain all hypotheses.
 
         Returns:
             Dictionary with information_gain, entropy_before, entropy_after
@@ -316,17 +316,10 @@ class SessionOrchestrator:
             >>> orch = SessionOrchestrator()
             >>> _ = orch.initialize_session()
             >>> result = orch.update_beliefs(
-            ...     "purpose", "What is the purpose?", "web application"
+            ...     "purpose", "What is the purpose?", "browser app",
+            ...     likelihoods={"web_app": 0.7, "cli_tool": 0.2, "library": 0.1, "service": 0.0}
             ... )
             >>> result["information_gain"] >= 0.0
-            True
-
-            >>> # Using pre-computed likelihoods (semantic evaluation)
-            >>> result2 = orch.update_beliefs(
-            ...     "purpose", "What is the purpose?", "browser app",
-            ...     likelihoods={"web_app": 0.7, "cli_tool": 0.2, "library": 0.1}
-            ... )
-            >>> result2["information_gain"] >= 0.0
             True
         """
         # Capture beliefs before update
