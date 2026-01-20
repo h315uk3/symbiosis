@@ -1,0 +1,165 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Requirement Dimensions Configuration",
+  "description": "Defines requirement dimensions for Bayesian belief updating with Claude computational engine",
+  "type": "object",
+  "required": ["dimensions", "dag", "session_config"],
+  "properties": {
+    "dimensions": {
+      "type": "object",
+      "description": "Map of dimension_id to dimension configuration",
+      "patternProperties": {
+        "^[a-z_]+$": {
+          "type": "object",
+          "required": ["id", "name", "description", "importance", "prerequisites", "convergence_threshold", "focus_areas", "hypotheses"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Unique identifier for dimension"
+            },
+            "name": {
+              "type": "string",
+              "description": "Human-readable dimension name"
+            },
+            "short_name": {
+              "type": "string",
+              "description": "Brief name for display (optional)"
+            },
+            "description": {
+              "type": "string",
+              "description": "What this dimension captures"
+            },
+            "importance": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Relative weight in requirement elicitation (0.0-1.0)"
+            },
+            "prerequisites": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "List of dimension IDs that must converge first"
+            },
+            "prerequisite_threshold": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Entropy threshold for prerequisite satisfaction (optional)"
+            },
+            "convergence_threshold": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Entropy threshold for dimension convergence"
+            },
+            "focus_areas": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Key aspects to explore in this dimension (guides Claude's question generation)"
+            },
+            "question_guidelines": {
+              "type": "object",
+              "description": "Instructions for Claude's question generation (optional)",
+              "properties": {
+                "when_high_entropy": {
+                  "type": "string",
+                  "description": "Guidance when entropy > 1.0 (broad exploration)"
+                },
+                "when_converging": {
+                  "type": "string",
+                  "description": "Guidance when entropy ≤ 1.0 (specific validation)"
+                },
+                "follow_up_triggers": {
+                  "type": "array",
+                  "items": {"type": "string"},
+                  "description": "Phrases that suggest follow-up opportunities"
+                }
+              }
+            },
+            "hypotheses": {
+              "type": "object",
+              "description": "Possible values for this dimension",
+              "patternProperties": {
+                "^[a-z_]+$": {
+                  "type": "object",
+                  "required": ["id", "name", "description", "focus_areas"],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Unique hypothesis identifier"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Human-readable hypothesis name"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "What this hypothesis represents (used by Claude for semantic evaluation)"
+                    },
+                    "focus_areas": {
+                      "type": "array",
+                      "items": {"type": "string"},
+                      "description": "Specific characteristics of this hypothesis (used by Claude for likelihood estimation)"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "dag": {
+      "type": "object",
+      "description": "Directed acyclic graph of dimension dependencies",
+      "required": ["nodes", "edges"],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "List of dimension IDs"
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["from", "to"],
+            "properties": {
+              "from": {"type": "string"},
+              "to": {"type": "string"}
+            }
+          },
+          "description": "Prerequisite relationships"
+        }
+      }
+    },
+    "session_config": {
+      "type": "object",
+      "description": "Global session configuration",
+      "required": ["initial_entropy", "convergence_threshold", "max_questions", "min_questions"],
+      "properties": {
+        "initial_entropy": {
+          "type": "number",
+          "description": "Starting entropy for uniform prior (H = log₂(N) for N hypotheses)"
+        },
+        "convergence_threshold": {
+          "type": "number",
+          "description": "Default entropy threshold for convergence"
+        },
+        "max_questions": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Safety limit for question count"
+        },
+        "min_questions": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Minimum questions before early termination"
+        },
+        "priority_order": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Order to query dimensions when entropy equal (optional)"
+        }
+      }
+    }
+  }
+}

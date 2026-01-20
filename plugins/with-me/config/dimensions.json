@@ -5,28 +5,9 @@
       "name": "Purpose",
       "short_name": "Why",
       "description": "Core problem, target users, and value proposition",
-      "color": "#2d5016",
       "importance": 1.0,
       "prerequisites": [],
       "convergence_threshold": 0.3,
-      "prompts": [
-        "What problem are you trying to solve?",
-        "Who will benefit from this solution?",
-        "What is the core value you're providing?",
-        "Why is this needed?",
-        "What gap does this fill?"
-      ],
-      "keywords": [
-        "why",
-        "purpose",
-        "goal",
-        "problem",
-        "need",
-        "user",
-        "benefit",
-        "value",
-        "solve"
-      ],
       "focus_areas": [
         "problem identification",
         "target users and stakeholders",
@@ -37,7 +18,12 @@
       "question_guidelines": {
         "when_high_entropy": "Ask broad, exploratory questions about the core problem or goal. Help identify what they're trying to achieve.",
         "when_converging": "Ask specific validation questions to confirm understanding of the problem scope and target users.",
-        "follow_up_triggers": ["mentioned problem", "mentioned users", "mentioned goal", "mentioned need"]
+        "follow_up_triggers": [
+          "mentioned problem",
+          "mentioned users",
+          "mentioned goal",
+          "mentioned need"
+        ]
       },
       "hypotheses": {
         "web_app": {
@@ -95,29 +81,12 @@
       "name": "Data",
       "short_name": "What",
       "description": "Information inputs, outputs, and transformations",
-      "color": "#5d4a1f",
       "importance": 0.7,
-      "prerequisites": ["purpose"],
+      "prerequisites": [
+        "purpose"
+      ],
       "prerequisite_threshold": 1.5,
       "convergence_threshold": 0.3,
-      "prompts": [
-        "What information will this work with?",
-        "What are the inputs and outputs?",
-        "What data structures are involved?",
-        "What transformations happen to the data?",
-        "What format is the data in?"
-      ],
-      "keywords": [
-        "data",
-        "input",
-        "output",
-        "information",
-        "file",
-        "format",
-        "structure",
-        "json",
-        "database"
-      ],
       "focus_areas": [
         "data sources and inputs",
         "data structure and format",
@@ -128,7 +97,12 @@
       "question_guidelines": {
         "when_high_entropy": "Ask about what information the system works with. Explore inputs, outputs, and data flow at a high level.",
         "when_converging": "Ask specific questions about data formats, structures, validation, or transformation details.",
-        "follow_up_triggers": ["mentioned format", "mentioned database", "mentioned file", "mentioned API"]
+        "follow_up_triggers": [
+          "mentioned format",
+          "mentioned database",
+          "mentioned file",
+          "mentioned API"
+        ]
       },
       "hypotheses": {
         "structured": {
@@ -174,29 +148,12 @@
       "name": "Behavior",
       "short_name": "How",
       "description": "Operational flow, actions, and interactions",
-      "color": "#5d4a1f",
       "importance": 0.8,
-      "prerequisites": ["purpose"],
+      "prerequisites": [
+        "purpose"
+      ],
       "prerequisite_threshold": 1.5,
       "convergence_threshold": 0.3,
-      "prompts": [
-        "How does this work step-by-step?",
-        "What triggers the functionality?",
-        "What actions take place?",
-        "How do components interact?",
-        "What is the processing flow?"
-      ],
-      "keywords": [
-        "how",
-        "step",
-        "process",
-        "flow",
-        "action",
-        "trigger",
-        "happen",
-        "work",
-        "interact"
-      ],
       "focus_areas": [
         "operational flow and sequence",
         "triggers and events",
@@ -207,7 +164,12 @@
       "question_guidelines": {
         "when_high_entropy": "Ask about the overall operational flow. Explore what triggers functionality and what happens step by step.",
         "when_converging": "Ask specific questions about edge cases, error handling, timing, or interaction details between components.",
-        "follow_up_triggers": ["mentioned trigger", "mentioned step", "mentioned interaction", "mentioned timing"]
+        "follow_up_triggers": [
+          "mentioned trigger",
+          "mentioned step",
+          "mentioned interaction",
+          "mentioned timing"
+        ]
       },
       "hypotheses": {
         "synchronous": {
@@ -265,28 +227,13 @@
       "name": "Constraints",
       "short_name": "Limits",
       "description": "Technical limitations, performance, and compatibility",
-      "color": "#5c1f1f",
       "importance": 0.6,
-      "prerequisites": ["behavior", "data"],
+      "prerequisites": [
+        "behavior",
+        "data"
+      ],
       "prerequisite_threshold": 1.5,
       "convergence_threshold": 0.3,
-      "prompts": [
-        "What are the technical limitations?",
-        "What performance requirements exist?",
-        "What compatibility needs are there?",
-        "What constraints must be respected?",
-        "What resources are limited?"
-      ],
-      "keywords": [
-        "constraint",
-        "limit",
-        "requirement",
-        "performance",
-        "speed",
-        "scale",
-        "secure",
-        "compatible"
-      ],
       "focus_areas": [
         "technical limitations",
         "performance requirements",
@@ -298,7 +245,12 @@
       "question_guidelines": {
         "when_high_entropy": "Ask about any technical limitations, performance needs, or compatibility requirements. Explore what constraints exist.",
         "when_converging": "Ask specific questions about performance metrics, security requirements, or compatibility with specific systems.",
-        "follow_up_triggers": ["mentioned performance", "mentioned scale", "mentioned security", "mentioned compatibility"]
+        "follow_up_triggers": [
+          "mentioned performance",
+          "mentioned scale",
+          "mentioned security",
+          "mentioned compatibility"
+        ]
       },
       "hypotheses": {
         "performance": {
@@ -356,28 +308,12 @@
       "name": "Quality",
       "short_name": "Success",
       "description": "Success criteria, edge cases, and testing",
-      "color": "#5c1f1f",
       "importance": 0.5,
-      "prerequisites": ["behavior"],
+      "prerequisites": [
+        "behavior"
+      ],
       "prerequisite_threshold": 1.5,
       "convergence_threshold": 0.3,
-      "prompts": [
-        "How will you know this is working correctly?",
-        "What edge cases need to be handled?",
-        "What could go wrong?",
-        "How should this be tested?",
-        "What defines success?"
-      ],
-      "keywords": [
-        "test",
-        "success",
-        "quality",
-        "edge case",
-        "fail",
-        "error",
-        "validate",
-        "correct"
-      ],
       "focus_areas": [
         "success criteria and metrics",
         "edge cases and failure modes",
@@ -388,7 +324,12 @@
       "question_guidelines": {
         "when_high_entropy": "Ask about how success will be measured and what could go wrong. Explore testing and validation approaches.",
         "when_converging": "Ask specific questions about edge cases, error scenarios, acceptance criteria, or testing details.",
-        "follow_up_triggers": ["mentioned testing", "mentioned failure", "mentioned validation", "mentioned edge case"]
+        "follow_up_triggers": [
+          "mentioned testing",
+          "mentioned failure",
+          "mentioned validation",
+          "mentioned edge case"
+        ]
       },
       "hypotheses": {
         "functional": {
@@ -431,13 +372,34 @@
     }
   },
   "dag": {
-    "nodes": ["purpose", "data", "behavior", "constraints", "quality"],
+    "nodes": [
+      "purpose",
+      "data",
+      "behavior",
+      "constraints",
+      "quality"
+    ],
     "edges": [
-      {"from": "purpose", "to": "data"},
-      {"from": "purpose", "to": "behavior"},
-      {"from": "behavior", "to": "constraints"},
-      {"from": "data", "to": "constraints"},
-      {"from": "behavior", "to": "quality"}
+      {
+        "from": "purpose",
+        "to": "data"
+      },
+      {
+        "from": "purpose",
+        "to": "behavior"
+      },
+      {
+        "from": "behavior",
+        "to": "constraints"
+      },
+      {
+        "from": "data",
+        "to": "constraints"
+      },
+      {
+        "from": "behavior",
+        "to": "quality"
+      }
     ]
   },
   "session_config": {
@@ -445,6 +407,12 @@
     "convergence_threshold": 0.3,
     "max_questions": 50,
     "min_questions": 5,
-    "priority_order": ["purpose", "behavior", "data", "constraints", "quality"]
+    "priority_order": [
+      "purpose",
+      "behavior",
+      "data",
+      "constraints",
+      "quality"
+    ]
   }
 }
