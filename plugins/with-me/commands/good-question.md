@@ -1,9 +1,11 @@
 ---
 description: "Adaptive requirement elicitation - systematically reduce uncertainty through information-maximizing questions"
-allowed-tools: [AskUserQuestion, Read, Glob, Grep, WebFetch, Bash, Skill]
+allowed-tools: [AskUserQuestion, Bash, Skill]
 ---
 
 # Good Question
+
+@theory/good-question-theory.md
 
 **Adaptive requirement elicitation using Bayesian belief updating and information theory.**
 
@@ -13,376 +15,137 @@ When requirements are unclear, this command systematically reduces uncertainty t
 
 ## Quick Start
 
-1. Start with `/with-me:good-question`
-2. Answer questions about your requirements
-3. Questions adapt based on your responses
-4. Session ends when clarity is achieved
-5. Structured specification generated automatically
+1. Run `/with-me:good-question`
+2. Answer adaptive questions about your requirements
+3. Questions adapt based on your responses using Bayesian belief updating
+4. Session ends when all dimensions converge or you signal clarity
+5. Structured requirement specification generated automatically
 
-**Theory:** See `docs/good-question-theory.md` for mathematical foundation
-**Configuration:** See `config/dimensions.json` for dimension definitions
-
----
-
-## How It Works
-
-### Five Requirement Dimensions
-
-1. **Purpose (Why)**: Problem, users, value
-2. **Data (What)**: Inputs, outputs, transformations
-3. **Behavior (How)**: Flow, actions, interactions
-4. **Constraints (Limits)**: Technical, performance, compatibility
-5. **Quality (Success)**: Criteria, edge cases, testing
-
-**Dependency structure:** Purpose → {Data, Behavior} → {Constraints, Quality}
-
-### Adaptive Strategy
-
-- Track uncertainty (entropy) for each dimension using Bayesian belief updating
-- Select next question targeting highest-entropy accessible dimension
-- Update beliefs after each answer using likelihood estimation
-- Stop when all dimensions converge (entropy < 0.3) or user signals clarity
+**Configuration:** See `config/dimensions.json` for dimension definitions and thresholds
 
 ---
 
-## Execution Protocol
+## Execution
 
-### Phase 0: Session Initialization
+Initialize session and run orchestrator:
 
-**Load dimension configuration:**
 ```bash
-DIMENSIONS_CONFIG=$(cat plugins/with-me/config/dimensions.json)
-```
-
-**Initialize dimension beliefs:**
-- Create uniform prior distribution for each dimension
-- All dimensions start at maximum entropy (H ≈ 2.0 bits)
-- Load dimension definitions and DAG structure from config
-
-**Start feedback tracking:**
-```bash
-# Initialize session in feedback manager
-python3 -c "
-from with_me.lib.question_feedback_manager import QuestionFeedbackManager
-from with_me.lib.dimension_belief import create_default_dimension_beliefs
-
-manager = QuestionFeedbackManager()
-beliefs = create_default_dimension_beliefs()
-session_id = manager.start_session(
-    initial_dimension_beliefs={k: v.to_dict() for k, v in beliefs.items()}
-)
-print(session_id)
-" > /tmp/with_me_session_id.txt
-
-SESSION_ID=$(cat /tmp/with_me_session_id.txt)
-```
-
----
-
-### Phase 1: Optional Reference Collection
-
-**Ask using AskUserQuestion:**
-```
-Question: "Do you have reference materials to save for this session?"
-Header: "References"
-multiSelect: false
-Options:
-  - "Git repository" - Clone a repository to /tmp for reference
-  - "Documentation URL" - Fetch documentation to /tmp
-  - "Local files" - Copy local files to /tmp for reference
-  - "No references" - Continue without saving references
-```
-
-**If references provided, save to /tmp:**
-- Git: `git clone <url> /tmp/ref-$(date +%s)-<project>`
-- Docs: `curl <url> -o /tmp/ref-$(date +%s)-doc.pdf`
-- Files: `cp <path> /tmp/ref-$(date +%s)-<name>`
-
-**Benefits:** References remain accessible throughout session, faster than repeated fetching.
-
----
-
-### Phase 2: Adaptive Questioning Loop
-
-**Loop until convergence:**
-
-#### 2.1 Check Convergence
-
-Calculate current entropy for all dimensions:
-```python
-from with_me.lib.dimension_belief import create_default_dimension_beliefs
-
-beliefs = create_default_dimension_beliefs()
-# ... load current beliefs from session state ...
-
-all_converged = all(hs.entropy() < 0.3 for hs in beliefs.values())
-```
-
-**If converged:** Jump to Phase 3 (Requirement Analysis)
-
-#### 2.2 Select Next Dimension
-
-**Priority:** Highest entropy among accessible dimensions
-
-```python
-def select_next_dimension(beliefs, dimensions_config):
-    """Select dimension with highest entropy that satisfies prerequisites."""
-    accessible = []
-
-    for dim_id, hs in beliefs.items():
-        # Check prerequisites
-        prereqs = dimensions_config['dimensions'][dim_id]['prerequisites']
-        prereq_threshold = dimensions_config['dimensions'][dim_id].get('prerequisite_threshold', 1.5)
-
-        if all(beliefs[prereq].entropy() < prereq_threshold for prereq in prereqs):
-            accessible.append((dim_id, hs.entropy()))
-
-    if not accessible:
-        return None  # No accessible dimensions (shouldn't happen)
-
-    # Sort by entropy (descending), then by importance
-    accessible.sort(key=lambda x: (x[1], dimensions_config['dimensions'][x[0]]['importance']), reverse=True)
-    return accessible[0][0]  # Return dimension ID
-```
-
-#### 2.3 Generate Question
-
-**Load example prompts from config:**
-```python
+python3 <<'EOF'
+from with_me.lib.session_orchestrator import SessionOrchestrator
 import json
-import random
 
-config = json.load(open('plugins/with-me/config/dimensions.json'))
-target_dim = selected_dimension_id
-prompts = config['dimensions'][target_dim]['prompts']
+# Initialize orchestrator
+orch = SessionOrchestrator()
+session_id = orch.initialize_session()
 
-# Select a prompt (rotate or randomize)
-question = random.choice(prompts)
+# Output session ID for tracking
+print(json.dumps({
+    "session_id": session_id,
+    "status": "initialized"
+}))
+EOF
 ```
 
-**Calculate expected reward:**
-```python
-from with_me.lib.question_reward_calculator import QuestionRewardCalculator, QuestionContext
-import time
+### Main Questioning Loop
 
-calculator = QuestionRewardCalculator()
-context = QuestionContext(
-    session_id=SESSION_ID,
-    timestamp=time.time(),
-    dimension_beliefs={k: v.to_dict() for k, v in beliefs.items()},
-    question_history=question_history,
-    feedback_history=[]
-)
+The orchestrator manages the adaptive questioning process:
 
-reward_response = calculator.calculate_reward_for_question(question, context)
-print(f"Expected reward: {reward_response.reward_score:.2f} (EIG: {reward_response.eig:.2f} bits)")
-```
+**For each iteration:**
 
-#### 2.4 Ask Question
+1. **Check convergence:**
+   ```bash
+   python3 <<'EOF'
+   from with_me.lib.session_orchestrator import SessionOrchestrator
+   orch = SessionOrchestrator()
+   # ... restore session state ...
+   converged = orch.check_convergence()
+   print("converged" if converged else "continue")
+   EOF
+   ```
 
-**Use AskUserQuestion:**
-```
-Question: <generated_question>
-Header: <dimension_short_name> (e.g., "Why", "What", "How")
-multiSelect: false
-Options:
-  - Provide detailed answer
-  - Provide brief answer
-  - Skip this question
-  - End session (clarity achieved)
-```
+2. **Select next question:**
+   ```bash
+   python3 <<'EOF'
+   from with_me.lib.session_orchestrator import SessionOrchestrator
+   orch = SessionOrchestrator()
+   # ... restore session state ...
+   dimension, question = orch.select_next_question()
+   print(f"{dimension}:{question}")
+   EOF
+   ```
 
-**Capture answer:**
-- If "End session": Jump to Phase 3
-- If "Skip": Select next dimension and repeat
-- Otherwise: Process answer and update beliefs
+3. **Ask user via AskUserQuestion:**
+   ```
+   Question: <question from orchestrator>
+   Header: <dimension short_name>
+   multiSelect: false
+   Options:
+     - "Provide detailed answer"
+     - "Provide brief answer"
+     - "Skip this question"
+     - "End session (clarity achieved)"
+   ```
 
-#### 2.5 Update Beliefs
+4. **Update beliefs:**
+   ```bash
+   python3 <<'EOF'
+   from with_me.lib.session_orchestrator import SessionOrchestrator
+   orch = SessionOrchestrator()
+   # ... restore session state ...
+   result = orch.update_beliefs(dimension, question, answer)
+   print(f"Information gained: {result['information_gain']:.3f} bits")
+   EOF
+   ```
 
-**Apply Bayesian update:**
-```python
-from with_me.lib.dimension_belief import HypothesisSet
+5. **Display current state:**
+   ```bash
+   python3 <<'EOF'
+   from with_me.lib.session_orchestrator import SessionOrchestrator
+   orch = SessionOrchestrator()
+   # ... restore session state ...
+   state = orch.get_current_state()
 
-# Capture beliefs before update
-beliefs_before = {k: v.to_dict() for k, v in beliefs.items()}
+   print("\nCurrent Uncertainty (bits):")
+   for dim_id, dim_data in state['dimensions'].items():
+       status = "✓" if dim_data['converged'] else ""
+       blocked = f"  [BLOCKED: needs {', '.join(dim_data['blocked_by'])}]" if dim_data['blocked'] else ""
+       bar_length = int(dim_data['entropy'] / 2.0 * 10)
+       bar = "█" * bar_length + "░" * (10 - bar_length)
+       print(f"  {dim_data['name']:12} {dim_data['entropy']:.2f} {bar}  ({dim_data['confidence']:.0%} confidence) {status}{blocked}")
+   EOF
+   ```
 
-# Update target dimension
-information_gain = beliefs[target_dim].update(
-    observation=question,
-    answer=user_answer_text
-)
-
-# Capture beliefs after update
-beliefs_after = {k: v.to_dict() for k, v in beliefs.items()}
-
-print(f"Information gained: {information_gain:.3f} bits")
-print(f"New entropy for {target_dim}: {beliefs[target_dim].entropy():.2f} bits")
-print(f"Confidence: {beliefs[target_dim].get_confidence():.2%}")
-```
-
-#### 2.6 Record Question
-
-**Save to feedback manager:**
-```python
-from with_me.lib.question_feedback_manager import QuestionFeedbackManager
-
-manager = QuestionFeedbackManager()
-
-# Prepare answer data
-answer_data = {
-    "text": user_answer_text,
-    "word_count": len(user_answer_text.split()),
-    "has_examples": "example" in user_answer_text.lower()
-}
-
-# Prepare context
-context_data = {
-    "question": question,
-    "dimension": target_dim,
-    "entropy_before": beliefs_before[target_dim]['entropy'],
-    "entropy_after": beliefs_after[target_dim]['entropy']
-}
-
-# Record
-manager.record_question(
-    session_id=SESSION_ID,
-    question=question,
-    dimension=target_dim,
-    context=context_data,
-    answer=answer_data,
-    reward_scores={
-        "total_reward": reward_response.reward_score,
-        "eig": reward_response.eig,
-        "clarity": reward_response.clarity,
-        "importance": reward_response.importance
-    },
-    dimension_beliefs_before=beliefs_before,
-    dimension_beliefs_after=beliefs_after
-)
-```
-
-#### 2.7 Loop Control
-
-- Increment question counter
-- Check max question limit (default: 50)
-- If max reached: Jump to Phase 3
-- Otherwise: Return to step 2.1
+**Repeat until convergence or user signals completion.**
 
 ---
 
-### Phase 3: Requirement Analysis
+### Post-Convergence Analysis
 
-**Complete session:**
-```python
-from with_me.lib.question_feedback_manager import QuestionFeedbackManager
+After convergence, complete session and generate specification:
 
-manager = QuestionFeedbackManager()
-
-# Calculate final uncertainties
-final_uncertainties = {dim: hs.entropy() for dim, hs in beliefs.items()}
-
-# Complete session with final beliefs
-summary = manager.complete_session(
-    session_id=SESSION_ID,
-    final_uncertainties=final_uncertainties,
-    final_dimension_beliefs={k: v.to_dict() for k, v in beliefs.items()}
-)
-
+```bash
+python3 <<'EOF'
+from with_me.lib.session_orchestrator import SessionOrchestrator
+orch = SessionOrchestrator()
+# ... restore session state ...
+summary = orch.complete_session()
 print(f"Session complete: {summary['total_questions']} questions asked")
 print(f"Total information gained: {summary['total_info_gain']:.2f} bits")
-print(f"Session efficiency: {summary['session_efficiency']:.2f} bits/question")
+EOF
 ```
 
-**Generate structured specification:**
+Then invoke requirement-analysis skill:
 
-Use the `requirement-analysis` skill:
 ```
 /with-me:requirement-analysis
 ```
 
-This skill:
-- Analyzes all collected answers
-- Detects ambiguities and gaps
-- Generates structured requirements document
-- Suggests implementation approach
-- Produces acceptance criteria
-
-**Output format:**
-- Purpose & context
-- Functional requirements
-- Non-functional requirements
-- Implementation guidance
-- Risk assessment
-- Open questions
-
----
-
-## Convergence Criteria
-
-**Session terminates when:**
-
-1. **Entropy threshold met:**
-   - All dimensions have H(h) < 0.3 (convergence_threshold)
-   - Approximately 70%+ confidence in each dimension
-
-2. **User signals clarity:**
-   - User selects "End session (clarity achieved)" option
-   - Explicit indication that requirements are sufficiently clear
-
-3. **Max questions reached:**
-   - Safety limit (default: 50 questions)
-   - Prevents infinite loops
-
-**Post-convergence:** Always invoke requirement-analysis skill for formal specification.
-
----
-
-## Question Quality Evaluation
-
-Each question is evaluated using:
-
-```
-reward(Q) = EIG(Q) + 0.1×clarity(Q) + 0.05×importance(Q)
-```
-
-**Components:**
-- **EIG (Expected Information Gain):** Entropy of target dimension (bits)
-- **Clarity:** Question quality score [0.0-1.0]
-- **Importance:** Strategic dimension weighting [0.0-1.0]
-
-**Implementation:** `with_me/lib/question_reward_calculator.py`
-
----
-
-## Error Handling
-
-### Invalid Dimension Access
-
-**Error:** Attempting to query dimension before prerequisites satisfied
-
-**Detection:**
-```python
-prereqs = config['dimensions'][dim_id]['prerequisites']
-for prereq in prereqs:
-    if beliefs[prereq].entropy() >= prereq_threshold:
-        raise ValueError(f"Cannot query {dim_id}: {prereq} not sufficiently clear")
-```
-
-**Recovery:** Select next highest-entropy accessible dimension
-
-### Session State Corruption
-
-**Error:** Belief state becomes invalid (probabilities don't sum to 1.0)
-
-**Detection:** Check distribution validity after each update
-
-**Recovery:** Re-initialize affected dimension with uniform prior
-
-### No Accessible Dimensions
-
-**Error:** All dimensions either converged or blocked by prerequisites
-
-**Action:** Force termination and proceed to Phase 3
+The skill will:
+- Analyze all collected answers
+- Detect ambiguities and gaps
+- Generate structured requirement specification
+- Suggest implementation approach
+- Produce acceptance criteria
 
 ---
 
@@ -390,83 +153,74 @@ for prereq in prereqs:
 
 ### For Users
 
-1. **Be specific in answers:** More detail = better belief updates
-2. **Provide examples:** Helps likelihood estimation
-3. **Ask for clarification:** If question is unclear, say so
-4. **Signal when done:** Don't wait for all 50 questions if clarity achieved
+1. **Be specific in answers:** More detail enables better belief updates
+2. **Provide examples:** Helps likelihood estimation understand context
+3. **Ask for clarification:** If a question is unclear, request rephrasing
+4. **Signal when done:** Don't wait for all 50 questions if clarity is achieved
 
-### For Claude (Implementation)
+### For Implementation
 
-1. **Check prerequisites before each question:** Validate DAG constraints
-2. **Record all questions:** Enable Phase 2 statistical analysis
-3. **Calculate actual information gain:** Compare entropy before/after
-4. **Adapt question style:** Based on user's answer patterns
-5. **Handle edge cases:** Empty answers, contradictions, uncertainty expressions
+1. **Persist session state:** Store session_id and beliefs between questions
+2. **Handle user interruption:** Allow "Skip" and "End session" options
+3. **Display progress:** Show entropy display after each answer
+4. **Validate prerequisites:** Orchestrator automatically checks DAG constraints
+5. **Record all interactions:** Feedback manager tracks full session history
 
 ---
 
-## Debugging & Monitoring
+## Error Handling
 
-### Real-time Entropy Display
+### No Accessible Dimensions
 
-After each answer, show:
-```
-Current Uncertainty (bits):
-  Purpose:      0.25 ████░░░░░░  (87% confidence) ✓
-  Data:         0.82 ██████░░░░  (59% confidence)
-  Behavior:     1.15 ████████░░  (43% confidence)
-  Constraints:  1.98 ██████████  (1% confidence)  [BLOCKED: needs Behavior + Data]
-  Quality:      1.85 ██████████  (8% confidence)  [BLOCKED: needs Behavior]
+If `select_next_dimension()` returns `None`:
+- All dimensions either converged or blocked by unmet prerequisites
+- Force termination and proceed to analysis
 
-Next target: Behavior (H = 1.15 bits)
-```
+**Recovery:** Call `complete_session()` and invoke requirement-analysis
 
-### Session Statistics
+### Session State Loss
 
-Track and display:
-- Questions asked per dimension
-- Average information gain per question
-- Time per question
-- Total session duration
-- Dimensions resolved
+If session state is lost mid-session:
+- Cannot resume (beliefs cannot be reconstructed)
+- Start new session with `/with-me:good-question`
+
+**Prevention:** Persist session_id and beliefs dictionary to temporary file
+
+### Invalid Answers
+
+If user provides off-topic or unclear answer:
+- Bayesian update will show minimal information gain
+- Question may be repeated or rephrased
+- Orchestrator adapts based on posterior distribution
+
+**No explicit handling needed** - Bayesian framework naturally handles noisy data
 
 ---
 
 ## Configuration
 
-### Adjustable Parameters
+Adjust parameters in `config/dimensions.json`:
 
-**In `config/dimensions.json`:**
-- `convergence_threshold`: Entropy threshold for dimension clarity (default: 0.3)
-- `prerequisite_threshold`: Entropy threshold for prerequisite satisfaction (default: 1.5)
-- `max_questions`: Maximum questions per session (default: 50)
-- `min_questions`: Minimum questions before allowing early termination (default: 5)
-
-### Dimension Customization
-
-Add custom dimensions by extending `dimensions.json`:
 ```json
 {
-  "dimensions": {
-    "custom_dimension": {
-      "id": "custom_dimension",
-      "name": "Custom Dimension",
-      "short_name": "Custom",
-      "description": "Description of what this captures",
-      "importance": 0.6,
-      "prerequisites": ["purpose"],
-      "prerequisite_threshold": 1.5,
-      "convergence_threshold": 0.3,
-      "prompts": ["Question 1?", "Question 2?"],
-      "keywords": ["keyword1", "keyword2"]
-    }
-  },
-  "dag": {
-    "nodes": ["purpose", "data", "behavior", "constraints", "quality", "custom_dimension"],
-    "edges": [
-      ... existing edges ...,
-      {"from": "purpose", "to": "custom_dimension"}
-    ]
+  "session_config": {
+    "convergence_threshold": 0.3,      // Entropy threshold for clarity
+    "prerequisite_threshold": 1.5,     // Threshold for prerequisite satisfaction
+    "max_questions": 50,                // Safety limit to prevent infinite loops
+    "min_questions": 5                  // Minimum before allowing early termination
   }
 }
 ```
+
+For custom dimensions and DAG structure, see theory document section on "Dimension Customization".
+
+---
+
+## References
+
+- **Theory:** `docs/good-question-theory.md` - Mathematical foundation and algorithms
+- **Orchestrator:** `with_me/lib/session_orchestrator.py` - Session coordination logic
+- **Beliefs:** `with_me/lib/dimension_belief.py` - Bayesian belief updating
+- **Rewards:** `with_me/lib/question_reward_calculator.py` - EIG calculation
+- **Feedback:** `with_me/lib/question_feedback_manager.py` - Session persistence
+- **Analysis Skill:** `skills/requirement-analysis/SKILL.md` - Post-session specification generation
