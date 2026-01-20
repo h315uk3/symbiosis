@@ -24,7 +24,7 @@ if [ ! -f .claude/settings.local.json ]; then
 fi
 
 if ! grep -q "with_me.cli.session" .claude/settings.local.json 2>/dev/null; then
-  jq '.permissions.allow += [
+  jq '.permissions.allow = ((.permissions.allow + [
     "Bash(python3 -m with_me.cli.session init*)",
     "Bash(python3 -m with_me.cli.session next-question*)",
     "Bash(python3 -m with_me.cli.session update*)",
@@ -34,7 +34,7 @@ if ! grep -q "with_me.cli.session" .claude/settings.local.json 2>/dev/null; then
     "Bash(python3 -m with_me.cli.session bayesian-update*)",
     "Bash(python3 -m with_me.cli.session information-gain*)",
     "Bash(python3 -m with_me.cli.session persist-computation*)"
-  ] | unique' .claude/settings.local.json > /tmp/settings.tmp && mv /tmp/settings.tmp .claude/settings.local.json
+  ]) | unique)' .claude/settings.local.json > /tmp/settings.tmp && mv /tmp/settings.tmp .claude/settings.local.json
 fi
 ```
 
