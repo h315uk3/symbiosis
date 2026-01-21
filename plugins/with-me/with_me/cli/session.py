@@ -59,7 +59,8 @@ def load_session_state(session_id: str) -> SessionOrchestrator:
 
     if not session_file.exists():
         print(
-            json.dumps({"error": f"Session not found: {session_id}"}), file=sys.stderr
+            json.dumps({"error": f"Session not found: {session_id}"}, ensure_ascii=False),
+            file=sys.stderr,
         )
         sys.exit(1)
 
@@ -92,7 +93,8 @@ def cmd_init(args: argparse.Namespace) -> None:
             {
                 "session_id": session_id,
                 "status": "initialized",
-            }
+            },
+            ensure_ascii=False,
         )
     )
 
@@ -108,7 +110,8 @@ def cmd_next_question(args: argparse.Namespace) -> None:
                 {
                     "converged": True,
                     "reason": "All dimensions converged or max questions reached",
-                }
+                },
+                ensure_ascii=False,
             )
         )
         return
@@ -121,7 +124,8 @@ def cmd_next_question(args: argparse.Namespace) -> None:
                 {
                     "converged": True,
                     "reason": "No accessible dimensions (all blocked by prerequisites)",
-                }
+                },
+                ensure_ascii=False,
             )
         )
         return
@@ -136,7 +140,8 @@ def cmd_next_question(args: argparse.Namespace) -> None:
                 "dimension": dimension,
                 "dimension_name": dim_config["name"],
                 "question": question,
-            }
+            },
+            ensure_ascii=False,
         )
     )
 
@@ -176,7 +181,7 @@ def cmd_update(args: argparse.Namespace) -> None:
             ),
         }
 
-        print(json.dumps(evaluation_request, indent=2))
+        print(json.dumps(evaluation_request, indent=2, ensure_ascii=False))
         return
 
     # Parse likelihoods (required)
@@ -186,7 +191,8 @@ def cmd_update(args: argparse.Namespace) -> None:
                 {
                     "error": "Missing required --likelihoods argument. "
                     "Use --enable-semantic-evaluation to get evaluation request first."
-                }
+                },
+                ensure_ascii=False,
             ),
             file=sys.stderr,
         )
@@ -196,7 +202,7 @@ def cmd_update(args: argparse.Namespace) -> None:
         likelihoods = json.loads(args.likelihoods)
     except json.JSONDecodeError as e:
         print(
-            json.dumps({"error": f"Invalid JSON in --likelihoods: {e}"}),
+            json.dumps({"error": f"Invalid JSON in --likelihoods: {e}"}, ensure_ascii=False),
             file=sys.stderr,
         )
         sys.exit(1)
@@ -215,7 +221,8 @@ def cmd_update(args: argparse.Namespace) -> None:
                 "entropy_before": round(result["entropy_before"], 2),
                 "entropy_after": round(result["entropy_after"], 2),
                 "dimension": result["dimension"],
-            }
+            },
+            ensure_ascii=False,
         )
     )
 
@@ -245,7 +252,7 @@ def cmd_status(args: argparse.Namespace) -> None:
             "most_likely": dim_data["most_likely"],
         }
 
-    print(json.dumps(output, indent=2))
+    print(json.dumps(output, indent=2, ensure_ascii=False))
 
 
 def cmd_complete(args: argparse.Namespace) -> None:
@@ -254,10 +261,25 @@ def cmd_complete(args: argparse.Namespace) -> None:
 
     summary = orch.complete_session()
 
-    # Clean up session file
+    # Archive session file with completion metadata
+    # Session files are preserved for:
+    # - Debugging and analysis
+    # - Pattern extraction
+    # - Progressive knowledge accumulation
+    # - Audit trail of requirement elicitation process
     session_file = get_session_dir() / f"{args.session_id}.json"
     if session_file.exists():
-        session_file.unlink()
+        with open(session_file, "r", encoding="utf-8") as f:
+            session_data = json.load(f)
+
+        # Add completion metadata
+        session_data["completed"] = True
+        session_data["completed_at"] = args.session_id  # ISO timestamp
+        session_data["summary"] = summary
+
+        # Save updated session with completion status
+        with open(session_file, "w", encoding="utf-8") as f:
+            json.dump(session_data, f, indent=2, ensure_ascii=False)
 
     print(
         json.dumps(
@@ -266,7 +288,9 @@ def cmd_complete(args: argparse.Namespace) -> None:
                 "total_questions": summary.get("total_questions", 0),
                 "total_info_gain": round(summary.get("total_info_gain", 0.0), 2),
                 "status": "completed",
-            }
+                "archived": True,
+            },
+            ensure_ascii=False,
         )
     )
 
@@ -291,6 +315,7 @@ def cmd_compute_entropy(args: argparse.Namespace) -> None:
                 ),
             },
             indent=2,
+            ensure_ascii=False,
         )
     )
 
@@ -317,6 +342,7 @@ def cmd_bayesian_update(args: argparse.Namespace) -> None:
                 ),
             },
             indent=2,
+            ensure_ascii=False,
         )
     )
 
@@ -338,6 +364,7 @@ def cmd_information_gain(args: argparse.Namespace) -> None:
                 ),
             },
             indent=2,
+            ensure_ascii=False,
         )
     )
 
@@ -392,7 +419,8 @@ def cmd_persist_computation(args: argparse.Namespace) -> None:
                 "entropy_after": round(args.entropy_after, 4),
                 "information_gain": round(args.information_gain, 4),
                 "question_count": orch.question_count,
-            }
+            },
+            ensure_ascii=False,
         )
     )
 
