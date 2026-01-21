@@ -160,9 +160,11 @@ def mark_promoted(
 
 def main():
     """CLI entry point."""
-    import sys
+    min_argc = 2  # program name + command
+    expected_merge_argc = 5  # program + command + 3 args
+    expected_mark_argc = 6  # program + command + 4 args
 
-    if len(sys.argv) < 2:
+    if len(sys.argv) < min_argc:
         print("Usage:", file=sys.stderr)
         print(
             "  pattern_updater.py merge <tracker_file> <keep> <merge>", file=sys.stderr
@@ -176,7 +178,7 @@ def main():
     command = sys.argv[1]
 
     if command == "merge":
-        if len(sys.argv) != 5:
+        if len(sys.argv) != expected_merge_argc:
             print(
                 "Usage: pattern_updater.py merge <tracker_file> <keep> <merge>",
                 file=sys.stderr,
@@ -192,7 +194,7 @@ def main():
         sys.exit(0 if result["status"] == "success" else 1)
 
     elif command == "mark":
-        if len(sys.argv) != 6:
+        if len(sys.argv) != expected_mark_argc:
             print(
                 "Usage: pattern_updater.py mark <tracker_file> <pattern> <type> <location>",
                 file=sys.stderr,

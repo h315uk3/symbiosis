@@ -100,7 +100,8 @@ if __name__ == "__main__":
     import doctest
     import sys
 
-    if len(sys.argv) == 3:
+    expected_argc_for_comparison = 3  # program name + 2 strings
+    if len(sys.argv) == expected_argc_for_comparison:
         # CLI usage: python levenshtein.py "string1" "string2"
         distance = levenshtein_distance(sys.argv[1], sys.argv[2])
         print(distance)

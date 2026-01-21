@@ -5,6 +5,7 @@ Replaces init-usage-stats.sh with testable Python implementation.
 """
 
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -48,9 +49,10 @@ def load_stats(stats_file: Path) -> dict:
         if "last_updated" not in data:
             data["last_updated"] = ""
 
-        return data
     except (OSError, json.JSONDecodeError):
         return {"skills": {}, "agents": {}, "last_updated": ""}
+    else:
+        return data
 
 
 def scan_skills(skills_dir: Path, stats: dict, current_date: str) -> int:
@@ -215,8 +217,6 @@ def init_usage_stats(
 
 def main():
     """CLI entry point."""
-    import os
-
     # Get paths from defaults
     project_root = os.getenv("PROJECT_ROOT", os.getcwd())
     claude_dir = os.getenv("CLAUDE_DIR", os.path.join(project_root, ".claude"))

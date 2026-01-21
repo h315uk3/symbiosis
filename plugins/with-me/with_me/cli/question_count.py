@@ -16,7 +16,8 @@ from with_me.lib.question_feedback_manager import QuestionFeedbackManager
 
 def main():
     """CLI entry point - argument parsing only"""
-    if len(sys.argv) != 2:
+    expected_argc = 2  # program name + session_id
+    if len(sys.argv) != expected_argc:
         print(
             "Usage: python3 -m with_me.cli.question_count <session_id>",
             file=sys.stderr,

@@ -13,7 +13,10 @@ This module encapsulates the core logic previously embedded in good-question.md,
 allowing the command file to focus on user interaction via AskUserQuestion.
 """
 
+import doctest
 import json
+import math
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +25,11 @@ from with_me.lib.dimension_belief import (
     create_default_dimension_beliefs,
 )
 from with_me.lib.question_feedback_manager import QuestionFeedbackManager
+
+# Thresholds
+CONFIDENCE_THRESHOLD_FOR_DISPLAY = (
+    0.5  # Minimum confidence to show most_likely hypothesis
+)
 
 
 class SessionOrchestrator:
@@ -181,8 +189,6 @@ class SessionOrchestrator:
 
             if prereq_satisfied:
                 # Use cached entropy or default to high value (max entropy for N hypotheses)
-                import math
-
                 entropy = (
                     hs._cached_entropy
                     if hs._cached_entropy is not None
@@ -284,8 +290,6 @@ class SessionOrchestrator:
         dimensions = {}
         for dim_id, hs in self.beliefs.items():
             # Use cached values from persist-computation
-            import math
-
             entropy = (
                 hs._cached_entropy
                 if hs._cached_entropy is not None
@@ -314,7 +318,9 @@ class SessionOrchestrator:
                 "converged": converged,
                 "blocked": len(blocked_by) > 0,
                 "blocked_by": blocked_by,
-                "most_likely": hs.get_most_likely() if confidence > 0.5 else None,
+                "most_likely": hs.get_most_likely()
+                if confidence > CONFIDENCE_THRESHOLD_FOR_DISPLAY
+                else None,
             }
 
         return {
@@ -359,9 +365,8 @@ class SessionOrchestrator:
 # CLI interface for testing
 def main():
     """Command-line interface for testing orchestrator."""
-    import sys
-
-    if len(sys.argv) < 2:
+    min_argc = 2  # program name + command
+    if len(sys.argv) < min_argc:
         print("Usage: python3 -m with_me.lib.session_orchestrator <command>")
         print("\nCommands:")
         print("  demo     - Run interactive demonstration")
@@ -402,8 +407,6 @@ def main():
         print(f"\nSession complete: {summary['total_questions']} questions asked")
 
     elif command == "test":
-        import doctest
-
         print("Running doctests...")
         result = doctest.testmod()
         if result.failed == 0:

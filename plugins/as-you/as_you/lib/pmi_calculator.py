@@ -11,6 +11,9 @@ from pathlib import Path
 from as_you.lib.common import AsYouConfig, load_tracker, save_tracker
 from as_you.lib.pattern_detector import extract_patterns
 
+# Constants
+WORD_PAIR_SIZE = 2  # Co-occurrence is between exactly 2 words
+
 
 def count_total_patterns(archive_dir: Path) -> int:
     """
@@ -89,7 +92,7 @@ def calculate_pmi(tracker_file: Path, archive_dir: Path) -> None:
     # Calculate PMI for each co-occurrence
     for cooccur in cooccurrences:
         words = cooccur.get("words", [])
-        if len(words) != 2:
+        if len(words) != WORD_PAIR_SIZE:
             continue
 
         word1, word2 = words

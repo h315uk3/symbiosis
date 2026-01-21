@@ -12,7 +12,8 @@ from as_you.lib.context_extractor import get_pattern_contexts
 
 def main():
     """Main entry point."""
-    if len(sys.argv) < 2:
+    min_argc = 2  # program name + pattern name
+    if len(sys.argv) < min_argc:
         print("Usage: python3 pattern_context.py <pattern-name>", file=sys.stderr)
         sys.exit(1)
 

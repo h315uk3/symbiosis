@@ -52,7 +52,8 @@ def add_note(content: str, note_file: Path | None = None) -> None:
 
 def main():
     """CLI entry point."""
-    if len(sys.argv) < 2:
+    min_argc = 2  # program name + content
+    if len(sys.argv) < min_argc:
         print('Usage: note_add.py "note content"', file=sys.stderr)
         sys.exit(1)
 

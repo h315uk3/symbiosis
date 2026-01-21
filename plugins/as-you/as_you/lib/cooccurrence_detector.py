@@ -5,6 +5,7 @@ Replaces detect-cooccurrence.sh with optimized Python implementation.
 Uses itertools.combinations for efficient pair generation.
 """
 
+import json
 import os
 import re
 import sys
@@ -59,7 +60,8 @@ def generate_word_pairs(words: list[str]) -> list[tuple]:
         >>> generate_word_pairs([])
         []
     """
-    if len(words) < 2:
+    min_words_for_cooccurrence = 2
+    if len(words) < min_words_for_cooccurrence:
         return []
 
     # Use itertools.combinations for efficient pair generation
@@ -99,33 +101,29 @@ def detect_cooccurrences(archive_dir: Path, top_n: int = 20) -> list[dict]:
     # Counter for word pair frequencies
     pair_counter = Counter()
 
-    try:
-        # Process all markdown files in archive
-        for md_file in archive_dir.glob("*.md"):
-            if not md_file.is_file():
-                continue
+    # Process all markdown files in archive
+    for md_file in archive_dir.glob("*.md"):
+        if not md_file.is_file():
+            continue
 
-            try:
-                with open(md_file, encoding="utf-8") as f:
-                    for line in f:
-                        # Remove timestamps [HH:MM]
-                        line = re.sub(r"\[\d{2}:\d{2}\]", "", line)
+        try:
+            with open(md_file, encoding="utf-8") as f:
+                for line in f:
+                    # Remove timestamps [HH:MM]
+                    cleaned_line = re.sub(r"\[\d{2}:\d{2}\]", "", line)
 
-                        # Extract words from line
-                        words = extract_words(line)
+                    # Extract words from line
+                    words = extract_words(cleaned_line)
 
-                        # Generate word pairs
-                        pairs = generate_word_pairs(words)
+                    # Generate word pairs
+                    pairs = generate_word_pairs(words)
 
-                        # Count pairs
-                        for pair in pairs:
-                            pair_counter[pair] += 1
+                    # Count pairs
+                    for pair in pairs:
+                        pair_counter[pair] += 1
 
-            except (OSError, UnicodeDecodeError):
-                continue
-
-    except Exception:
-        pass
+        except (OSError, UnicodeDecodeError):
+            continue
 
     # Return top N pairs as list of dicts
     result = []
@@ -137,8 +135,6 @@ def detect_cooccurrences(archive_dir: Path, top_n: int = 20) -> list[dict]:
 
 def main():
     """CLI entry point."""
-    import json
-
     # Get paths from environment or defaults
     project_root = os.getenv("PROJECT_ROOT", os.getcwd())
     claude_dir = Path(os.getenv("CLAUDE_DIR", os.path.join(project_root, ".claude")))

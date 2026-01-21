@@ -5,6 +5,7 @@ Provides both archive-based extraction and tracker-based retrieval.
 Replaces extract-contexts.sh with testable Python implementation.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -135,39 +136,36 @@ def extract_contexts_for_pattern(
 
     contexts = []
 
-    try:
-        # Search all .md files in archive
-        for md_file in archive_dir.glob("*.md"):
-            if not md_file.is_file():
-                continue
+    # Search all .md files in archive
+    for md_file in archive_dir.glob("*.md"):
+        if not md_file.is_file():
+            continue
 
-            try:
-                with open(md_file, encoding="utf-8") as f:
-                    lines = f.readlines()
-            except (OSError, UnicodeDecodeError):
-                continue
+        try:
+            with open(md_file, encoding="utf-8") as f:
+                lines = f.readlines()
+        except (OSError, UnicodeDecodeError):
+            continue
 
-            # Search for pattern (case-insensitive)
-            pattern_lower = pattern.lower()
-            for i, line in enumerate(lines):
-                if pattern_lower in line.lower():
-                    # Get context: line before, matching line, line after
-                    context_lines = []
-                    if i > 0:
-                        context_lines.append(lines[i - 1].strip())
-                    context_lines.append(line.strip())
-                    if i < len(lines) - 1:
-                        context_lines.append(lines[i + 1].strip())
+        # Search for pattern (case-insensitive)
+        pattern_lower = pattern.lower()
+        for i, line in enumerate(lines):
+            if pattern_lower in line.lower():
+                # Get context: line before, matching line, line after
+                context_lines = []
+                if i > 0:
+                    context_lines.append(lines[i - 1].strip())
+                context_lines.append(line.strip())
+                if i < len(lines) - 1:
+                    context_lines.append(lines[i + 1].strip())
 
-                    # Add non-empty context lines
-                    for ctx_line in context_lines:
-                        if ctx_line and ctx_line != "--":
-                            contexts.append(ctx_line)
+                # Add non-empty context lines
+                for ctx_line in context_lines:
+                    if ctx_line and ctx_line != "--":
+                        contexts.append(ctx_line)
 
-                            if len(contexts) >= max_contexts:
-                                return contexts
-    except Exception:
-        pass
+                        if len(contexts) >= max_contexts:
+                            return contexts
 
     return contexts
 
@@ -235,8 +233,6 @@ def main():
     )
 
     # Output JSON
-    import json
-
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 

@@ -99,9 +99,27 @@ def usage() -> None:
     print("  stats", file=sys.stderr)
 
 
+def _validate_args(command: str, args: list[str]) -> None:
+    """Validate command arguments (raises ValueError if invalid)"""
+    expected_record_argc = 5  # command + 4 args
+    expected_batch_argc = 3  # command + 2 args
+    expected_complete_argc = 3  # command + 2 args
+
+    if command == "record" and len(args) != expected_record_argc:
+        msg = "record requires 4 arguments"
+        raise ValueError(msg)
+    elif command == "record-batch" and len(args) != expected_batch_argc:
+        msg = "record-batch requires 2 arguments"
+        raise ValueError(msg)
+    elif command == "complete" and len(args) != expected_complete_argc:
+        msg = "complete requires 2 arguments"
+        raise ValueError(msg)
+
+
 def main() -> None:
     """CLI entry point"""
-    if len(sys.argv) < 2:
+    min_argc = 2  # program name + command
+    if len(sys.argv) < min_argc:
         usage()
         sys.exit(1)
 
@@ -119,20 +137,21 @@ def main() -> None:
 
     command = args[0]
 
+    # Validate arguments before entering try block
+    try:
+        _validate_args(command, args)
+    except ValueError as e:
+        print(json.dumps({"error": str(e)}), file=sys.stderr)
+        sys.exit(1)
+
     try:
         if command == "start":
             cmd_start(plain_output=plain_output)
         elif command == "record":
-            if len(args) != 5:
-                raise ValueError("record requires 4 arguments")
             cmd_record(args[1], args[2], args[3], args[4])
         elif command == "record-batch":
-            if len(args) != 3:
-                raise ValueError("record-batch requires 2 arguments")
             cmd_record_batch(args[1], args[2])
         elif command == "complete":
-            if len(args) != 3:
-                raise ValueError("complete requires 2 arguments")
             cmd_complete(args[1], args[2])
         elif command == "stats":
             cmd_stats()

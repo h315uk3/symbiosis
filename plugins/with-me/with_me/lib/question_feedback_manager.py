@@ -13,6 +13,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, TypedDict
 
+# Thresholds
+UNCERTAINTY_RESOLVED_THRESHOLD = 0.3  # Uncertainty threshold for dimension resolution
+
 
 @dataclass(frozen=True)
 class WithMeConfig:
@@ -165,10 +168,11 @@ def load_feedback(feedback_file: Path) -> FeedbackData:
             if key not in data:
                 data[key] = value
 
-        return data
     except (json.JSONDecodeError, OSError) as e:
         print(f"Warning: Could not load feedback file: {e}")
         return default_data
+    else:
+        return data
 
 
 def save_feedback(feedback_file: Path, data: FeedbackData) -> None:
@@ -206,7 +210,8 @@ def save_feedback(feedback_file: Path, data: FeedbackData) -> None:
     except Exception as e:
         if temp_file.exists():
             temp_file.unlink()
-        raise OSError(f"Failed to save feedback: {e}") from e
+        msg = f"Failed to save feedback: {e}"
+        raise OSError(msg) from e
 
 
 class QuestionFeedbackManager:
@@ -287,7 +292,8 @@ class QuestionFeedbackManager:
         """
         session = self._find_session(session_id)
         if session is None:
-            raise ValueError(f"Session {session_id} not found")
+            msg = f"Session {session_id} not found"
+            raise ValueError(msg)
 
         question_data: QuestionData = {
             "question": question,
@@ -340,7 +346,8 @@ class QuestionFeedbackManager:
         """
         session = self._find_session(session_id)
         if session is None:
-            raise ValueError(f"Session {session_id} not found")
+            msg = f"Session {session_id} not found"
+            raise ValueError(msg)
 
         # Calculate summary
         questions = session["questions"]
@@ -357,7 +364,9 @@ class QuestionFeedbackManager:
         )
 
         dimensions_resolved = [
-            dim for dim, unc in final_uncertainties.items() if unc < 0.3
+            dim
+            for dim, unc in final_uncertainties.items()
+            if unc < UNCERTAINTY_RESOLVED_THRESHOLD
         ]
 
         summary: SessionSummary = {

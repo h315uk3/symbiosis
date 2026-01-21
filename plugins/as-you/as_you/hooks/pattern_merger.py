@@ -62,7 +62,8 @@ def create_backup(tracker_file: Path, keep_count: int = 5) -> Path | None:
         True
     """
     if not tracker_file.exists():
-        raise FileNotFoundError(f"Tracker file not found: {tracker_file}")
+        msg = f"Tracker file not found: {tracker_file}"
+        raise FileNotFoundError(msg)
 
     # Create backup with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -256,8 +257,6 @@ def _count_patterns(tracker_file: Path) -> int:
 
 def main():
     """CLI entry point."""
-    import os
-
     # Get paths from environment
     config = AsYouConfig.from_environment()
     tracker_file = config.tracker_file

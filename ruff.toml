@@ -24,6 +24,8 @@ extend-select = [
     "SIM",  # flake8-simplify: Simplification suggestions
     "RUF",  # Ruff-specific rules
     "W",    # pycodestyle warnings
+    "PL",   # Pylint: Additional static analysis checks
+    "TRY",  # tryceratops: Exception handling best practices
 ]
 
 # Project-specific ignores
@@ -56,6 +58,11 @@ section-order = ["future", "standard-library", "third-party", "first-party", "lo
 [lint.mccabe]
 # Maximum cyclomatic complexity
 max-complexity = 10
+
+[lint.pylint]
+# Allow up to 8 arguments for complex functions (default: 5)
+# Some functions like record_question legitimately need more parameters
+max-args = 8
 
 [format]
 # Use double quotes for strings (matches project style)

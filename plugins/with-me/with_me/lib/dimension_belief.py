@@ -18,6 +18,9 @@ Skills:
 Related: #37
 """
 
+import doctest
+import math
+import sys
 from typing import Any
 
 
@@ -33,19 +36,25 @@ class HypothesisSet:
     - /with-me:bayesian-update for posterior updating
     - /with-me:information-gain for information gain calculation
 
+    Constants:
+        EPSILON: Small value to avoid log(0) errors in entropy calculation
+
     Examples:
         >>> # Initialize with uniform prior
         >>> hs = HypothesisSet(
         ...     dimension="purpose", hypotheses=["web_app", "cli_tool", "library"]
         ... )
-        >>> hs.posterior["web_app"]
-        0.333...
+        >>> round(hs.posterior["web_app"], 2)
+        0.33
 
         >>> # Get most likely hypothesis
         >>> hs.posterior = {"web_app": 0.7, "cli_tool": 0.2, "library": 0.1}
         >>> hs.get_most_likely()
         'web_app'
     """
+
+    # Class constants
+    EPSILON = 1e-10  # Threshold to avoid log(0) in entropy calculation
 
     def __init__(
         self,
@@ -99,15 +108,68 @@ class HypothesisSet:
         self._cached_entropy: float | None = None
         self._cached_confidence: float | None = None
 
-    # Computation methods removed - use skills instead:
-    # - /with-me:entropy for H(h) calculation
-    # - /with-me:bayesian-update for posterior updating
-    # - /with-me:information-gain for IG calculation
-    #
-    # CLI commands:
-    # - python -m with_me.cli.session compute-entropy
-    # - python -m with_me.cli.session bayesian-update
-    # - python -m with_me.cli.session persist-computation
+    def entropy(self) -> float:
+        """
+        Calculate Shannon entropy: H(h) = -Σ p(h) log₂ p(h)
+
+        Returns:
+            Entropy in bits (0 = certain, log₂(N) = maximum uncertainty)
+
+        Examples:
+            >>> # Maximum uncertainty (uniform distribution)
+            >>> hs = HypothesisSet("test", ["a", "b", "c", "d"])
+            >>> round(hs.entropy(), 2)
+            2.0
+
+            >>> # Complete certainty
+            >>> hs.posterior = {"a": 1.0, "b": 0.0, "c": 0.0, "d": 0.0}
+            >>> round(hs.entropy(), 2)
+            0.0
+
+            >>> # Partial uncertainty
+            >>> hs.posterior = {"a": 0.7, "b": 0.2, "c": 0.05, "d": 0.05}
+            >>> 0.9 < hs.entropy() < 1.3
+            True
+        """
+        h = 0.0
+        for p in self.posterior.values():
+            if p > self.EPSILON:  # Avoid log(0)
+                h -= p * math.log2(p)
+        return h
+
+    def update(self, likelihoods: dict[str, float]) -> None:
+        """
+        Bayesian update with given likelihoods.
+        p₁(h) ∝ p₀(h) × L(observation|h)
+
+        Args:
+            likelihoods: L(observation|h) for each hypothesis (from LLM semantic analysis)
+
+        Examples:
+            >>> hs = HypothesisSet("test", ["web_app", "cli_tool"])
+            >>> # Start with uniform prior
+            >>> hs.posterior["web_app"]
+            0.5
+
+            >>> # User answer strongly suggests CLI tool
+            >>> hs.update({"web_app": 0.1, "cli_tool": 0.9})
+            >>> hs.posterior["cli_tool"] > 0.8
+            True
+
+            >>> # Another observation refines belief
+            >>> hs.update({"web_app": 0.2, "cli_tool": 0.8})
+            >>> hs.posterior["cli_tool"] > 0.9
+            True
+        """
+        # Bayes rule: p_new(h) ∝ p_old(h) * L(observation|h)
+        updated = {}
+        for h in self.hypotheses:
+            updated[h] = self.posterior[h] * likelihoods[h]
+
+        # Normalize to valid probability distribution
+        total = sum(updated.values())
+        if total > 0:
+            self.posterior = {h: p / total for h, p in updated.items()}
 
     def get_most_likely(self) -> str:
         """
@@ -251,9 +313,8 @@ def create_default_dimension_beliefs() -> dict[str, HypothesisSet]:
 # CLI interface
 def main():
     """Command-line usage example"""
-    import sys
-
-    if len(sys.argv) < 2:
+    min_argc = 2  # program name + command
+    if len(sys.argv) < min_argc:
         print("Usage: python dimension_belief.py <command>")
         print("\nCommands:")
         print("  test     - Run doctests")
@@ -266,8 +327,6 @@ def main():
     command = sys.argv[1]
 
     if command == "test":
-        import doctest
-
         print("Running doctests...")
         result = doctest.testmod()
         if result.failed == 0:

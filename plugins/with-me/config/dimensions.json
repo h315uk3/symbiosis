@@ -228,6 +228,7 @@
       "short_name": "Limits",
       "description": "Technical limitations, performance, and compatibility",
       "importance": 0.6,
+      "supports_multi_select": true,
       "prerequisites": [
         "behavior",
         "data"
@@ -309,6 +310,7 @@
       "short_name": "Success",
       "description": "Success criteria, edge cases, and testing",
       "importance": 0.5,
+      "supports_multi_select": true,
       "prerequisites": [
         "behavior"
       ],
