@@ -5,6 +5,7 @@ Replaces O(n²) brute force with O(n log n) tree-based search.
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -94,7 +95,8 @@ def detect_similar_patterns(
             if meta.get("count", 0) >= min_count
         }
 
-    if len(patterns) < 2:
+    min_patterns_for_comparison = 2
+    if len(patterns) < min_patterns_for_comparison:
         return []
 
     # Build BK-Tree
@@ -116,8 +118,8 @@ def detect_similar_patterns(
             if word < match_word:
                 p1, p2 = word, match_word
             else:
-                p1, p2 = match_word, word
-                continue  # Already processed in reverse order
+                # Already processed in reverse order
+                continue
 
             # Get pattern metadata
             meta1 = patterns[p1]
@@ -156,8 +158,6 @@ def detect_similar_patterns(
 
 def main():
     """CLI entry point."""
-    import os
-
     # Get paths from environment
     config = AsYouConfig.from_environment()
     tracker_file = config.tracker_file

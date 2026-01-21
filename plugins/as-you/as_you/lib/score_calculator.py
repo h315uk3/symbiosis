@@ -28,6 +28,9 @@ from as_you.lib.common import AsYouConfig
 from as_you.lib.pmi_calculator import count_total_patterns
 from as_you.lib.tfidf_calculator import calculate_tfidf_single_pass, is_stopword
 
+# Constants
+WORD_PAIR_SIZE = 2  # Co-occurrence is between exactly 2 words
+
 
 class UnifiedScoreCalculator:
     """
@@ -134,7 +137,7 @@ class UnifiedScoreCalculator:
 
         for cooccur in self.cooccurrences:
             words = cooccur.get("words", [])
-            if len(words) != 2:
+            if len(words) != WORD_PAIR_SIZE:
                 continue
 
             word1, word2 = words

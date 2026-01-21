@@ -127,10 +127,10 @@ def mark_as_promoted(
             except Exception:
                 pass  # Non-fatal if scoring fails
 
-        return result
-
     except Exception as e:
         return {"status": "error", "message": str(e)}
+    else:
+        return result
 
 
 def main():

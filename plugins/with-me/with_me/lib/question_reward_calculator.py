@@ -16,6 +16,8 @@ Skills:
 Related: #37, #44, #54
 """
 
+import doctest
+import sys
 from dataclasses import dataclass
 from typing import Any, TypedDict
 
@@ -146,9 +148,6 @@ class RewardResponse:
 # CLI interface for testing
 def main():
     """Command-line usage example"""
-    import doctest
-    import sys
-
     if len(sys.argv) > 1 and sys.argv[1] == "--test":
         print("Running doctests...")
         result = doctest.testmod()

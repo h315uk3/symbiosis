@@ -88,11 +88,11 @@ def extract_description(contexts: list[str], max_length: int = 100) -> str:
     cleaned = []
     for ctx in sample:
         # Remove timestamps [HH:MM]
-        ctx = re.sub(r"\[\d{2}:\d{2}\]\s*", "", ctx)
+        cleaned_ctx = re.sub(r"\[\d{2}:\d{2}\]\s*", "", ctx)
         # Normalize spaces
-        ctx = re.sub(r"\s+", " ", ctx).strip()
-        if ctx:
-            cleaned.append(ctx)
+        cleaned_ctx = re.sub(r"\s+", " ", cleaned_ctx).strip()
+        if cleaned_ctx:
+            cleaned.append(cleaned_ctx)
 
     description = " ".join(cleaned)
     return description[:max_length]

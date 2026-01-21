@@ -116,13 +116,13 @@ def load_tracker(tracker_file: Path) -> TrackerData:
             if key not in data:
                 data[key] = default_data[key]
 
-        return data
-
     except (OSError, json.JSONDecodeError) as e:
         # Python 3.11+: Add context to exception
         e.add_note(f"Failed to load tracker file: {tracker_file}")
         e.add_note("File may be corrupted. Consider restoring from backup.")
         raise
+    else:
+        return data
 
 
 def save_tracker(tracker_file: Path, data: TrackerData) -> None:
