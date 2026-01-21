@@ -43,6 +43,23 @@ The with-me plugin implements a **hybrid computational architecture** where:
 - **Zero External Dependencies**: No NumPy, SciPy, or ML libraries required
 - **Skill Composition**: Skills can invoke other skills for complex workflows
 
+**Stateful Session Design:**
+
+This plugin uses **persistent session state** rather than stateless API calls. This design choice is intentional for Claude Code's long-running interactive sessions:
+
+1. **Progressive Accumulation**: Each question builds on previous answers, requiring full conversation history
+2. **Session Resumption**: Users can pause and resume requirement elicitation across multiple Claude Code sessions
+3. **Token Efficiency**: Avoids re-transmitting entire belief state on every API call (CLI stores state in `.claude/with_me/sessions/`)
+4. **Audit Trail**: Complete question history preserved for requirement specification generation and debugging
+5. **Convergence Detection**: Tracks entropy trends over time to detect when sufficient clarity is achieved
+
+Session state includes:
+- **Beliefs**: Posterior probability distributions over all hypotheses (Bayesian-updated after each answer)
+- **Question History**: All questions, answers, and information gain metrics
+- **Metadata**: Session ID, question count, convergence status
+
+This stateful design is optimized for Claude Code's use case (interactive requirement elicitation) rather than ephemeral API calls or microservices.
+
 **Information-Theoretic Foundation:**
 
 The system uses Bayesian belief updating and information theory for adaptive questioning:
@@ -59,6 +76,49 @@ r(Q) = EIG(Q) + 0.1 * clarity(Q) + 0.05 * importance(Q)
 4. **Information Gain**: IG = H_before - H_after - quantifies learning from each answer
 
 This architecture enables continuous improvement through statistical analysis of question effectiveness across sessions.
+
+---
+
+## Configuration and Thresholds
+
+The system uses several configurable thresholds in `config/dimensions.json`:
+
+### Convergence Threshold (default: 0.3)
+**What it means**: Entropy value below which a dimension is considered "resolved"
+- **Entropy scale**: 0.0 (complete certainty) to log₂(N) bits (maximum uncertainty, where N = number of hypotheses)
+- **Example**: For 4 hypotheses, max entropy = 2.0 bits
+  - Entropy 0.3 → ~85% confidence in one hypothesis
+  - Entropy 1.0 → ~50% confidence spread across 2-3 hypotheses
+  - Entropy 2.0 → uniform distribution (complete uncertainty)
+
+**When to adjust**:
+- **Lower (e.g., 0.2)**: Need higher confidence before moving on (more questions, longer sessions)
+- **Higher (e.g., 0.5)**: Accept moderate confidence (fewer questions, faster sessions)
+
+### Prerequisite Threshold (default: 1.5)
+**What it means**: Maximum entropy allowed in prerequisite dimension before unblocking dependent dimensions
+- **Purpose**: Ensures foundational dimensions (e.g., "Purpose") are clarified before advanced ones (e.g., "Performance")
+
+**When to adjust**:
+- **Lower (e.g., 1.0)**: Require stronger clarity in prerequisites
+- **Higher (e.g., 2.0)**: Allow parallel exploration of dimensions with less strict ordering
+
+### Question Limits
+- **max_questions** (default: 50): Safety limit to prevent infinite loops
+- **min_questions** (default: 5): Minimum questions before allowing early termination
+
+### Likelihood Validation
+The system validates all LLM-generated likelihood values to ensure numerical stability:
+- **Epsilon** (1e-9): Minimum non-zero likelihood value (prevents log(0) errors)
+- **Normalization**: All likelihoods automatically normalized to sum=1.0
+- **Negative Clamping**: Negative values clamped to 0.0
+- **Uniform Fallback**: If all likelihoods are zero, falls back to uniform distribution
+
+**Adjust thresholds based on**:
+- **Domain complexity**: More complex domains may need lower convergence thresholds
+- **Time constraints**: Tighter schedules may warrant higher thresholds
+- **User patience**: Longer sessions require user engagement tolerance
+- **Requirement criticality**: Safety-critical systems need lower thresholds (higher confidence)
 
 ---
 

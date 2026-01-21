@@ -213,12 +213,28 @@ All values are provided in the CLI output. Calculate and store as `IMPORTANCE` (
 
 **Step 4: Estimate EIG (bits)**
 
-Based on the EIG criteria from CLI output, estimate expected information gain:
+**Probability-Based Estimation Method:**
+
+For each hypothesis h_i with posterior probability P(h_i), consider how the question's answer templates would affect beliefs:
+
+1. **Enumerate likely answer templates** (2-4 realistic user responses)
+2. **For each template t**: Estimate P(h_i | t) - how would each hypothesis's probability change?
+3. **Calculate entropy after template**: H(t) = -Σ P(h_i | t) × log₂(P(h_i | t))
+4. **Estimate template probability**: P(t) - how likely is this answer?
+5. **Compute expected entropy**: H_expected = Σ P(t) × H(t)
+6. **Calculate EIG**: EIG = H_current - H_expected
+
+**IMPORTANT:** These answer templates are HYPOTHETICAL, for calculation only. They are NOT the user's actual answer. You must still ask the user and wait for their real response in Step 2.2c.
+
+**Practical Guidelines:**
+- Strong discriminating questions with clear answer patterns: 0.5-1.0 bits
+- Moderate questions that partially narrow uncertainty: 0.3-0.5 bits
+- Weak questions with ambiguous or overlapping answers: 0.1-0.3 bits
+
+**Quality Checks:**
 - Does the question target high-probability hypotheses?
 - Would different answers clearly distinguish hypotheses?
-- Is the question relevant to current uncertainty?
-
-Use the heuristic: Strong discriminating questions: 0.5-1.0 bits, Weak: 0.1-0.3 bits
+- Is the question relevant to current uncertainty (high entropy dimensions)?
 
 Store as `EIG` (float, bits)
 
@@ -320,7 +336,27 @@ This command internally:
 
 Output (internal use only): `status`, `entropy_before`, `entropy_after`, `information_gain`, `question_count`
 
-**WARNING CHECK:** If `information_gain` is negative (uncertainty increased), your likelihood estimates likely contradicted previous answers. This indicates inconsistent reasoning. While the system will continue, review your estimates for logical consistency in future questions.
+**ANOMALY DETECTION: Negative Information Gain**
+
+If `information_gain` is negative (IG < 0), this means uncertainty *increased* rather than decreased. This is an anomaly with two possible root causes:
+
+**Root Cause 1: Inconsistent Likelihood Estimation**
+- Your P(answer | hypothesis) estimates contradicted previous answers
+- Example: Previously indicated "web app", but new likelihood strongly favored "CLI tool"
+- **Action**: Review answer history and ensure new estimates are consistent with established facts
+
+**Root Cause 2: Genuinely Conflicting Information**
+- User's answer genuinely contradicts their previous responses
+- Example: User said "real-time updates" but later rejected "WebSocket" and "database"
+- **Action**: This is valid uncertainty - system correctly reflects the conflict
+
+**How to Proceed:**
+1. **Check for estimation errors first**: Review your likelihood values for logical consistency
+2. **If estimates are sound**: Accept the negative IG - the user may need to resolve contradictions
+3. **Continue normally**: The system handles negative IG gracefully with validation (values are clamped to valid probabilities)
+4. **Future questions**: Pay extra attention to consistency with ALL previous answers, not just the most recent one
+
+The system will continue execution - this warning helps you maintain quality in future likelihood estimates.
 
 **Multi-select continuation:** If the user selected multiple items and you haven't processed all of them yet:
 - Return to Phase A with the next unprocessed item

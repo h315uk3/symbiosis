@@ -27,6 +27,84 @@ DIMENSION_RESOLVED_THRESHOLD = (
     0.3  # Entropy threshold for considering a dimension resolved
 )
 
+# Likelihood validation constants
+LIKELIHOOD_EPSILON = 1e-9  # Minimum non-zero likelihood value
+
+
+def validate_and_normalize_likelihoods(
+    hs: HypothesisSet, likelihoods_in: dict[str, Any]
+) -> dict[str, float]:
+    """Validate and normalize likelihoods for Bayesian update.
+
+    Handles common input errors from LLM-generated likelihoods:
+    - Missing hypotheses → treated as 0.0
+    - Negative values → clamped to 0.0
+    - All zeros → fallback to uniform distribution
+    - Otherwise → normalized to sum=1.0
+    - Extreme values → clamped to epsilon
+
+    Args:
+        hs: HypothesisSet containing the hypotheses
+        likelihoods_in: Raw likelihood dict from LLM
+
+    Returns:
+        Normalized likelihood dict (sum=1.0, all non-negative)
+
+    Examples:
+        >>> hs = HypothesisSet("test", ["a", "b", "c"])
+        >>> # Normal case
+        >>> validate_and_normalize_likelihoods(hs, {"a": 0.5, "b": 0.3, "c": 0.2})
+        {'a': 0.5, 'b': 0.3, 'c': 0.2}
+
+        >>> # Missing keys → filled with 0.0
+        >>> result = validate_and_normalize_likelihoods(hs, {"a": 1.0})
+        >>> round(result["a"], 2)
+        1.0
+        >>> round(result["b"], 2)
+        0.0
+
+        >>> # Negative values → clamped to 0.0
+        >>> result = validate_and_normalize_likelihoods(
+        ...     hs, {"a": 0.5, "b": -0.1, "c": 0.6}
+        ... )
+        >>> result["b"]
+        0.0
+
+        >>> # All zeros → uniform fallback
+        >>> result = validate_and_normalize_likelihoods(
+        ...     hs, {"a": 0.0, "b": 0.0, "c": 0.0}
+        ... )
+        >>> round(result["a"], 2)
+        0.33
+
+        >>> # Unnormalized → normalized
+        >>> result = validate_and_normalize_likelihoods(
+        ...     hs, {"a": 2.0, "b": 3.0, "c": 5.0}
+        ... )
+        >>> round(result["a"], 2)
+        0.2
+        >>> round(result["c"], 2)
+        0.5
+    """
+    vals = {}
+    for h in hs.hypotheses:
+        v = float(likelihoods_in.get(h, 0.0))
+        if v < 0:
+            v = 0.0
+        # Clamp extremely small values to epsilon
+        if 0 < v < LIKELIHOOD_EPSILON:
+            v = LIKELIHOOD_EPSILON
+        vals[h] = v
+
+    s = sum(vals.values())
+    if s <= 0.0:
+        # Uniform fallback when all likelihoods are zero
+        u = 1.0 / len(hs.hypotheses) if hs.hypotheses else 1.0
+        return {h: u for h in hs.hypotheses}
+
+    # Normalize to sum=1.0
+    return {h: v / s for h, v in vals.items()}
+
 
 def get_session_dir() -> Path:
     """Get session persistence directory."""
@@ -368,11 +446,14 @@ def cmd_update_with_computation(args: argparse.Namespace) -> None:
     # Phase B: Computation chain (Python)
     hs = orch.beliefs[args.dimension]
 
+    # Validate and normalize likelihoods to handle malformed LLM output
+    validated_likelihoods = validate_and_normalize_likelihoods(hs, likelihoods)
+
     # B1: Entropy before
     h_before = hs.entropy()
 
-    # B2: Bayesian update
-    hs.update(likelihoods)
+    # B2: Bayesian update with validated likelihoods
+    hs.update(validated_likelihoods)
 
     # B3: Entropy after
     h_after = hs.entropy()
