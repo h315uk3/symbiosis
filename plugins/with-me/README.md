@@ -153,50 +153,6 @@ At each step, Claude identifies the dimension with highest remaining uncertainty
 
 ## Available Skills
 
-The plugin provides 10 specialized skills for computational tasks:
-
-### Core Computational Skills
-
-**`/with-me:entropy`** - Shannon Entropy Calculation
-- Computes H(h) = -Σ p(h) log₂ p(h) from posterior distributions
-- Returns uncertainty measurement in bits
-
-**`/with-me:bayesian-update`** - Bayesian Belief Updating
-- Applies p₁(h) = [p₀(h) * L(obs|h)] / Σ[p₀(h) * L(obs|h)]
-- Updates beliefs after receiving evidence
-
-**`/with-me:information-gain`** - Information Gain Calculation
-- Computes IG = H_before - H_after
-- Quantifies learning from each question-answer pair
-
-### Question Evaluation Skills
-
-**`/with-me:question-clarity`** - Clarity Scoring
-- Evaluates question comprehensibility (0.0-1.0)
-- Checks for ambiguity, jargon, and structure
-
-**`/with-me:question-importance`** - Importance Scoring
-- Assesses strategic value of question (0.0-1.0)
-- Considers dimension priority and context
-
-**`/with-me:eig-calculation`** - Expected Information Gain
-- Predicts uncertainty reduction via counterfactual simulation
-- Guides optimal question selection
-
-### Statistical Analysis Skills
-
-**`/with-me:statistical-measures`** - Descriptive Statistics
-- Computes mean, median, standard deviation, variance
-- Used for analyzing question effectiveness metrics
-
-**`/with-me:correlation`** - Pearson Correlation
-- Measures linear relationship between two variables
-- Validates prediction accuracy and metric relationships
-
-**`/with-me:grid-search`** - Parameter Optimization
-- Performs exhaustive search over parameter space
-- Optimizes session configuration thresholds
-
 ### Specification Generation Skill
 
 **`/with-me:requirement-analysis`** - Structured Requirement Specification
