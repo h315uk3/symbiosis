@@ -10,25 +10,6 @@ Working with you, Claude elicits requirements through information theory-inspire
 
 ### `/with-me:good-question` - Adaptive Requirement Elicitation
 
-**Note**: This command now includes automatic question effectiveness tracking. Each question's reward score (information gain, clarity, specificity, etc.) is recorded for continuous improvement.
-
-### `/with-me:stats` - Question Effectiveness Dashboard
-
-View statistics about question effectiveness from past sessions.
-
-**What it shows:**
-- Total sessions and questions asked
-- Best performing question patterns (highest reward scores)
-- Dimension-specific statistics (avg information gain per dimension)
-- Recent session summaries
-
-**Usage:**
-```bash
-/with-me:stats
-```
-
-**Data Storage**: All statistics are stored locally in `~/.claude/with_me/question_feedback.json`
-
 ---
 
 ## Claude Computational Engine Architecture
