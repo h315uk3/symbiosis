@@ -3,8 +3,36 @@ name: Tests
 on:
   push:
     branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.claude/rules/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'CLAUDE.md'
+      - 'CONTRIBUTING.md'
+      - 'mise.toml'
+      - 'ruff.toml'
+      - '.vscode/**'
+      - '.github/instructions.md'
+      - '**.schema.json'
+      - '.claude-plugin/marketplace.json'
   pull_request:
     branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.claude/rules/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'CLAUDE.md'
+      - 'CONTRIBUTING.md'
+      - 'mise.toml'
+      - 'ruff.toml'
+      - '.vscode/**'
+      - '.github/instructions.md'
+      - '**.schema.json'
+      - '.claude-plugin/marketplace.json'
 
 jobs:
   test:
