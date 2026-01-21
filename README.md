@@ -46,9 +46,9 @@ Claude learns from your work patterns and builds knowledge automatically from yo
 Working with you, Claude elicits requirements through information theory-inspired adaptive questioning.
 
 **Key Features:**
-- `/with-me:good-question` - Adaptive requirement elicitation with automatic effectiveness tracking
-- `/with-me:stats` - Question effectiveness dashboard with reward-based analytics
-- Adaptive questioning based on uncertainty dimensions (simplified approximation model)
+- `/with-me:good-question` - Adaptive requirement elicitation using information theory
+- Information-theoretic approach: Shannon entropy, Bayesian updating, Expected Information Gain
+- Automatic quality control with REWARD threshold (regenerates low-quality questions)
 - Structured specification generation via forked context analysis
 
 ---
