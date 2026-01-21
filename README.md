@@ -57,18 +57,23 @@ Working with you, Claude elicits requirements through information theory-inspire
 
 ### Add Marketplace
 
+Add this marketplace to Claude Code:
+
 ```bash
-# Add this marketplace to Claude Code
 /plugin marketplace add h315uk3/symbiosis
 ```
 
 ### Install Plugins
 
-```bash
-# Install As You plugin
-/plugin install as-you@h315uk3-symbiosis
+Install As You plugin:
 
-# Install With Me plugin
+```bash
+/plugin install as-you@h315uk3-symbiosis
+```
+
+Install With Me plugin:
+
+```bash
 /plugin install with-me@h315uk3-symbiosis
 ```
 
