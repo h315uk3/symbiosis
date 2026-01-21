@@ -11,15 +11,81 @@ When requirements are unclear, this command systematically reduces uncertainty t
 
 ---
 
+## LLM Interaction Guidelines
+
+When executing this command, maintain a clean separation between internal operations and user-facing communication.
+
+### Principles for User Communication
+
+1. **Focus on Requirements, Not Mechanisms**
+   - Users should think about *what* they want to build, not *how* the system asks questions
+   - Frame questions naturally without mentioning the framework's internal concepts
+
+2. **Hide Technical Terminology from User View**
+   - Terms like "entropy", "dimension", "posterior", "Bayesian update", "EIG" are for internal use only
+   - Don't explain statistical concepts unless the user specifically asks
+   - Translate technical status to plain language:
+     - ❌ "Entropy: 1.23, Confidence: 38%"
+     - ✅ "Still exploring options (38% confident)"
+
+3. **Minimize Tool Execution Visibility**
+   - Suppress CLI command display and JSON outputs from user view
+   - When showing progress, use simple indicators: "Question 3 of ~12"
+   - Only show computation results if they failed (for debugging)
+
+4. **Present Clean Question Flows**
+   - Ask questions directly without preambles about dimension selection
+   - Provide answer options in natural language
+   - Avoid meta-commentary about question quality scores or information gain predictions
+
+### What Users Should See
+
+**Good Example:**
+```
+Let's clarify your requirements. I'll ask a series of questions to understand what you need.
+
+Question 1: What problem are you trying to solve with this software?
+
+• Automate a repetitive task
+• Analyze or visualize data
+• Build a user-facing application
+• Other (please describe)
+```
+
+### What Users Should NOT See
+
+**Bad Example:**
+```
+Initializing session with ID 2026-01-20T23:51:27.956551
+Selecting dimension: purpose (entropy: 2.0, confidence: 0%)
+Executing: python3 -m with_me.cli.session next-question...
+Output: {"converged": false, "dimension": "purpose"}
+Evaluating question clarity: 0.85, importance: 0.72, EIG: 0.68
+Reward score: 0.766 (threshold: 0.5) ✓
+
+What problem are you trying to solve with this software?
+```
+
+### Implementation Notes
+
+- Use internal variables for tracking (SESSION_ID, DIMENSION, etc.) without displaying them
+- Summarize progress in simple terms: "We've covered 3 areas so far, focusing on 2 more"
+- Only surface technical details if an error occurs that requires user action
+- The requirement analysis output (step 4) can be detailed, as that's the desired deliverable
+
+---
+
 ## Execution Protocol
 
 ### 0. Setup Permissions (First Time Only)
 
-**CRITICAL: You MUST execute and verify ALL steps below. Do NOT proceed to step 1 until ALL verifications pass.**
+Check if permissions are already configured:
 
-#### Step 0.1: Execute Permission Setup Script
+```bash
+grep -c "with_me.cli.session" .claude/settings.local.json 2>/dev/null || echo "0"
+```
 
-Run the permission setup script:
+If the output is `9`, skip to step 1. Otherwise, run the setup script:
 
 ```bash
 if [ ! -f .claude/settings.local.json ]; then
@@ -42,53 +108,7 @@ if ! grep -q "with_me.cli.session" .claude/settings.local.json 2>/dev/null; then
 fi
 ```
 
-#### Step 0.2: Verify File Exists
-
-**REQUIRED**: Execute this command to verify the settings file was created:
-
-```bash
-ls -la .claude/settings.local.json
-```
-
-Expected output: File exists with read/write permissions (e.g., `-rw-r--r--`)
-
-If the file does NOT exist, STOP and report the error. Do NOT proceed to step 0.3.
-
-#### Step 0.3: Verify Permissions Were Added
-
-**REQUIRED**: Execute this command to check if permissions were added:
-
-```bash
-grep "with_me.cli.session" .claude/settings.local.json
-```
-
-Expected output: At least one line containing `"Bash(python3 -m with_me.cli.session`
-
-If NO output is returned, STOP and report the error. Do NOT proceed to step 0.4.
-
-#### Step 0.4: Verify All 9 Permissions Are Registered
-
-**REQUIRED**: Execute this command to count registered permissions:
-
-```bash
-grep -c "with_me.cli.session" .claude/settings.local.json
-```
-
-Expected output: `9` (exactly 9 permission patterns)
-
-If the count is NOT 9, STOP and report which permissions are missing. Do NOT proceed to step 1.
-
-#### Step 0.5: Display Full Permission List (Optional)
-
-For confirmation, you may display the full permission array:
-
-```bash
-jq '.permissions.allow[] | select(contains("with_me.cli.session"))' .claude/settings.local.json
-```
-
-Expected output: 9 lines, each containing one of the session commands (init, next-question, update, status, complete, compute-entropy, bayesian-update, information-gain, persist-computation).
-
-**Only after ALL verifications pass (steps 0.2, 0.3, 0.4), proceed to step 1.**
+Verify setup succeeded by checking the count again. If not `9`, report the error.
 
 ### 1. Initialize Session
 
@@ -99,12 +119,14 @@ export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
 python3 -m with_me.cli.session init
 ```
 
-Expected output:
+Expected output (internal use only, do NOT show to user):
 ```json
 {"session_id": "2026-01-20T12:34:56.789012", "status": "initialized"}
 ```
 
 Store the `session_id` for subsequent commands.
+
+**User-facing message:** "Let's clarify your requirements. I'll ask a series of questions to understand what you need."
 
 ### 2. Question Loop
 
@@ -119,7 +141,7 @@ export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
 python3 -m with_me.cli.session next-question --session-id <SESSION_ID>
 ```
 
-If output shows `"converged": true`, skip to step 3. Otherwise, note the `dimension` and `dimension_name`.
+If output shows `"converged": true`, skip to step 3. Otherwise, note the `dimension` and `dimension_name` (internal use only).
 
 Get current session state:
 
@@ -129,6 +151,8 @@ python3 -m with_me.cli.session status --session-id <SESSION_ID>
 ```
 
 Read dimension configuration from `config/dimensions.json` for the selected dimension.
+
+**IMPORTANT:** Do NOT mention dimension names or technical terms to the user. Proceed directly to generating the question in step 2.2.
 
 #### 2.2. Generate and Evaluate Question
 
@@ -142,7 +166,13 @@ Generate a contextual question based on:
 
 **b) Evaluate question quality:**
 
-**IMPORTANT: You MUST invoke all three skills using the Skill tool. Do NOT estimate or calculate these values yourself.**
+**PERFORMANCE OPTIMIZATION:** Check the `question_count` from the session status (obtained in step 2.1). If `question_count < 2`, skip the evaluation steps (Step 1-5 below) and proceed directly to step 2.2c. This significantly reduces latency while maintaining quality, as initial questions are typically straightforward and high-value.
+
+For question 3 onwards (`question_count >= 2`), perform full evaluation:
+
+**IMPORTANT:**
+- You MUST invoke all three skills using the Skill tool. Do NOT estimate or calculate these values yourself.
+- Do NOT show evaluation scores (CLARITY, IMPORTANCE, EIG, REWARD) to the user. These are internal quality metrics.
 
 **Step 1: Evaluate clarity**
 
@@ -158,6 +188,8 @@ MUST invoke `/with-me:question-importance` skill:
 
 **Step 3: Calculate Expected Information Gain**
 
+**EVALUATION ONLY:** This step uses hypothetical answer templates for EIG calculation. Do NOT treat these templates as actual user answers.
+
 First, get current beliefs from session status:
 ```bash
 export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
@@ -171,9 +203,11 @@ Extract the posterior distribution for the selected dimension from the status ou
 Then, MUST invoke `/with-me:eig-calculation` skill with:
 - Question: Your generated question text
 - Current beliefs: The posterior distribution from status output
-- Answer templates: 3-4 representative answer options you would ask the user
+- Answer templates: 3-4 representative answer options (HYPOTHETICAL, for calculation only)
 
 Output: Store as `EIG` (float, bits)
+
+**IMPORTANT:** Discard the answer templates after EIG calculation. They are NOT user responses.
 
 **Step 4: Calculate reward score**
 
@@ -190,7 +224,9 @@ If REWARD < 0.5:
 If REWARD >= 0.5:
 - Proceed to Step 2.2c (Ask user)
 
-**c) Ask user:**
+**c) Ask user (AFTER evaluation is complete):**
+
+**QUESTIONING PHASE:** Now you ask the actual question. This is NOT evaluation - wait for the user's actual response.
 
 Generate 2-4 quick answer options relevant to your question, plus standard options:
 - "Skip this question" / "Move to the next question without answering"
@@ -198,11 +234,15 @@ Generate 2-4 quick answer options relevant to your question, plus standard optio
 
 Translate all text to the language specified in your system prompt.
 
+**CRITICAL:** You MUST invoke the AskUserQuestion tool now. Do NOT skip this step. Do NOT use evaluation templates as answers.
+
 Ask user using `AskUserQuestion` tool:
 - Question: Your evaluated question
 - Header: Use `dimension_name` from CLI
 - Options: Your options (translated)
 - multiSelect: false
+
+Wait for the user's actual response. Do NOT proceed until the user answers.
 
 Handle user response:
 - Quick answer or "Other": Proceed to step 2.3 with the answer
@@ -211,7 +251,9 @@ Handle user response:
 
 #### 2.3. Update Beliefs
 
-**IMPORTANT: You MUST execute all CLI commands using Bash tool and invoke all skills using Skill tool. DO NOT estimate likelihoods, calculate entropy, or perform Bayesian updates yourself.**
+**IMPORTANT:**
+- You MUST execute all CLI commands using Bash tool and invoke all skills using Skill tool. DO NOT estimate likelihoods, calculate entropy, or perform Bayesian updates yourself.
+- Do NOT show CLI outputs, likelihoods, entropy values, or Bayesian update results to the user. These are internal computations.
 
 **Step 1: Get hypothesis definitions and estimate likelihoods**
 
@@ -311,34 +353,27 @@ The CLI will confirm persistence and increment the question count.
 
 #### 2.4. Display Progress (Optional)
 
-Show entropy reduction to user:
+Get current session status:
 
 ```bash
 export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
 python3 -m with_me.cli.session status --session-id <SESSION_ID>
 ```
 
-Output:
-```json
-{
-  "session_id": "...",
-  "question_count": 5,
-  "all_converged": false,
-  "dimensions": {
-    "purpose": {
-      "name": "Purpose",
-      "entropy": 1.23,
-      "confidence": 0.38,
-      "converged": false,
-      "blocked": false,
-      "most_likely": null
-    },
-    ...
-  }
-}
+**IMPORTANT:** Do NOT show the raw JSON output to the user. Instead, translate the status into simple, user-friendly language.
+
+**Good progress display:**
+```
+Progress: Question 5 of ~12
+✓ Understanding your goals (confident)
+→ Exploring technical approach (38% confident)
+• Performance requirements (not started)
 ```
 
-Format dimensions for user display (entropy bars, confidence percentages, convergence status).
+**Bad progress display:**
+```json
+{"session_id": "...", "question_count": 5, "dimensions": {"purpose": {"entropy": 1.23, "confidence": 0.38}}}
+```
 
 Return to step 2.1-2.2.
 
@@ -349,14 +384,16 @@ export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
 python3 -m with_me.cli.session complete --session-id <SESSION_ID>
 ```
 
-Output:
+**IMPORTANT:** Do NOT show the raw JSON output to the user. Instead, provide a simple completion message.
+
+**Good completion message:**
+```
+Great! I've gathered enough information through 12 questions. Let me now analyze your requirements and create a specification.
+```
+
+**Bad completion message:**
 ```json
-{
-  "session_id": "...",
-  "total_questions": 12,
-  "total_info_gain": 8.45,
-  "status": "completed"
-}
+{"session_id": "2026-01-20T...", "total_questions": 12, "total_info_gain": 8.45, "status": "completed"}
 ```
 
 ### 4. Generate Requirements Specification
