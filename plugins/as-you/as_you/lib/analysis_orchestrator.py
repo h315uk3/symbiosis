@@ -18,11 +18,19 @@ _PLUGIN_ROOT = Path(__file__).parent.parent.parent
 if str(_PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLUGIN_ROOT))
 
+# Import scoring modules
+from as_you.lib.bm25_calculator import calculate_bm25_scores  # noqa: E402
 from as_you.lib.common import (  # noqa: E402
     AsYouConfig,
     TrackerData,
     load_tracker,
     save_tracker,
+)
+from as_you.lib.composite_score_calculator import (  # noqa: E402
+    calculate_composite_scores,
+)
+from as_you.lib.time_decay_calculator import (  # noqa: E402
+    calculate_time_decay_scores,
 )
 
 
@@ -166,16 +174,69 @@ class AnalysisOrchestrator:
         # Load data
         self.load_data()
 
-        patterns_analyzed = len(self.data.get("patterns", {}))
+        patterns = self.data.get("patterns", {})
+        patterns_analyzed = len(patterns)
         patterns_merged = 0
         scores_updated = 0
 
-        # TODO: Phase 3 - Add actual analysis steps:
-        # 1. TF-IDF/BM25 calculation
-        # 2. PMI calculation
+        if not patterns:
+            # No patterns to analyze
+            duration_ms = (time.perf_counter() - start_time) * 1000
+            return AnalysisResult(
+                patterns_analyzed=0,
+                patterns_merged=0,
+                scores_updated=0,
+                duration_ms=duration_ms,
+            )
+
+        # Get configuration settings
+        config = AsYouConfig.from_environment()
+        scoring_config = config.settings["scoring"]
+
+        # 1. BM25 calculation (replaces TF-IDF)
+        if scoring_config["bm25"]["enabled"]:
+            bm25_scores = calculate_bm25_scores(
+                patterns,
+                self.archive_dir,
+                k1=scoring_config["bm25"]["k1"],
+                b=scoring_config["bm25"]["b"],
+            )
+            for pattern_text, score in bm25_scores.items():
+                if pattern_text in patterns:
+                    patterns[pattern_text]["bm25_score"] = score
+                    scores_updated += 1
+
+        # 2. PMI calculation (co-occurrence analysis)
+        # TODO: Integrate PMI calculator once refactored
+        # For now, skip PMI calculation
+
         # 3. Time decay calculation
+        if scoring_config["time_decay"]["enabled"]:
+            time_decay_scores = calculate_time_decay_scores(
+                patterns,
+                half_life_days=scoring_config["time_decay"]["half_life_days"],
+            )
+            for pattern_text, score in time_decay_scores.items():
+                if pattern_text in patterns:
+                    patterns[pattern_text]["time_decay_score"] = score
+                    scores_updated += 1
+
         # 4. Composite score calculation
+        composite_scores = calculate_composite_scores(
+            patterns,
+            weights=scoring_config["weights"],
+            normalize=True,
+        )
+        for pattern_text, score in composite_scores.items():
+            if pattern_text in patterns:
+                patterns[pattern_text]["composite_score"] = score
+                scores_updated += 1
+
         # 5. Pattern merging (if not skip_merge)
+        # TODO: Integrate pattern merger once refactored
+        if not skip_merge:
+            # For now, skip pattern merging
+            pass
 
         # Save results
         self.save_data()
