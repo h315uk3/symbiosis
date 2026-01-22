@@ -1,0 +1,217 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/h315uk3/as-you/config/as-you.schema.json",
+  "title": "As-You Configuration Schema",
+  "description": "Configuration schema for as-you plugin v2",
+  "type": "object",
+  "required": ["version", "scoring", "memory", "confidence", "promotion", "categories"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Configuration schema version"
+    },
+    "scoring": {
+      "type": "object",
+      "required": ["bm25", "pmi", "time_decay", "weights"],
+      "properties": {
+        "bm25": {
+          "type": "object",
+          "required": ["enabled", "k1", "b"],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable BM25 scoring"
+            },
+            "k1": {
+              "type": "number",
+              "minimum": 1.2,
+              "maximum": 2.0,
+              "description": "BM25 saturation parameter"
+            },
+            "b": {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "description": "BM25 length normalization parameter"
+            }
+          }
+        },
+        "pmi": {
+          "type": "object",
+          "required": ["enabled", "min_cooccurrence", "window_size"],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable PMI scoring"
+            },
+            "min_cooccurrence": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "description": "Minimum cooccurrence count"
+            },
+            "window_size": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 10,
+              "description": "Cooccurrence window size"
+            }
+          }
+        },
+        "time_decay": {
+          "type": "object",
+          "required": ["enabled", "half_life_days"],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable time decay"
+            },
+            "half_life_days": {
+              "type": "integer",
+              "minimum": 7,
+              "maximum": 180,
+              "description": "Half-life for time decay in days"
+            }
+          }
+        },
+        "weights": {
+          "type": "object",
+          "required": ["bm25", "pmi", "time_decay"],
+          "properties": {
+            "bm25": {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "description": "Weight for BM25 score"
+            },
+            "pmi": {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "description": "Weight for PMI score"
+            },
+            "time_decay": {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "description": "Weight for time decay"
+            }
+          }
+        }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "required": ["sm2"],
+      "properties": {
+        "sm2": {
+          "type": "object",
+          "required": ["enabled", "initial_easiness", "min_easiness"],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable SM-2 memory model"
+            },
+            "initial_easiness": {
+              "type": "number",
+              "minimum": 1.3,
+              "maximum": 3.0,
+              "description": "Initial easiness factor"
+            },
+            "min_easiness": {
+              "type": "number",
+              "minimum": 1.1,
+              "maximum": 2.0,
+              "description": "Minimum easiness factor"
+            }
+          }
+        }
+      }
+    },
+    "confidence": {
+      "type": "object",
+      "required": ["bayesian", "thompson_sampling"],
+      "properties": {
+        "bayesian": {
+          "type": "object",
+          "required": ["enabled", "prior_mean", "prior_variance"],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable Bayesian learning"
+            },
+            "prior_mean": {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "description": "Prior distribution mean"
+            },
+            "prior_variance": {
+              "type": "number",
+              "minimum": 0.01,
+              "maximum": 0.25,
+              "description": "Prior distribution variance"
+            }
+          }
+        },
+        "thompson_sampling": {
+          "type": "object",
+          "required": ["enabled", "initial_alpha", "initial_beta"],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable Thompson Sampling"
+            },
+            "initial_alpha": {
+              "type": "number",
+              "minimum": 0.5,
+              "maximum": 5.0,
+              "description": "Initial alpha for Beta distribution"
+            },
+            "initial_beta": {
+              "type": "number",
+              "minimum": 0.5,
+              "maximum": 5.0,
+              "description": "Initial beta for Beta distribution"
+            }
+          }
+        }
+      }
+    },
+    "promotion": {
+      "type": "object",
+      "required": ["threshold", "min_observations", "min_confidence"],
+      "properties": {
+        "threshold": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Composite score threshold for promotion"
+        },
+        "min_observations": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Minimum observations required for promotion"
+        },
+        "min_confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Minimum confidence required for promotion"
+        }
+      }
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["preference", "style", "process", "decision", "observation", "workflow"]
+      },
+      "minItems": 1,
+      "uniqueItems": true,
+      "description": "Learning pattern categories"
+    }
+  }
+}
