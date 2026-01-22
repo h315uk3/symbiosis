@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from as_you.lib.common import AsYouConfig, load_tracker, save_tracker
+from as_you.lib.cooccurrence_detector import detect_cooccurrences
 from as_you.lib.pattern_detector import extract_patterns
 
 # Constants
@@ -123,6 +124,118 @@ def calculate_pmi(tracker_file: Path, archive_dir: Path) -> None:
     # Save tracker data using common utility
     save_tracker(tracker_file, tracker_data)
     print("PMI scores calculated for all co-occurrences")
+
+
+def calculate_pmi_scores(  # noqa: PLR0912
+    patterns: dict[str, dict],
+    archive_dir: Path,
+    min_cooccurrence: int = 2,
+) -> dict[str, float]:
+    """Calculate PMI scores for patterns based on co-occurrence analysis.
+
+    Strategy:
+    1. Extract co-occurrences from archive files
+    2. Calculate PMI for each pattern pair
+    3. Aggregate pattern-level score (mean of all PMIs involving pattern)
+    4. Normalize to [0, 1] range
+
+    Args:
+        patterns: Pattern data dict
+        archive_dir: Session archive directory
+        min_cooccurrence: Minimum co-occurrence count threshold
+
+    Returns:
+        Dict mapping pattern text to normalized PMI score
+
+    Examples:
+        >>> from pathlib import Path
+        >>> import tempfile
+        >>> # Test with empty archive
+        >>> with tempfile.TemporaryDirectory() as tmpdir:
+        ...     patterns = {"test": {"count": 5}, "deploy": {"count": 3}}
+        ...     scores = calculate_pmi_scores(patterns, Path(tmpdir))
+        ...     isinstance(scores, dict)
+        True
+
+        >>> # Test with no patterns
+        >>> with tempfile.TemporaryDirectory() as tmpdir:
+        ...     scores = calculate_pmi_scores({}, Path(tmpdir))
+        ...     scores
+        {}
+    """
+    # Handle empty patterns
+    if not patterns:
+        return {}
+
+    # Count total patterns in archive
+    total_patterns = count_total_patterns(archive_dir)
+    if total_patterns == 0:
+        # No data in archive, return zero scores
+        return {pattern: 0.0 for pattern in patterns}
+
+    # Detect co-occurrences from archive (get top 1000)
+    cooccurrences = detect_cooccurrences(archive_dir, top_n=1000)
+    if not cooccurrences:
+        # No co-occurrences found, return zero scores
+        return {pattern: 0.0 for pattern in patterns}
+
+    # Calculate PMI for each pattern
+    pmi_scores = {}
+    for pattern_text, pattern_data in patterns.items():
+        pattern_count = pattern_data.get("count", 0)
+        if pattern_count == 0:
+            pmi_scores[pattern_text] = 0.0
+            continue
+
+        # Find all co-occurrences involving this pattern
+        related_pmis = []
+        for cooccur in cooccurrences:
+            words = cooccur["words"]
+            if pattern_text not in words:
+                continue
+
+            cooccur_count = cooccur["count"]
+            if cooccur_count < min_cooccurrence:
+                continue
+
+            # Get both word counts
+            word1, word2 = words
+            word1_count = patterns.get(word1, {}).get("count", 0)
+            word2_count = patterns.get(word2, {}).get("count", 0)
+
+            # Calculate PMI if both words have counts
+            if word1_count > 0 and word2_count > 0:
+                p_ab = cooccur_count / total_patterns
+                p_a = word1_count / total_patterns
+                p_b = word2_count / total_patterns
+
+                # PMI formula: log(P(A,B) / (P(A) * P(B)))
+                if p_ab > 0 and p_a > 0 and p_b > 0:
+                    pmi = math.log(p_ab / (p_a * p_b))
+                    related_pmis.append(pmi)
+
+        # Aggregate PMI scores for this pattern (mean)
+        if related_pmis:
+            pmi_scores[pattern_text] = sum(related_pmis) / len(related_pmis)
+        else:
+            pmi_scores[pattern_text] = 0.0
+
+    # Normalize scores to [0, 1] range
+    if pmi_scores:
+        min_pmi = min(pmi_scores.values())
+        max_pmi = max(pmi_scores.values())
+
+        if max_pmi > min_pmi:
+            # Min-max normalization
+            for pattern in list(pmi_scores.keys()):
+                normalized = (pmi_scores[pattern] - min_pmi) / (max_pmi - min_pmi)
+                pmi_scores[pattern] = round(normalized, 6)
+        else:
+            # All scores are the same, set to 0.5
+            for pattern in pmi_scores:
+                pmi_scores[pattern] = 0.5
+
+    return pmi_scores
 
 
 def main():

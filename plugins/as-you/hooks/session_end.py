@@ -134,13 +134,21 @@ def run_python_script(
     if args:
         cmd.extend(args)
 
+    # Inherit environment and ensure PYTHONPATH includes plugin root
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(REPO_ROOT)
+    # Ensure PROJECT_ROOT is set for child processes
+    if "PROJECT_ROOT" not in env:
+        env["PROJECT_ROOT"] = os.getcwd()
+
     try:
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
             timeout=timeout,
-            cwd=REPO_ROOT
+            cwd=os.environ.get("PROJECT_ROOT", os.getcwd()),
+            env=env
         )
 
         # Log stderr if present
@@ -210,7 +218,7 @@ def main() -> dict:
     """
     # Ensure PROJECT_ROOT is set correctly for hook execution
     if "PROJECT_ROOT" not in os.environ:
-        os.environ["PROJECT_ROOT"] = str(REPO_ROOT)
+        os.environ["PROJECT_ROOT"] = os.getcwd()
 
     try:
         config = AsYouConfig.from_environment()

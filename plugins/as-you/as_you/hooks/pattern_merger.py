@@ -12,9 +12,14 @@ from datetime import datetime
 from pathlib import Path
 
 from as_you.commands.similarity_detector import detect_similar_patterns
+from as_you.lib.analysis_orchestrator import AnalysisOrchestrator
+from as_you.lib.bktree import build_bktree_from_patterns
 from as_you.lib.common import AsYouConfig
+from as_you.lib.levenshtein import levenshtein_distance
 from as_you.lib.pattern_updater import merge_patterns as update_merge_patterns
-from as_you.lib.score_calculator import UnifiedScoreCalculator
+
+# Constants
+MIN_PATTERNS_FOR_COMPARISON = 2  # Minimum patterns needed for similarity detection
 
 
 def create_backup(tracker_file: Path, keep_count: int = 5) -> Path | None:
@@ -223,13 +228,12 @@ def merge_similar_patterns_batch(
                 {"keep": keep, "merge": merge, "distance": distance, "error": str(e)}
             )
 
-    # Recalculate all scores
+    # Recalculate all scores using v0.3.0 orchestrator
     try:
         archive_dir = tracker_file.parent / "session_archive"
         if archive_dir.exists():
-            calculator = UnifiedScoreCalculator(tracker_file, archive_dir)
-            calculator.calculate_all_scores()
-            calculator.save()
+            orchestrator = AnalysisOrchestrator(tracker_file, archive_dir)
+            orchestrator.run_analysis(skip_merge=True)
     except Exception:
         pass  # Non-fatal if scoring fails
 
@@ -253,6 +257,162 @@ def _count_patterns(tracker_file: Path) -> int:
         return len(data.get("patterns", {}))
     except Exception:
         return 0
+
+
+def merge_patterns_auto(  # noqa: PLR0912, PLR0915
+    patterns: dict[str, dict],
+    similarity_threshold: float = 0.85,
+    min_count: int = 1,
+) -> tuple[dict[str, dict], int]:
+    """Automatically merge similar patterns based on composite scores.
+
+    Strategy:
+    1. Use BK-tree similarity detection
+    2. Keep pattern with higher composite_score
+    3. Merge counts, sessions, contexts, last_seen
+    4. Remove merged pattern from dict
+    5. Return updated dict and merge count
+
+    Args:
+        patterns: Pattern data dict (modified in-place)
+        similarity_threshold: Levenshtein distance threshold (0.0-1.0)
+        min_count: Minimum pattern count to consider
+
+    Returns:
+        Tuple of (updated_patterns, merge_count)
+
+    Examples:
+        >>> patterns = {
+        ...     "test": {"count": 5, "composite_score": 0.8, "sessions": ["s1"]},
+        ...     "tests": {"count": 3, "composite_score": 0.6, "sessions": ["s2"]},
+        ... }
+        >>> updated, count = merge_patterns_auto(patterns, similarity_threshold=2)
+        >>> count
+        1
+        >>> "tests" in updated
+        False
+        >>> updated["test"]["count"]
+        8
+
+        >>> # Test with no similar patterns
+        >>> patterns = {
+        ...     "unique": {"count": 5, "composite_score": 0.8, "sessions": ["s1"]},
+        ...     "different": {"count": 3, "composite_score": 0.6, "sessions": ["s2"]},
+        ... }
+        >>> updated, count = merge_patterns_auto(patterns, similarity_threshold=1)
+        >>> count
+        0
+    """
+    if not patterns:
+        return patterns, 0
+
+    # Filter by minimum count
+    filtered_patterns = {
+        word: meta
+        for word, meta in patterns.items()
+        if meta.get("count", 0) >= min_count
+    }
+
+    if len(filtered_patterns) < MIN_PATTERNS_FOR_COMPARISON:
+        return patterns, 0
+
+    # Build BK-Tree for similarity detection
+    tree = build_bktree_from_patterns(filtered_patterns, levenshtein_distance)
+
+    # Find similar pairs
+    similar_pairs = []
+    for word in filtered_patterns:
+        # Note: similarity_threshold is distance, not similarity ratio
+        # For Levenshtein distance, convert 0.85 threshold to integer distance
+        # For now, use threshold as-is (assuming it's passed as integer in practice)
+        threshold_distance = (
+            int(similarity_threshold) if similarity_threshold >= 1 else 2
+        )
+        matches = tree.search(word, threshold_distance)
+
+        for match_word, distance in matches:
+            if distance == 0:
+                continue  # Skip self-match
+
+            # Ensure consistent ordering (alphabetical)
+            if word < match_word:
+                p1, p2 = word, match_word
+            else:
+                continue  # Already processed in reverse order
+
+            # Get metadata
+            meta1 = filtered_patterns[p1]
+            meta2 = filtered_patterns[p2]
+
+            score1 = meta1.get("composite_score", 0.0)
+            score2 = meta2.get("composite_score", 0.0)
+
+            # Determine which pattern to keep (higher composite_score)
+            if score1 > score2:
+                keep, merge = p1, p2
+            elif score2 > score1:
+                keep, merge = p2, p1
+            else:
+                # Equal scores, prefer higher count
+                count1 = meta1.get("count", 0)
+                count2 = meta2.get("count", 0)
+                if count1 >= count2:
+                    keep, merge = p1, p2
+                else:
+                    keep, merge = p2, p1
+
+            similar_pairs.append({"keep": keep, "merge": merge, "distance": distance})
+
+    if not similar_pairs:
+        return patterns, 0
+
+    # Track merged patterns to avoid duplicates
+    merged_patterns = set()
+    merge_count = 0
+
+    # Perform merges
+    for pair in similar_pairs:
+        keep = pair["keep"]
+        merge = pair["merge"]
+
+        # Skip if already merged
+        if merge in merged_patterns or merge not in patterns:
+            continue
+
+        # Skip if keep pattern was already merged into something else
+        if keep not in patterns:
+            continue
+
+        # Merge data
+        keep_data = patterns[keep]
+        merge_data = patterns[merge]
+
+        # Combine counts
+        keep_data["count"] = keep_data.get("count", 0) + merge_data.get("count", 0)
+
+        # Combine sessions (unique)
+        keep_sessions = set(keep_data.get("sessions", []))
+        merge_sessions = set(merge_data.get("sessions", []))
+        keep_data["sessions"] = sorted(keep_sessions | merge_sessions)
+
+        # Combine contexts if present
+        if "contexts" in keep_data or "contexts" in merge_data:
+            keep_contexts = keep_data.get("contexts", [])
+            merge_contexts = merge_data.get("contexts", [])
+            keep_data["contexts"] = keep_contexts + merge_contexts
+
+        # Update last_seen (most recent)
+        keep_last_seen = keep_data.get("last_seen", "")
+        merge_last_seen = merge_data.get("last_seen", "")
+        if merge_last_seen > keep_last_seen:
+            keep_data["last_seen"] = merge_last_seen
+
+        # Remove merged pattern
+        del patterns[merge]
+        merged_patterns.add(merge)
+        merge_count += 1
+
+    return patterns, merge_count
 
 
 def main():

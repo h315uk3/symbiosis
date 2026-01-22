@@ -1,39 +1,43 @@
 #!/usr/bin/env python3
 """
-Score calculator hook for As You plugin.
-Calculates composite scores for patterns and identifies promotion candidates.
-Split from frequency_tracker.py for independent execution and testing.
+Score calculator hook for As You plugin (v0.3.0).
+Uses AnalysisOrchestrator with BM25, time decay, and composite scoring.
 """
 
 import sys
+from pathlib import Path
 
-from as_you.lib.common import AsYouConfig
-from as_you.lib.score_calculator import UnifiedScoreCalculator
+# Add plugin to path for imports
+_PLUGIN_ROOT = Path(__file__).parent.parent.parent
+if str(_PLUGIN_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PLUGIN_ROOT))
+
+from as_you.lib.analysis_orchestrator import AnalysisOrchestrator  # noqa: E402
+from as_you.lib.common import AsYouConfig  # noqa: E402
 
 
 def main():
-    """CLI entry point for score calculation."""
+    """CLI entry point for score calculation (v0.3.0)."""
     # Get paths from environment using common config
     config = AsYouConfig.from_environment()
 
-    # Calculate scores
+    # Run analysis with orchestrator
     try:
-        calculator = UnifiedScoreCalculator(config.tracker_file, config.archive_dir)
+        orchestrator = AnalysisOrchestrator(config.tracker_file, config.archive_dir)
 
-        # Calculate all scores (TF-IDF, PMI, frequency, etc.)
-        data = calculator.calculate_all_scores()
-
-        # Save updated tracker with scores and promotion candidates
-        calculator.save()
-
-        # Get statistics from data
-        pattern_count = len(data.get("patterns", {}))
-        candidate_count = len(data.get("promotion_candidates", []))
+        # Run complete analysis (BM25, time decay, composite scoring)
+        result = orchestrator.run_analysis(skip_merge=True)
 
         print(
-            f"Scores calculated: {pattern_count} patterns analyzed, "
-            f"{candidate_count} promotion candidates identified"
+            f"v0.3.0 Scoring complete: {result.patterns_analyzed} patterns analyzed, "
+            f"{result.scores_updated} scores updated "
+            f"({result.duration_ms:.1f}ms)"
         )
+
+        # Get statistics
+        stats = orchestrator.get_statistics()
+        if stats["promotion_candidates"] > 0:
+            print(f"Promotion candidates: {stats['promotion_candidates']}")
 
     except Exception as e:
         print(f"Error calculating scores: {e}", file=sys.stderr)
