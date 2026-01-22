@@ -323,7 +323,7 @@ Without argument:
 ## Getting Help
 
 **Documentation:** This help file
-**Issues:** https://github.com/h315uk3/as_you/issues
+**Issues:** https://github.com/h315uk3/symbiosis/issues
 **License:** MIT
 
 ---

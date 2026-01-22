@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/h315uk3/as-you/config/as-you.schema.json",
+  "$id": "https://github.com/h315uk3/symbiosis/plugins/as-you/config/as-you.schema.json",
   "title": "As-You Configuration Schema",
   "description": "Configuration schema for as-you plugin v2",
   "type": "object",

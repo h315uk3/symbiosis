@@ -2,7 +2,7 @@
 
 **IMPORTANT**: This is a general reference guide for developing Claude Code plugins. It describes the standard plugin architecture, component types, and best practices that apply to ANY Claude Code plugin project. This is NOT documentation of this specific project's structure.
 
-For information about this specific project (as_you plugin), see the README.md and project-specific documentation in the repository.
+For information about this specific project (Symbiosis plugins), see the README.md and project-specific documentation in the repository.
 
 ---
 
