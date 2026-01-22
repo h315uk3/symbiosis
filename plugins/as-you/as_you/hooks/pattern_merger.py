@@ -12,9 +12,9 @@ from datetime import datetime
 from pathlib import Path
 
 from as_you.commands.similarity_detector import detect_similar_patterns
+from as_you.lib.analysis_orchestrator import AnalysisOrchestrator
 from as_you.lib.common import AsYouConfig
 from as_you.lib.pattern_updater import merge_patterns as update_merge_patterns
-from as_you.lib.score_calculator import UnifiedScoreCalculator
 
 
 def create_backup(tracker_file: Path, keep_count: int = 5) -> Path | None:
@@ -223,13 +223,12 @@ def merge_similar_patterns_batch(
                 {"keep": keep, "merge": merge, "distance": distance, "error": str(e)}
             )
 
-    # Recalculate all scores
+    # Recalculate all scores using v0.3.0 orchestrator
     try:
         archive_dir = tracker_file.parent / "session_archive"
         if archive_dir.exists():
-            calculator = UnifiedScoreCalculator(tracker_file, archive_dir)
-            calculator.calculate_all_scores()
-            calculator.save()
+            orchestrator = AnalysisOrchestrator(tracker_file, archive_dir)
+            orchestrator.run_analysis(skip_merge=True)
     except Exception:
         pass  # Non-fatal if scoring fails
 
