@@ -116,6 +116,7 @@ class AnalysisOrchestrator:
         self.tracker_file = tracker_file
         self.archive_dir = archive_dir
         self.data: TrackerData | None = None
+        self.config = AsYouConfig.from_environment()
 
     def load_data(self) -> TrackerData:
         """Load tracker data.

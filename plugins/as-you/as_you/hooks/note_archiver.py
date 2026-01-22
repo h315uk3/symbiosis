@@ -104,6 +104,9 @@ def archive_note(memo_file: Path, archive_dir: Path) -> Path | None:
         # Create new archive
         archive_file.write_text(memo_content, encoding="utf-8")
 
+    # Clear session notes after archiving
+    memo_file.unlink()
+
     return archive_file
 
 
