@@ -26,8 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Configurable Weights** - Tune scoring weights without code changes
 
 #### Testing and Benchmarking
-- **Performance Benchmark Framework** - Baseline measurements for regression detection
-- **A/B Testing Framework** - Algorithm validation infrastructure
 - **Comprehensive Doctests** - 200+ doctests across all modules
 
 ### Changed
@@ -81,9 +79,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `plugins/as-you/config/as-you.schema.json` - Configuration schema
 
 #### Testing Infrastructure
-- `tests/performance/benchmarks.py` - Performance baseline measurements
-- `tests/ab_testing/framework.py` - Algorithm comparison framework
 - `tests/run_doctests.py` - Comprehensive doctest runner
+- `tests/validate_plugins.py` - Configuration validation
 
 ### Backward Compatibility
 - **Data Format** - v0.3.0 adds new fields to existing pattern_tracker.json
