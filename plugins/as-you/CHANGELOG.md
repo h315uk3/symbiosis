@@ -11,14 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Scoring Algorithms
 - **BM25 Calculator** - Improved relevance ranking with term frequency saturation and document length normalization (k1=1.5, b=0.75)
-- **Time Decay Calculator** - Exponential decay with configurable half-life (default: 30 days)
-- **Composite Score Calculator** - Weighted combination of BM25 (40%), PMI (30%), and Time Decay (30%)
+- **Ebbinghaus Forgetting Curve** - Replaces exponential decay; memory strength increases with repetition, modeling cognitive psychology research
+- **Shannon Entropy** - Pattern diversity measurement; distinguishes general-purpose from specialized patterns
+- **Composite Score Calculator** - Weighted combination of BM25 (40%), PMI (30%), and Ebbinghaus (30%)
 - **Analysis Orchestrator** - Unified workflow replacing sequential script calls
 
 #### Memory and Confidence
-- **Bayesian Learning** - Confidence tracking with mean, variance, and 95% confidence intervals
-- **SM-2 Memory Model** - Spaced repetition scheduling with easiness factors and review intervals
-- **Thompson Sampling** - Exploration-exploitation balance for pattern selection
+- **Bayesian Learning** - Confidence tracking with mean, variance, posterior updating based on composite scores
+- **Thompson Sampling (Beta-Binomial)** - Exploration-exploitation balance for pattern selection with success/failure tracking
 
 #### Configuration
 - **Unified Config File** - `config/as-you.json` for all algorithm parameters
@@ -38,9 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Learning dashboard without arguments
   - Pattern analysis integration
 - **`/as-you:memory`** - Enhanced memory analysis (improved `/memory`)
-  - BM25, Time Decay, Composite scores
+  - BM25, Ebbinghaus, Shannon Entropy, Composite scores
   - Bayesian confidence display
-  - SM-2 review scheduling
   - Thompson Sampling recommendations
 - **`/as-you:apply`** - Pattern application (replaces `/workflow-save` and `/workflows`)
   - Save workflows with arguments
@@ -49,10 +48,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`/as-you:help`** - Comprehensive v0.3.0 documentation (improved `/help`)
 
 #### Algorithm Improvements
-- **BM25 replaces TF-IDF** - Better handling of term frequency saturation
-- **Time-based relevance** - Recent patterns automatically prioritized
-- **Confidence-weighted recommendations** - High-certainty patterns preferred
-- **Optimal review scheduling** - SM-2 algorithm for memory consolidation
+- **BM25 replaces TF-IDF** - Better handling of term frequency saturation and document length normalization
+- **Ebbinghaus replaces exponential decay** - Memory strength grows with repetition; cognitive psychology-based forgetting curve
+- **Shannon Entropy** - Measures pattern diversity across contexts (sessions, categories)
+- **Bayesian confidence tracking** - Sequential belief updating with posterior mean and variance
+- **Thompson Sampling** - Beta-Binomial exploration-exploitation for pattern selection
 
 ### Improved
 - **Configuration Management** - Enhanced `common.py` with settings validation
@@ -64,12 +64,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### New Modules
 - `as_you/lib/bm25_calculator.py` - BM25 relevance scoring
+- `as_you/lib/ebbinghaus_calculator.py` - Ebbinghaus forgetting curve (replaces time decay)
+- `as_you/lib/shannon_entropy_calculator.py` - Shannon entropy for pattern diversity
 - `as_you/lib/bayesian_learning.py` - Bayesian confidence tracking
-- `as_you/lib/sm2_memory.py` - SM-2 spaced repetition
-- `as_you/lib/thompson_sampling.py` - Exploration-exploitation balance
-- `as_you/lib/time_decay_calculator.py` - Temporal relevance decay
-- `as_you/lib/composite_score_calculator.py` - Multi-metric scoring
+- `as_you/lib/thompson_sampling.py` - Thompson Sampling (Beta-Binomial)
+- `as_you/lib/composite_score_calculator.py` - Multi-metric scoring (BM25, PMI, Ebbinghaus)
 - `as_you/lib/analysis_orchestrator.py` - Unified analysis workflow
+
+#### Modules Kept for Future Use
+- `as_you/lib/sm2_memory.py` - SM-2 spaced repetition (implemented but not integrated; planned for v0.4.0)
+- `as_you/lib/time_decay_calculator.py` - Exponential decay (deprecated; use ebbinghaus_calculator.py)
 
 #### Updated Modules
 - `as_you/lib/common.py` - Configuration loading and validation
@@ -200,12 +204,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### v0.3.0
 - PMI calculation not yet integrated into AnalysisOrchestrator (planned for v0.3.1)
 - Pattern merging not yet using new composite scores (planned for v0.3.1)
-- SM-2 review scheduling UI needs enhancement (planned for v0.4.0)
+- SM-2 spaced repetition not integrated (implemented but deferred to v0.4.0)
 
 ### Workarounds
 - PMI scores still calculated but not used in composite score
 - Pattern merging uses Levenshtein distance as before
-- SM-2 state tracked but review prompts not implemented
+- SM-2 module exists but not called from AnalysisOrchestrator
 
 ---
 

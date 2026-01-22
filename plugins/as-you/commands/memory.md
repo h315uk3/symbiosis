@@ -31,8 +31,9 @@ Explore pattern memory, analyze confidence, and manage knowledge base.
 
    ## Pattern Analysis (v0.3.0)
    - Detected patterns: X
-   - BM25 scores calculated: X
-   - Time decay applied: X
+   - BM25 scores: X
+   - Ebbinghaus scores: X
+   - Shannon Entropy scores: X
    - Composite scores: X
    - Promotion candidates: X
 
@@ -76,7 +77,8 @@ Explore pattern memory, analyze confidence, and manage knowledge base.
      - Pattern text
      - Composite score
      - BM25 score
-     - Time decay score
+     - Ebbinghaus score (memory strength)
+     - Shannon Entropy score (diversity)
      - Count (frequency)
      - Last seen date
    - Return to step 3
@@ -154,12 +156,13 @@ Explore pattern memory, analyze confidence, and manage knowledge base.
    - Launch memory-analyzer agent using Task tool:
      ```
      subagent_type: "as-you:memory-analyzer"
-     prompt: "Analyze pattern_tracker.json using v0.3.0 scoring (BM25, time decay, composite scores, Bayesian confidence, SM-2 memory). Provide detailed insights on:
+     prompt: "Analyze pattern_tracker.json using v0.3.0 scoring (BM25, Ebbinghaus, Shannon Entropy, composite scores, Bayesian confidence, Thompson Sampling). Provide detailed insights on:
      1. High-value patterns (composite score > 0.7)
      2. Patterns with high uncertainty (Bayesian variance > 0.1)
-     3. Patterns due for review (SM-2)
-     4. Promotion recommendations with reasoning
-     5. Potential pattern merges
+     3. General-purpose vs specialized patterns (Shannon Entropy)
+     4. Patterns with strong memory (Ebbinghaus score)
+     5. Promotion recommendations with reasoning
+     6. Potential pattern merges
 
      Working directory: {pwd} (use absolute paths)"
      description: "Deep memory analysis"
@@ -173,28 +176,38 @@ Explore pattern memory, analyze confidence, and manage knowledge base.
 ## Understanding the Scores
 
 **BM25 Score**
-- Measures relevance based on term frequency and document length
-- Higher = more distinctive terminology
+- Measures relevance based on term frequency and document length normalization
+- Higher = more distinctive and relevant terminology
+- Saturates to avoid over-weighting frequent terms (k1=1.5, b=0.75)
 
-**Time Decay Score**
-- Exponential decay based on last_seen date
-- Half-life: 30 days (configurable)
-- Recent patterns maintain high scores
+**Ebbinghaus Score**
+- Based on Ebbinghaus forgetting curve: R(t) = e^(-t/s)
+- Memory strength increases with repetition count
+- Recent and frequently-repeated patterns maintain high scores
+- Replaces simple exponential decay with cognitive psychology model
+
+**Shannon Entropy Score**
+- Measures pattern diversity across contexts (sessions, categories)
+- High entropy (>0.7) = general-purpose pattern (appears in diverse contexts)
+- Low entropy (<0.3) = specialized pattern (appears in specific contexts)
+- Helps identify patterns suitable for different use cases
 
 **Composite Score**
-- Weighted combination: BM25 (40%) + PMI (30%) + Time Decay (30%)
-- Final ranking metric for patterns
+- Weighted combination: BM25 (40%) + PMI (30%) + Ebbinghaus (30%)
+- Final ranking metric for pattern importance
 - Range: 0.0 to 1.0
 
 **Bayesian Confidence**
-- Mean: Expected quality (0-1)
-- Variance: Uncertainty
+- Mean: Expected quality/usefulness (0-1)
+- Variance: Uncertainty in the estimate
 - Confidence interval: 95% probability range
+- Updated with each pattern observation
 
-**SM-2 Memory**
-- Easiness factor: Quality of recall (min 1.3)
-- Interval: Days until next review
-- Repetitions: Consecutive successful recalls
+**Thompson Sampling (Beta-Binomial)**
+- Alpha: Success count + 1
+- Beta: Failure count + 1
+- Used for exploration-exploitation balance in pattern selection
+- Patterns with high success rate sampled more frequently
 
 ## Related Commands
 

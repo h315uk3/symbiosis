@@ -78,10 +78,12 @@ DEFAULT_SETTINGS = {
     "scoring": {
         "bm25": {"enabled": True, "k1": 1.5, "b": 0.75},
         "pmi": {"enabled": True, "min_cooccurrence": 2, "window_size": 5},
-        "time_decay": {"enabled": True, "half_life_days": 30},
-        "weights": {"bm25": 0.4, "pmi": 0.3, "time_decay": 0.3},
+        "weights": {"bm25": 0.4, "pmi": 0.3, "ebbinghaus": 0.3},
     },
-    "memory": {"sm2": {"enabled": True, "initial_easiness": 2.5, "min_easiness": 1.3}},
+    "memory": {
+        "ebbinghaus": {"enabled": True, "base_strength": 1.0, "growth_factor": 0.5},
+        "sm2": {"enabled": True, "initial_easiness": 2.5, "min_easiness": 1.3},
+    },
     "confidence": {
         "bayesian": {"enabled": True, "prior_mean": 0.5, "prior_variance": 0.04},
         "thompson_sampling": {
@@ -89,6 +91,14 @@ DEFAULT_SETTINGS = {
             "initial_alpha": 1.0,
             "initial_beta": 1.0,
         },
+    },
+    "diversity": {
+        "shannon_entropy": {
+            "enabled": True,
+            "context_keys": ["sessions"],
+            "aggregation": "mean",
+            "max_contexts": 10,
+        }
     },
     "promotion": {"threshold": 0.3, "min_observations": 3, "min_confidence": 0.6},
     "categories": [

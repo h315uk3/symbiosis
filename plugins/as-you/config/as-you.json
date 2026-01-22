@@ -11,17 +11,18 @@
       "min_cooccurrence": 2,
       "window_size": 5
     },
-    "time_decay": {
-      "enabled": true,
-      "half_life_days": 30
-    },
     "weights": {
       "bm25": 0.4,
       "pmi": 0.3,
-      "time_decay": 0.3
+      "ebbinghaus": 0.3
     }
   },
   "memory": {
+    "ebbinghaus": {
+      "enabled": true,
+      "base_strength": 1.0,
+      "growth_factor": 0.5
+    },
     "sm2": {
       "enabled": true,
       "initial_easiness": 2.5,
@@ -38,6 +39,14 @@
       "enabled": true,
       "initial_alpha": 1.0,
       "initial_beta": 1.0
+    }
+  },
+  "diversity": {
+    "shannon_entropy": {
+      "enabled": true,
+      "context_keys": ["sessions"],
+      "aggregation": "mean",
+      "max_contexts": 10
     }
   },
   "promotion": {

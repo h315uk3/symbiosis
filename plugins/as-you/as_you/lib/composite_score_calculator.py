@@ -103,12 +103,12 @@ def calculate_composite_score(
         Composite score (0-1)
 
     Examples:
-        >>> scores = {"bm25": 0.8, "pmi": 0.6, "time_decay": 0.4}
-        >>> weights = {"bm25": 0.4, "pmi": 0.3, "time_decay": 0.3}
+        >>> scores = {"bm25": 0.8, "pmi": 0.6, "ebbinghaus": 0.4}
+        >>> weights = {"bm25": 0.4, "pmi": 0.3, "ebbinghaus": 0.3}
         >>> round(calculate_composite_score(scores, weights), 2)
         0.62
         >>> # Missing dimension treated as 0.0
-        >>> scores2 = {"bm25": 0.8, "time_decay": 0.4}
+        >>> scores2 = {"bm25": 0.8, "ebbinghaus": 0.4}
         >>> round(calculate_composite_score(scores2, weights), 2)
         0.44
         >>> # Only one dimension
@@ -144,20 +144,20 @@ def calculate_composite_scores(
         ...     "pattern_a": {
         ...         "bm25_score": 10.0,
         ...         "pmi_score": 5.0,
-        ...         "time_decay_score": 0.8,
+        ...         "ebbinghaus_score": 0.8,
         ...     },
         ...     "pattern_b": {
         ...         "bm25_score": 5.0,
         ...         "pmi_score": 2.0,
-        ...         "time_decay_score": 0.6,
+        ...         "ebbinghaus_score": 0.6,
         ...     },
         ...     "pattern_c": {
         ...         "bm25_score": 0.0,
         ...         "pmi_score": 0.0,
-        ...         "time_decay_score": 0.2,
+        ...         "ebbinghaus_score": 0.2,
         ...     },
         ... }
-        >>> weights = {"bm25": 0.5, "pmi": 0.3, "time_decay": 0.2}
+        >>> weights = {"bm25": 0.5, "pmi": 0.3, "ebbinghaus": 0.2}
         >>> scores = calculate_composite_scores(patterns, weights, normalize=True)
         >>> # pattern_a should have highest score
         >>> scores["pattern_a"] > scores["pattern_b"] > scores["pattern_c"]
@@ -176,7 +176,7 @@ def calculate_composite_scores(
     score_keys = {
         "bm25": "bm25_score",
         "pmi": "pmi_score",
-        "time_decay": "time_decay_score",
+        "ebbinghaus": "ebbinghaus_score",
     }
 
     # Extract scores for each dimension

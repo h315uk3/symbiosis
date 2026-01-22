@@ -19,6 +19,9 @@ if str(_PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLUGIN_ROOT))
 
 # Import scoring modules
+from as_you.lib.bayesian_learning import (  # noqa: E402
+    update_bayesian_state,
+)
 from as_you.lib.bm25_calculator import calculate_bm25_scores  # noqa: E402
 from as_you.lib.common import (  # noqa: E402
     AsYouConfig,
@@ -29,9 +32,20 @@ from as_you.lib.common import (  # noqa: E402
 from as_you.lib.composite_score_calculator import (  # noqa: E402
     calculate_composite_scores,
 )
-from as_you.lib.time_decay_calculator import (  # noqa: E402
-    calculate_time_decay_scores,
+from as_you.lib.ebbinghaus_calculator import (  # noqa: E402
+    calculate_ebbinghaus_scores,
 )
+from as_you.lib.shannon_entropy_calculator import (  # noqa: E402
+    calculate_shannon_entropy_scores,
+    normalize_entropy_scores,
+)
+from as_you.lib.thompson_sampling import (  # noqa: E402
+    ThompsonState,
+    update_thompson_state,
+)
+
+# Constants
+THOMPSON_SUCCESS_THRESHOLD = 0.5  # Threshold for treating composite score as "success"
 
 
 @dataclass
@@ -146,7 +160,7 @@ class AnalysisOrchestrator:
             raise ValueError(msg)
         save_tracker(self.tracker_file, self.data)
 
-    def run_analysis(self, skip_merge: bool = False) -> AnalysisResult:
+    def run_analysis(self, skip_merge: bool = False) -> AnalysisResult:  # noqa: PLR0912, PLR0915
         """Run complete pattern analysis workflow.
 
         Args:
@@ -210,15 +224,35 @@ class AnalysisOrchestrator:
         # TODO: Integrate PMI calculator once refactored
         # For now, skip PMI calculation
 
-        # 3. Time decay calculation
-        if scoring_config["time_decay"]["enabled"]:
-            time_decay_scores = calculate_time_decay_scores(
+        # 3. Ebbinghaus forgetting curve calculation
+        memory_config = self.config.settings["memory"]
+        if memory_config.get("ebbinghaus", {}).get("enabled", True):
+            ebbinghaus_scores = calculate_ebbinghaus_scores(
                 patterns,
-                half_life_days=scoring_config["time_decay"]["half_life_days"],
+                base_strength=memory_config["ebbinghaus"]["base_strength"],
+                growth_factor=memory_config["ebbinghaus"]["growth_factor"],
             )
-            for pattern_text, score in time_decay_scores.items():
+            for pattern_text, score in ebbinghaus_scores.items():
                 if pattern_text in patterns:
-                    patterns[pattern_text]["time_decay_score"] = score
+                    patterns[pattern_text]["ebbinghaus_score"] = score
+                    scores_updated += 1
+
+        # 3.5. Shannon Entropy calculation (pattern diversity)
+        diversity_config = self.config.settings.get("diversity", {})
+        entropy_config = diversity_config.get("shannon_entropy", {})
+        if entropy_config.get("enabled", True):
+            context_keys = entropy_config.get("context_keys", ["sessions"])
+            aggregation = entropy_config.get("aggregation", "mean")
+            max_contexts = entropy_config.get("max_contexts", 10)
+
+            entropy_scores = calculate_shannon_entropy_scores(
+                patterns, context_keys=context_keys, aggregation=aggregation
+            )
+            normalized_entropy = normalize_entropy_scores(entropy_scores, max_contexts)
+
+            for pattern_text, score in normalized_entropy.items():
+                if pattern_text in patterns:
+                    patterns[pattern_text]["shannon_entropy_score"] = score
                     scores_updated += 1
 
         # 4. Composite score calculation
@@ -230,6 +264,72 @@ class AnalysisOrchestrator:
         for pattern_text, score in composite_scores.items():
             if pattern_text in patterns:
                 patterns[pattern_text]["composite_score"] = score
+                scores_updated += 1
+
+        # 4.5. Bayesian confidence tracking
+        confidence_config = self.config.settings.get("confidence", {})
+        bayesian_config = confidence_config.get("bayesian", {})
+        if bayesian_config.get("enabled", True):
+            prior_mean = bayesian_config.get("prior_mean", 0.5)
+            prior_variance = bayesian_config.get("prior_variance", 0.04)
+
+            for _pattern_text, pattern_data in patterns.items():
+                # Initialize Bayesian state if not present
+                if "bayesian_state" not in pattern_data:
+                    pattern_data["bayesian_state"] = {
+                        "mean": prior_mean,
+                        "variance": prior_variance,
+                    }
+
+                # Update Bayesian state using composite score as observation
+                composite_score = pattern_data.get("composite_score", 0.0)
+                observation_variance = 0.01  # Low variance for composite score
+
+                current_state = pattern_data["bayesian_state"]
+                updated_state = update_bayesian_state(
+                    prior_mean=current_state["mean"],
+                    prior_variance=current_state["variance"],
+                    observation=composite_score,
+                    observation_variance=observation_variance,
+                )
+
+                pattern_data["bayesian_state"] = {
+                    "mean": updated_state.mean,
+                    "variance": updated_state.variance,
+                }
+                scores_updated += 1
+
+        # 4.6. Thompson Sampling (Beta-Binomial)
+        thompson_config = confidence_config.get("thompson_sampling", {})
+        if thompson_config.get("enabled", True):
+            initial_alpha = thompson_config.get("initial_alpha", 1.0)
+            initial_beta = thompson_config.get("initial_beta", 1.0)
+
+            for _pattern_text, pattern_data in patterns.items():
+                # Initialize Thompson state if not present
+                if "thompson_state" not in pattern_data:
+                    pattern_data["thompson_state"] = {
+                        "alpha": initial_alpha,
+                        "beta": initial_beta,
+                    }
+
+                # Update Thompson state based on composite score
+                # Treat high composite score as "success"
+                composite_score = pattern_data.get("composite_score", 0.0)
+                success = composite_score > THOMPSON_SUCCESS_THRESHOLD
+
+                current_thompson = pattern_data["thompson_state"]
+                updated_thompson = update_thompson_state(
+                    ThompsonState(
+                        alpha=current_thompson["alpha"], beta=current_thompson["beta"]
+                    ),
+                    success=success,
+                )
+
+                pattern_data["thompson_state"] = {
+                    "alpha": updated_thompson.alpha,
+                    "beta": updated_thompson.beta,
+                }
                 scores_updated += 1
 
         # 5. Pattern merging (if not skip_merge)
