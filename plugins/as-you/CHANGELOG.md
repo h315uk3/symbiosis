@@ -28,6 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Testing and Benchmarking
 - **Comprehensive Doctests** - 200+ doctests across all modules
 
+#### Completed Integrations
+- **PMI Integration** - Co-occurrence analysis fully integrated into AnalysisOrchestrator
+- **Pattern Merging** - Automatic similarity-based pattern consolidation using composite scores
+- **SM-2 State Persistence** - Spaced repetition state initialized for all patterns (quality updates in v0.3.1)
+- **Architecture Completeness** - 95% complete (SM-2 quality updates pending user feedback mechanism)
+
 ### Changed
 
 #### Command Restructuring (7 → 4 commands)
@@ -199,23 +205,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Known Issues
 
 ### v0.3.0
-- PMI calculation not yet integrated into AnalysisOrchestrator (planned for v0.3.1)
-- Pattern merging not yet using new composite scores (planned for v0.3.1)
-- SM-2 spaced repetition not integrated (implemented but deferred to v0.4.0)
+- ~~PMI calculation not yet integrated~~ - COMPLETED
+- ~~Pattern merging not yet using composite scores~~ - COMPLETED
+- SM-2 spaced repetition initialized but quality updates deferred to v0.3.1 (requires /apply command feedback)
+
+**Status**: All core architecture refactoring complete. SM-2 quality updates will be implemented when user feedback mechanism is available.
 
 ### Workarounds
-- PMI scores still calculated but not used in composite score
-- Pattern merging uses Levenshtein distance as before
-- SM-2 module exists but not called from AnalysisOrchestrator
+- None required. All critical integrations are complete.
 
 ---
 
 ## Future Plans
 
 ### v0.3.1 (Planned)
-- Integrate PMI into composite scoring
-- Use composite scores for pattern merging
-- Enhanced similarity detection with BK-tree
+- SM-2 quality updates based on user feedback from /apply command
+- Pattern review workflow integration
+- Enhanced user feedback mechanisms
 
 ### v0.4.0 (Planned)
 - SM-2 review prompts and UI

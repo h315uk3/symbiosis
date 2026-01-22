@@ -35,6 +35,7 @@ from as_you.lib.composite_score_calculator import (  # noqa: E402
 from as_you.lib.ebbinghaus_calculator import (  # noqa: E402
     calculate_ebbinghaus_scores,
 )
+from as_you.lib.pmi_calculator import calculate_pmi_scores  # noqa: E402
 from as_you.lib.shannon_entropy_calculator import (  # noqa: E402
     calculate_shannon_entropy_scores,
     normalize_entropy_scores,
@@ -221,11 +222,19 @@ class AnalysisOrchestrator:
                     scores_updated += 1
 
         # 2. PMI calculation (co-occurrence analysis)
-        # TODO: Integrate PMI calculator once refactored
-        # For now, skip PMI calculation
+        if scoring_config.get("pmi", {}).get("enabled", True):
+            pmi_scores = calculate_pmi_scores(
+                patterns,
+                self.archive_dir,
+                min_cooccurrence=scoring_config["pmi"].get("min_cooccurrence", 2),
+            )
+            for pattern_text, score in pmi_scores.items():
+                if pattern_text in patterns:
+                    patterns[pattern_text]["pmi_score"] = score
+                    scores_updated += 1
 
         # 3. Ebbinghaus forgetting curve calculation
-        memory_config = self.config.settings["memory"]
+        memory_config = config.settings["memory"]
         if memory_config.get("ebbinghaus", {}).get("enabled", True):
             ebbinghaus_scores = calculate_ebbinghaus_scores(
                 patterns,
@@ -238,7 +247,7 @@ class AnalysisOrchestrator:
                     scores_updated += 1
 
         # 3.5. Shannon Entropy calculation (pattern diversity)
-        diversity_config = self.config.settings.get("diversity", {})
+        diversity_config = config.settings.get("diversity", {})
         entropy_config = diversity_config.get("shannon_entropy", {})
         if entropy_config.get("enabled", True):
             context_keys = entropy_config.get("context_keys", ["sessions"])
@@ -332,11 +341,42 @@ class AnalysisOrchestrator:
                 }
                 scores_updated += 1
 
+        # 6. SM-2 state initialization (quality updates deferred to v0.3.1)
+        memory_config = config.settings.get("memory", {})
+        sm2_config = memory_config.get("sm2", {})
+        if sm2_config.get("enabled", True):
+            from datetime import datetime  # noqa: PLC0415
+
+            from as_you.lib.sm2_memory import create_initial_state  # noqa: PLC0415
+
+            for _pattern_text, pattern_data in patterns.items():
+                # Initialize SM-2 state if not present
+                if "sm2_state" not in pattern_data:
+                    initial_ef = sm2_config.get("initial_easiness", 2.5)
+                    state = create_initial_state(initial_ef)
+                    pattern_data["sm2_state"] = {
+                        "easiness_factor": state.easiness_factor,
+                        "interval": state.interval,
+                        "repetitions": state.repetitions,
+                        "last_review": datetime.now().strftime("%Y-%m-%d"),
+                        "next_review": None,  # Will be set when /apply provides feedback
+                    }
+                    scores_updated += 1
+
         # 5. Pattern merging (if not skip_merge)
-        # TODO: Integrate pattern merger once refactored
         if not skip_merge:
-            # For now, skip pattern merging
-            pass
+            from as_you.hooks.pattern_merger import merge_patterns_auto  # noqa: PLC0415
+
+            # Merge similar patterns based on Levenshtein distance
+            patterns, merged_count = merge_patterns_auto(
+                patterns,
+                similarity_threshold=0.85,  # Can make configurable later
+                min_count=1,
+            )
+            patterns_merged += merged_count
+
+            # Update tracker data with merged patterns
+            self.data["patterns"] = patterns
 
         # Save results
         self.save_data()
