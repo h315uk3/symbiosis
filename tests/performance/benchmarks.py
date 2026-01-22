@@ -17,6 +17,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, ClassVar
 
+# Add plugins directory to Python path for imports
+_REPO_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(_REPO_ROOT / "plugins/as-you"))
+
 
 @dataclass
 class BenchmarkResult:
@@ -172,6 +176,67 @@ class Benchmark:
         path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
 
 
+def create_test_data(base_dir: Path, num_patterns: int = 100) -> dict[str, Any]:
+    """Create test data for benchmarking.
+
+    Args:
+        base_dir: Base directory for test files
+        num_patterns: Number of patterns to create
+
+    Returns:
+        Dictionary with test data paths and content
+    """
+    # Create directories
+    tracker_file = base_dir / "pattern_tracker.json"
+    archive_dir = base_dir / "archive"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate test patterns
+    patterns = {}
+    for i in range(num_patterns):
+        pattern_text = f"test pattern {i}"
+        patterns[pattern_text] = {
+            "count": i + 1,
+            "last_seen": f"2026-01-{(i % 28) + 1:02d}",
+            "sessions": [f"2026-01-{(j % 28) + 1:02d}" for j in range(i % 5 + 1)],
+            "promoted": False,
+            "contexts": [f"context {i}"],
+        }
+
+    # Create cooccurrences
+    cooccurrences = []
+    for i in range(min(num_patterns // 2, 50)):
+        cooccurrences.append(
+            {
+                "words": [f"test pattern {i}", f"test pattern {i+1}"],
+                "count": i + 1,
+            }
+        )
+
+    # Write tracker file
+    tracker_data = {
+        "patterns": patterns,
+        "cooccurrences": cooccurrences,
+        "promotion_candidates": [],
+    }
+    tracker_file.write_text(json.dumps(tracker_data, indent=2, ensure_ascii=False))
+
+    # Create archive files
+    for i in range(10):
+        archive_file = archive_dir / f"2026-01-{i+1:02d}.md"
+        content_lines = [
+            f"test pattern {j}"
+            for j in range(i * 10, min((i + 1) * 10, num_patterns))
+        ]
+        archive_file.write_text("\n".join(content_lines))
+
+    return {
+        "tracker_file": tracker_file,
+        "archive_dir": archive_dir,
+        "num_patterns": num_patterns,
+    }
+
+
 def benchmark_current_implementation() -> Benchmark:
     """Benchmark current implementation (v1).
 
@@ -179,18 +244,79 @@ def benchmark_current_implementation() -> Benchmark:
         Benchmark object with all results
 
     Note:
-        Actual benchmark implementations will be added as we measure
-        the current system performance. This is a placeholder for the
-        framework structure.
+        Creates temporary test data and measures actual v1 operations.
+        All test data is cleaned up after benchmarking.
     """
+    import shutil
+    import tempfile
+
     bench = Benchmark()
 
-    # TODO: Add actual benchmarks
-    # bench.run("note_add", lambda: ...)
-    # bench.run("pattern_tracker_update", lambda: ...)
+    # Create temporary directory for test data
+    temp_dir = Path(tempfile.mkdtemp(prefix="as_you_bench_"))
 
-    # Placeholder: framework test
-    bench.run("test", lambda: time.sleep(0.001))
+    try:
+        # Create test data
+        test_data = create_test_data(temp_dir, num_patterns=100)
+
+        # Benchmark: JSON load
+        def json_load():
+            json.loads(test_data["tracker_file"].read_text())
+
+        bench.run("json_load", json_load)
+
+        # Benchmark: JSON save
+        def json_save():
+            data = json.loads(test_data["tracker_file"].read_text())
+            test_data["tracker_file"].write_text(json.dumps(data, indent=2))
+
+        bench.run("json_save", json_save)
+
+        # Benchmark: TF-IDF calculation (100 patterns)
+        def tfidf_calculation():
+            from as_you.lib.tfidf_calculator import calculate_tfidf_single_pass
+
+            data = json.loads(test_data["tracker_file"].read_text())
+            patterns = data.get("patterns", {})
+            calculate_tfidf_single_pass(patterns, test_data["archive_dir"])
+
+        bench.run("tfidf_calculation_100", tfidf_calculation)
+
+        # Benchmark: PMI calculation (100 patterns)
+        def pmi_calculation():
+            from as_you.lib.pmi_calculator import count_total_patterns
+
+            count_total_patterns(test_data["archive_dir"])
+
+        bench.run("pmi_calculation_100", pmi_calculation)
+
+        # Benchmark: Score calculation
+        def score_calculation():
+            from as_you.lib.score_calculator import UnifiedScoreCalculator
+
+            calc = UnifiedScoreCalculator(
+                test_data["tracker_file"], test_data["archive_dir"]
+            )
+            calc.calculate_all_scores()
+
+        bench.run("score_calculation", score_calculation)
+
+        # Benchmark: Pattern search
+        def pattern_search():
+            data = json.loads(test_data["tracker_file"].read_text())
+            patterns = data.get("patterns", {})
+            # Simulate searching for top patterns
+            sorted_patterns = sorted(
+                patterns.items(), key=lambda x: x[1].get("count", 0), reverse=True
+            )
+            top_10 = sorted_patterns[:10]
+            return top_10
+
+        bench.run("pattern_search", pattern_search)
+
+    finally:
+        # Cleanup temporary directory
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
     return bench
 
