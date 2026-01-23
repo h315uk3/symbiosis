@@ -40,6 +40,8 @@ on:
 permissions:
   contents: read
   security-events: write
+  actions: read
+  pull-requests: read
 
 jobs:
   analyze:
@@ -63,9 +65,5 @@ jobs:
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
-
-      - name: Upload SARIF results
-        uses: github/codeql-action/upload-sarif@v3
         with:
           category: 'CodeQL'
-        if: always()
