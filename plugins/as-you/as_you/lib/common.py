@@ -239,6 +239,8 @@ class TrackerData(TypedDict, total=False):
     patterns: dict[str, dict]
     promotion_candidates: list[str]
     cooccurrences: list[dict]
+    notes: list[dict]
+    clusters: dict[str, dict]
 
 
 def load_tracker(tracker_file: Path) -> TrackerData:
@@ -278,6 +280,8 @@ def load_tracker(tracker_file: Path) -> TrackerData:
         "patterns": {},
         "promotion_candidates": [],
         "cooccurrences": [],
+        "notes": [],
+        "clusters": {},
     }
 
     if not tracker_file.exists() or tracker_file.stat().st_size == 0:
