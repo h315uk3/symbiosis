@@ -219,13 +219,34 @@ Explore pattern memory, analyze confidence, and manage knowledge base.
    **If "Consider skill creation":**
    - Display Tier 1 promotion recommendations from analysis
    - Show pattern group, combined occurrences, suggested skill name
-   - Guide user to create skill file:
-     - Skill location: `skills/{skill-name}/SKILL.md`
-     - Include pattern context and use cases
-     - Reference promotion recommendations
-   - Ask if user wants to proceed:
-     - If yes: Guide through skill creation
-     - If no: Return to step 3
+   - Ask if user wants to proceed with skill creation
+   - If yes:
+     1. Generate skill content based on analysis:
+        - Title: Pattern group name
+        - Overview: Combined patterns summary
+        - When to Use: Contexts from pattern occurrences
+        - Guidelines: Evidence-based best practices
+        - Examples: Concrete use cases from pattern history
+        - Best Practices: Key recommendations
+     2. Write content to temporary file:
+        ```bash
+        cat > /tmp/skill_content.md <<'EOF'
+        # Generated skill content here
+        EOF
+        ```
+     3. Create skill using skill_creator.py:
+        ```bash
+        export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+        python3 -m as_you.commands.skill_creator \
+          "{skill-name}" \
+          "{description}" \
+          "$(cat /tmp/skill_content.md)" \
+          "fork" \
+          "Read,Bash,Glob"
+        ```
+     4. Display result and skill location
+     5. Clean up temporary file: `rm /tmp/skill_content.md`
+   - If no: Return to step 3
 
    **If "Consider agent creation":**
    - Display Tier 2 promotion recommendations from analysis

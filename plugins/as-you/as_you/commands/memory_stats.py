@@ -46,10 +46,10 @@ def collect_stats() -> dict:
         stats["habit_clusters"] = 0
 
     # Skills
-    skills_dir = Path(".claude/as_you/skills")
+    skills_dir = Path("plugins/as-you/skills")
     if skills_dir.exists():
-        # Count .md files in skills directory (excluding subdirectories)
-        stats["skills"] = len([f for f in skills_dir.glob("*.md") if f.is_file()])
+        # Count SKILL.md files in subdirectories (Claude Code skill format)
+        stats["skills"] = len(list(skills_dir.glob("*/SKILL.md")))
     else:
         stats["skills"] = 0
 
