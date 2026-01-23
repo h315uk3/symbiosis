@@ -23,7 +23,7 @@ Claude learns from your work patterns and builds knowledge automatically from yo
 
 3. Pattern Analysis & Scoring (Automatic)
    → Extract patterns from archive
-   → Calculate BM25 relevance scores
+   → Calculate BM25 distinctiveness scores (rare terms score higher)
    → Apply time decay (30-day half-life)
    → Track Bayesian confidence
    → Schedule SM-2 memory reviews
@@ -74,7 +74,7 @@ Patterns are automatically extracted from your session notes using statistical i
 - **No telemetry** - Zero tracking or analytics
 
 ### Statistical Intelligence (v0.3.0)
-- **BM25 Scoring** - Relevance ranking with term saturation (replaces TF-IDF)
+- **BM25 Scoring** - Distinctiveness ranking based on term rarity (replaces TF-IDF)
 - **Time Decay** - Exponential decay prioritizes recent patterns (configurable half-life)
 - **Bayesian Confidence** - Tracks certainty with mean, variance, and confidence intervals
 - **SM-2 Memory** - Spaced repetition scheduling for optimal review timing
@@ -97,7 +97,7 @@ Patterns are automatically extracted from your session notes using statistical i
 ## What's New in v0.3.0
 
 ### Enhanced Scoring System
-- **BM25** replaces TF-IDF for better relevance ranking
+- **BM25** replaces TF-IDF for distinctiveness ranking (rare terms score higher)
 - **Time Decay** with configurable half-life (default: 30 days)
 - **Composite Score** combines BM25 (40%) + PMI (30%) + Time Decay (30%)
 - Weights configurable in `config/as-you.json`
@@ -151,7 +151,7 @@ Patterns are automatically extracted from your session notes using statistical i
       "half_life_days": 30  // Adjust for faster/slower decay
     },
     "weights": {
-      "bm25": 0.4,          // Relevance weight
+      "bm25": 0.4,          // Distinctiveness weight
       "pmi": 0.3,           // Co-occurrence weight
       "time_decay": 0.3     // Recency weight
     }
@@ -189,7 +189,7 @@ Patterns are automatically extracted from your session notes using statistical i
 - Lower `half_life_days` (e.g., 15)
 - Increase `time_decay` weight (e.g., 0.4)
 
-**Prioritize relevance over recency:**
+**Prioritize distinctiveness over recency:**
 - Increase `bm25` weight (e.g., 0.5)
 - Decrease `time_decay` weight (e.g., 0.2)
 

@@ -265,9 +265,10 @@ Explore pattern memory, analyze confidence, and manage knowledge base.
 ## Understanding the Scores
 
 **BM25 Score**
-- Measures relevance based on term frequency and document length normalization
-- Higher = more distinctive and relevant terminology
-- Saturates to avoid over-weighting frequent terms (k1=1.5, b=0.75)
+- Measures pattern distinctiveness based on term rarity in the corpus
+- Higher = pattern contains rare, specific terminology
+- Lower = pattern contains common, general terms
+- Saturates to avoid over-weighting repeated terms (k1=1.5, b=0.75)
 
 **Ebbinghaus Score**
 - Based on Ebbinghaus forgetting curve: R(t) = e^(-t/s)

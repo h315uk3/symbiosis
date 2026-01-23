@@ -45,6 +45,18 @@ jobs:
 
       - name: Install mise
         uses: jdx/mise-action@v2
+        with:
+          cache: true
+
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/uv
+            .venv
+          key: python-deps-${{ runner.os }}-${{ hashFiles('**/pyproject.toml', '**/uv.lock') }}
+          restore-keys: |
+            python-deps-${{ runner.os }}-
 
       - name: Install dependencies with mise
         run: mise install

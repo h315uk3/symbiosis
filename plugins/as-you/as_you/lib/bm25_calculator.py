@@ -1,25 +1,34 @@
 #!/usr/bin/env python3
-"""BM25 scoring algorithm for pattern relevance ranking.
+"""BM25 scoring algorithm for pattern distinctiveness ranking.
 
-BM25 (Best Matching 25) is a ranking function used by search engines to estimate
-the relevance of documents to a given search query. It's an improvement over TF-IDF
-that incorporates:
-1. Term frequency saturation (prevents over-weighting of high-frequency terms)
-2. Document length normalization (accounts for varying document lengths)
+This module adapts BM25 to measure pattern distinctiveness (specificity) rather than
+traditional query-document relevance. Patterns containing rare, specific terms score
+higher than those with common, general terms.
+
+How it works in this context:
+- Pattern tokens are treated as query terms
+- Session archive files are treated as the document corpus
+- IDF component identifies rare/distinctive terms
+- TF saturation prevents over-weighting of repeated terms
+
+Key properties:
+1. High score = Pattern contains distinctive, specific terminology
+2. Low score = Pattern contains common, general terms
+3. Term frequency saturation prevents gaming via repetition
 
 Formula:
     BM25(D, Q) = Σ IDF(qi) × (f(qi, D) × (k1 + 1)) / (f(qi, D) + k1 × (1 - b + b × |D| / avgdl))
 
 Where:
-    D: Document (pattern text)
-    Q: Query (search terms)
-    qi: Query term i
+    D: Document (archive file)
+    Q: Query (pattern tokens)
+    qi: Pattern token i
     f(qi, D): Frequency of qi in D
     |D|: Length of document D
     avgdl: Average document length
     k1: Term frequency saturation parameter (typically 1.2-2.0)
     b: Length normalization parameter (typically 0.75)
-    IDF(qi): Inverse document frequency of qi
+    IDF(qi): Inverse document frequency of qi (higher for rare terms)
 
 References:
     Robertson, S. & Zaragoza, H. (2009). The Probabilistic Relevance Framework:
