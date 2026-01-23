@@ -48,9 +48,29 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 - Commit to main directly
 - Rebase shared branches
 - Commit secrets or API keys
+- **Create and push files without explicit user instruction**
+- **Push to GitHub without explicit user confirmation**
 
 **ALWAYS**:
 - Review changes before committing (`git diff`)
 - Test before pushing
 - Keep commits focused
 - Update documentation with code
+- **Show changes locally first, then ask for push permission**
+- **Get explicit confirmation before any GitHub operation (commit, push, PR, Issue)**
+
+## Critical: GitHub Operations
+
+**Before any push/PR/GitHub operation**:
+1. Show all changes to user (files created, modified, deleted)
+2. Explain what will be pushed and why
+3. Wait for explicit user confirmation: "OK to push?" or "Create PR?"
+4. Never assume permission from implementation requests
+
+**Especially critical for**:
+- Hooks and scripts (pre-commit, setup scripts)
+- Configuration files (.gitignore, CI/CD configs)
+- Documentation changes
+- Any file that wasn't explicitly requested
+
+**Rationale**: Once pushed to GitHub, data cannot be easily removed. Commits remain in object storage even after force-push.
