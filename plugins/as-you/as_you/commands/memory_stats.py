@@ -30,20 +30,25 @@ def collect_stats() -> dict:
     else:
         stats["archives"] = 0
 
-    # Patterns
+    # Patterns and habits
     tracker_file = Path(".claude/as_you/pattern_tracker.json")
     try:
         data = load_tracker(tracker_file)
         stats["patterns"] = len(data.get("patterns", {}))
         stats["candidates"] = len(data.get("promotion_candidates", []))
+        stats["habit_notes"] = len(data.get("notes", []))
+        stats["habit_clusters"] = len(data.get("clusters", {}))
     except (OSError, json.JSONDecodeError):
         # Corrupted or inaccessible file - use defaults
         stats["patterns"] = 0
         stats["candidates"] = 0
+        stats["habit_notes"] = 0
+        stats["habit_clusters"] = 0
 
     # Skills
-    skills_dir = Path("skills")
+    skills_dir = Path("plugins/as-you/skills")
     if skills_dir.exists():
+        # Count SKILL.md files in subdirectories (Claude Code skill format)
         stats["skills"] = len(list(skills_dir.glob("*/SKILL.md")))
     else:
         stats["skills"] = 0

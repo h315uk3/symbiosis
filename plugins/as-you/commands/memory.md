@@ -37,6 +37,10 @@ Explore pattern memory, analyze confidence, and manage knowledge base.
    - Composite scores: X
    - Promotion candidates: X
 
+   ## Habit Extraction (v0.3.1)
+   - Indexed notes: X
+   - Habit clusters: X
+
    ## Confidence Tracking
    - High confidence (>0.7): X patterns
    - Medium confidence (0.4-0.7): X patterns
@@ -167,8 +171,93 @@ Explore pattern memory, analyze confidence, and manage knowledge base.
      Working directory: {pwd} (use absolute paths)"
      description: "Deep memory analysis"
      ```
-   - Display agent output
+   - Summarize agent output focusing on:
+     - High-value patterns (score > 0.7)
+     - Pattern stability (Bayesian variance)
+     - General vs specialized patterns (Shannon Entropy)
+     - Memory strength (Ebbinghaus score)
+     - Promotion recommendations (Tier 1/2/3)
+     - Pattern merge candidates
+     - Noise patterns (score < 0.3)
+   - Present action-oriented menu using AskUserQuestion (step 4)
+
+   **If "Exit":**
+   - Respond: "Done"
+
+4. **Present Action-Oriented Menu** (Step 4 - after Deep Analysis)
+
+   Using AskUserQuestion:
+   - Question: "What would you like to do next?"
+   - Header: "Next"
+   - multiSelect: false
+   - Options:
+     - Label: "Merge patterns"
+       Description: "Consolidate duplicate patterns to reduce noise"
+     - Label: "Consider skill creation"
+       Description: "Create skills recommended by analysis"
+     - Label: "Consider agent creation"
+       Description: "Create agents recommended by analysis"
+     - Label: "Exit"
+       Description: "Close memory dashboard"
+
+5. **Execute Based on Step 4 Selection**
+
+   **If "Merge patterns":**
+   - Read pattern_tracker.json and identify merge candidates from analysis
+   - For each merge candidate group:
+     - Show patterns and co-occurrence count
+     - Ask if user wants to merge
+   - If yes:
+     - Execute:
+       ```bash
+       export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+       python3 -m as_you.hooks.pattern_merger
+       ```
+     - Show merge results
    - Return to step 3
+
+   **If "Consider skill creation":**
+   - Display Tier 1 promotion recommendations from analysis
+   - Show pattern group, combined occurrences, suggested skill name
+   - Ask if user wants to proceed with skill creation
+   - If yes:
+     1. Generate skill content based on analysis:
+        - Title: Pattern group name
+        - Overview: Combined patterns summary
+        - When to Use: Contexts from pattern occurrences
+        - Guidelines: Evidence-based best practices
+        - Examples: Concrete use cases from pattern history
+        - Best Practices: Key recommendations
+     2. Write content to temporary file:
+        ```bash
+        cat > /tmp/skill_content.md <<'EOF'
+        # Generated skill content here
+        EOF
+        ```
+     3. Create skill using skill_creator.py:
+        ```bash
+        export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+        python3 -m as_you.commands.skill_creator \
+          "{skill-name}" \
+          "{description}" \
+          "$(cat /tmp/skill_content.md)" \
+          "fork" \
+          "Read,Bash,Glob"
+        ```
+     4. Display result and skill location
+     5. Clean up temporary file: `rm /tmp/skill_content.md`
+   - If no: Return to step 3
+
+   **If "Consider agent creation":**
+   - Display Tier 2 promotion recommendations from analysis
+   - Show pattern group, PMI scores, suggested agent name
+   - Guide user to create agent file:
+     - Agent location: `agents/{agent-name}.md`
+     - Include workflow patterns and automation logic
+     - Reference promotion recommendations
+   - Ask if user wants to proceed:
+     - If yes: Guide through agent creation
+     - If no: Return to step 3
 
    **If "Exit":**
    - Respond: "Done"

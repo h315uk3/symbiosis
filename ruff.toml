@@ -40,6 +40,10 @@ ignore = [
 # Allow module-level imports after sys.path manipulation in commands/hooks
 "plugins/*/scripts/commands/*.py" = ["E402"]
 "plugins/*/scripts/hooks/*.py" = ["E402"]
+"plugins/*/as_you/commands/*.py" = ["E402"]
+"plugins/*/as_you/hooks/*.py" = ["E402"]
+"plugins/*/with_me/commands/*.py" = ["E402"]
+"plugins/*/with_me/hooks/*.py" = ["E402"]
 
 # Allow unused imports and shadowing in __init__.py files
 "__init__.py" = ["F401", "F403"]

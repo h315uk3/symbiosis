@@ -61,5 +61,12 @@
     "decision",
     "observation",
     "workflow"
-  ]
+  ],
+  "habits": {
+    "deduplication_threshold": 0.9,
+    "clustering_threshold": 0.85,
+    "min_confidence": 0.5,
+    "min_freshness": 0.3,
+    "freshness_half_life_days": 30
+  }
 }

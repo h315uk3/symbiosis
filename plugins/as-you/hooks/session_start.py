@@ -190,6 +190,53 @@ def main() -> dict:
         if summary:
             display_promotion_info(summary)
 
+    # 3.5. Inject relevant habits (Phase 3 of Issue #83)
+    try:
+        from as_you.lib.context_detector import (
+            detect_project_type,
+            extract_keywords_from_files,
+            build_context_query
+        )
+        from as_you.lib.habit_searcher import search_habits
+
+        # Detect context
+        tags = detect_project_type(config.project_root)
+        keywords = extract_keywords_from_files(config.project_root)
+        query = build_context_query(tags, keywords)
+
+        # Get settings
+        habits_config = config.settings.get("habits", {})
+        min_confidence = habits_config.get("min_confidence", 0.6)  # Higher threshold for auto-injection
+        min_freshness = habits_config.get("min_freshness", 0.4)    # Higher threshold for auto-injection
+        half_life_days = habits_config.get("freshness_half_life_days", 30)
+
+        bm25_config = config.settings.get("scoring", {}).get("bm25", {})
+        k1 = bm25_config.get("k1", 1.5)
+        b = bm25_config.get("b", 0.75)
+
+        # Search for habits (top 3, high threshold to reduce noise)
+        habits = search_habits(
+            query,
+            config.tracker_file,
+            top_k=3,
+            min_confidence=min_confidence,
+            min_freshness=min_freshness,
+            k1=k1,
+            b=b,
+            half_life_days=half_life_days,
+        )
+
+        if habits:
+            print("Relevant habits for this session:")
+            for i, habit in enumerate(habits, 1):
+                print(f"  {i}. {habit['text']}")
+            print()
+
+    except Exception as e:
+        # Non-fatal error - don't block session start
+        with open(error_log, "a", encoding="utf-8") as f:
+            f.write(f"[{datetime.now()}] Habit injection error: {e}\n")
+
     # 4. Display welcome message
     print("As You plugin loaded")
     print("Quick start: /as-you:help")

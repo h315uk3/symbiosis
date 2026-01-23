@@ -241,6 +241,15 @@ def main() -> dict:
     if not result["success"]:
         print(f"Warning: Note archiving failed: {result['stderr']}", file=sys.stderr)
 
+    # 1.5. Index notes from archives (Phase 1 of Issue #83)
+    result = run_python_script(
+        REPO_ROOT / "as_you/hooks/note_indexer_hook.py",
+        error_log=error_log,
+        timeout=20
+    )
+    if not result["success"]:
+        print(f"Warning: Note indexing failed: {result['stderr']}", file=sys.stderr)
+
     # 2. Update pattern tracker (detect patterns, extract contexts, update tracker)
     result = run_python_script(
         REPO_ROOT / "as_you/hooks/pattern_tracker_update.py",
@@ -260,6 +269,15 @@ def main() -> dict:
     if not result["success"]:
         print(f"Warning: Score calculation failed: {result['stderr']}", file=sys.stderr)
         # Non-fatal: tracker is still updated, just without scores
+
+    # 3.5. Update habit freshness (Phase 4 of Issue #83)
+    result = run_python_script(
+        REPO_ROOT / "as_you/hooks/habit_freshness_update.py",
+        error_log=error_log,
+        timeout=10
+    )
+    if not result["success"]:
+        print(f"Warning: Habit freshness update failed: {result['stderr']}", file=sys.stderr)
 
     # 4. Periodic pattern merge
     merge_interval = int(os.getenv("AS_YOU_MERGE_INTERVAL", "10"))

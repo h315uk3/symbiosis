@@ -12,8 +12,8 @@ _PLUGIN_ROOT = Path(__file__).parent.parent.parent
 if str(_PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLUGIN_ROOT))
 
-from as_you.lib.analysis_orchestrator import AnalysisOrchestrator  # noqa: E402
-from as_you.lib.common import AsYouConfig  # noqa: E402
+from as_you.lib.analysis_orchestrator import AnalysisOrchestrator
+from as_you.lib.common import AsYouConfig
 
 
 def main():
