@@ -46,9 +46,10 @@ def collect_stats() -> dict:
         stats["habit_clusters"] = 0
 
     # Skills
-    skills_dir = Path("skills")
+    skills_dir = Path(".claude/as_you/skills")
     if skills_dir.exists():
-        stats["skills"] = len(list(skills_dir.glob("*/SKILL.md")))
+        # Count .md files in skills directory (excluding subdirectories)
+        stats["skills"] = len([f for f in skills_dir.glob("*.md") if f.is_file()])
     else:
         stats["skills"] = 0
 
