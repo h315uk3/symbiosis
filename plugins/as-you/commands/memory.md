@@ -37,6 +37,10 @@ Explore pattern memory, analyze confidence, and manage knowledge base.
    - Composite scores: X
    - Promotion candidates: X
 
+   ## Habit Extraction (v0.3.1)
+   - Indexed notes: X
+   - Habit clusters: X
+
    ## Confidence Tracking
    - High confidence (>0.7): X patterns
    - Medium confidence (0.4-0.7): X patterns
