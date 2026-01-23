@@ -1,13 +1,25 @@
 #!/usr/bin/env python3
 """
-Apply habits command.
+Apply habits command (debug/verification tool).
 
 Phase 3 of Issue #83: Habit Extraction and Automatic Application.
+
+This is a developer tool for debugging and verifying habit application.
+In normal operation, habits are automatically injected via SessionStart hook
+and applied by Claude without user intervention.
+Users do NOT need to run this command manually.
 
 Usage:
     python3 -m as_you.commands.apply_habits [query]
     python3 -m as_you.commands.apply_habits "testing python"
     python3 -m as_you.commands.apply_habits  # Auto-detect context
+
+Examples:
+    # Debug: Check what habits would be shown for current project
+    python3 -m as_you.commands.apply_habits
+
+    # Verify: Test context detection with specific query
+    python3 -m as_you.commands.apply_habits "database migration"
 """
 
 import sys

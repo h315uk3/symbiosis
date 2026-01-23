@@ -1,12 +1,23 @@
 #!/usr/bin/env python3
 """
-Habit search command (debug tool).
+Habit search command (debug/verification tool).
 
 Phase 2 of Issue #83: Habit Extraction and Automatic Application.
+
+This is a developer tool for debugging and verifying habit search functionality.
+In normal operation, habits are automatically injected via SessionStart hook.
+Users do NOT need to run this command manually.
 
 Usage:
     python3 -m as_you.commands.habit_search "query string"
     python3 -m as_you.commands.habit_search "query" --json
+
+Examples:
+    # Debug: Check what habits match a query
+    python3 -m as_you.commands.habit_search "testing python"
+
+    # Verify: Get JSON output for inspection
+    python3 -m as_you.commands.habit_search "run tests" --json
 """
 
 import json

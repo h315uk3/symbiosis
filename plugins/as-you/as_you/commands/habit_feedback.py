@@ -1,14 +1,29 @@
 #!/usr/bin/env python3
 """
-Habit feedback command.
+Habit feedback command (debug/verification tool).
 
 Phase 4 of Issue #83: Habit Extraction and Automatic Application.
+
+This is a developer tool for manually testing feedback and confidence updates.
+In normal operation, feedback should be collected automatically by Claude
+when habits are applied (future implementation).
+Users do NOT need to run this command manually.
 
 Usage:
     python3 -m as_you.commands.habit_feedback <note_id> <feedback>
     python3 -m as_you.commands.habit_feedback n_20260123_001 success
     python3 -m as_you.commands.habit_feedback n_20260123_001 partial
     python3 -m as_you.commands.habit_feedback n_20260123_001 failure
+
+Examples:
+    # Debug: Simulate successful habit application
+    python3 -m as_you.commands.habit_feedback n_20260123_001 success
+
+    # Verify: Check confidence update after failure
+    python3 -m as_you.commands.habit_feedback n_20260123_001 failure
+
+    # Test: Partial application scenario
+    python3 -m as_you.commands.habit_feedback n_20260123_001 partial
 """
 
 import sys
