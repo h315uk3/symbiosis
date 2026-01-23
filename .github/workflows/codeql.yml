@@ -57,6 +57,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Cache CodeQL
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.codeql
+            ~/codeql-home
+          key: codeql-${{ runner.os }}-${{ matrix.language }}-${{ hashFiles('**/*.py') }}
+          restore-keys: |
+            codeql-${{ runner.os }}-${{ matrix.language }}-
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
