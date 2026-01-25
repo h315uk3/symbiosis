@@ -279,6 +279,15 @@ def main() -> dict:
     if not result["success"]:
         print(f"Warning: Habit freshness update failed: {result['stderr']}", file=sys.stderr)
 
+    # 3.6. Integrate active learning data (Issue #93)
+    result = run_python_script(
+        REPO_ROOT / "as_you/hooks/active_learning_integration.py",
+        error_log=error_log,
+        timeout=15
+    )
+    if not result["success"]:
+        print(f"Warning: Active learning integration failed: {result['stderr']}", file=sys.stderr)
+
     # 4. Periodic pattern merge
     merge_interval = int(os.getenv("AS_YOU_MERGE_INTERVAL", "10"))
     counter = SessionCounter(as_you_dir / ".session_count")
