@@ -225,7 +225,7 @@ Browse and use saved workflows and patterns.
 - Reviewing best practices
 
 **Context automatically considers:**
-- BM25 relevance to your description
+- BM25 distinctiveness (patterns with rare terms score higher)
 - Time decay (recent patterns prioritized)
 - Bayesian confidence (proven patterns weighted higher)
 - Thompson Sampling (balances exploration/exploitation)

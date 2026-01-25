@@ -38,7 +38,7 @@ Without argument:
 **Analyze patterns with advanced scoring**
 
 Interactive memory dashboard with:
-- Pattern analysis (BM25, time decay, composite scores)
+- Pattern analysis (BM25 distinctiveness, time decay, composite scores)
 - Bayesian confidence tracking
 - SM-2 spaced repetition review
 - Thompson Sampling recommendations
@@ -47,7 +47,7 @@ Interactive memory dashboard with:
 - Deep analysis with AI agent
 
 **New in v0.3.0:**
-- BM25 relevance scoring (replaces TF-IDF)
+- BM25 distinctiveness scoring (replaces TF-IDF)
 - Time decay with configurable half-life
 - Composite score weighting
 - Bayesian confidence intervals
@@ -70,7 +70,7 @@ Without argument:
   - Save new workflow
 
 **Pattern context features:**
-- BM25 relevance matching
+- BM25 distinctiveness scoring
 - Time-decayed recency
 - Confidence-weighted recommendations
 - Thompson Sampling (exploration/exploitation)
@@ -105,7 +105,7 @@ Without argument:
 - Pattern detection runs automatically
 
 **2. Analyze (Memory)**
-- BM25 calculates term relevance
+- BM25 calculates term distinctiveness
 - Time decay prioritizes recent patterns
 - Composite scoring combines metrics
 - Bayesian tracking builds confidence
@@ -127,9 +127,9 @@ Without argument:
 ## Scoring System (v0.3.0)
 
 ### BM25 Score
-- **What:** Relevance based on term frequency and document length
+- **What:** Distinctiveness based on term rarity in the corpus
 - **Range:** 0.0+ (unbounded, normalized for ranking)
-- **Use:** Identifies distinctive, important patterns
+- **Use:** Identifies patterns with specific, rare terminology (vs common terms)
 - **Formula:** Saturation function with k1=1.5, b=0.75
 
 ### Time Decay Score
@@ -236,7 +236,7 @@ Without argument:
 - Transparent algorithms
 
 ### Statistical Intelligence
-- BM25: Information retrieval (proven since 1994)
+- BM25: Term distinctiveness scoring (adapted from information retrieval, proven since 1994)
 - SM-2: Spaced repetition (proven since 1987)
 - Bayesian inference: Confidence tracking
 - Thompson Sampling: Optimal exploration
@@ -278,7 +278,7 @@ Without argument:
 
 **Low scores for important patterns?**
 - Check `last_seen` date (time decay may be low)
-- Review BM25 score (may need more distinctive terms)
+- Review BM25 score (patterns with common terms score lower)
 - Verify composite weights in config
 
 **Uncertain confidence?**
@@ -296,7 +296,7 @@ Without argument:
 ## Version History
 
 **v0.3.0 (Current)**
-- BM25 scoring replaces TF-IDF
+- BM25 distinctiveness scoring replaces TF-IDF
 - Time decay with configurable half-life
 - Composite score calculator
 - Bayesian confidence tracking
