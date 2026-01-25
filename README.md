@@ -4,99 +4,99 @@
 [![Tests](https://github.com/h315uk3/symbiosis/actions/workflows/test.yml/badge.svg)](https://github.com/h315uk3/symbiosis/actions/workflows/test.yml)
 [![CodeQL](https://github.com/h315uk3/symbiosis/actions/workflows/codeql.yml/badge.svg)](https://github.com/h315uk3/symbiosis/actions/workflows/codeql.yml)
 
-**Claude Code plugins that just work**
+**A minimalist engine for Human-AI collaboration.**
 
-> No setup. No dependencies. No databases. No servers.
-> Just install and start using.
+> Install and use immediately. No setup. No configuration. No external services.
 
-Two plugins to enhance your Claude Code workflow—one remembers your patterns, the other helps clarify your requirements.
+I built this because I wanted to see how far we can extend human cognition using only Python's standard library and fundamental algorithms. No heavy dependencies, no black boxes—just information theory, cognitive science, and a desire for a more "natural" partnership with AI.
 
-## Core Principles
+It's still in its early stages, but it has already become indispensable for my own daily requirement analysis. I'd love to hear your thoughts on whether this interdisciplinary approach makes sense to you.
 
-**No auth, No backend, No external APIs**
+## What It Does
 
-All processing happens locally on your machine. Your data never leaves your computer. No telemetry, no cloud services, no authentication required.
+Two plugins that extend Claude Code:
 
-## The Philosophy
+- **as-you** — Your extended memory. Learns patterns, retrieves them when relevant.
+- **with-me** — Your thinking partner. Asks the right questions to clarify requirements.
 
-**Symbiosis** represents the mutual relationship between human developers and AI:
+## Architecture
 
-- **As You**: Claude learns your patterns and acts as your extended memory
-- **With Me**: Working with you, Claude elicits requirements and guides your thinking
+```mermaid
+graph TD
+    subgraph "Your Workspace"
+        Work[Coding & Discussion]
+    end
 
-Together, they form a symbiotic development environment where human creativity and AI capabilities enhance each other.
+    subgraph "Symbiosis Engine"
+        AsYou["as-you<br/>Pattern Memory"]
+        WithMe["with-me<br/>Adaptive Questions"]
+    end
 
----
+    subgraph "Claude Code"
+        LLM[Enhanced Response]
+    end
 
-## Plugins
-
-### [as-you](./plugins/as-you/README.md) — Teach Once, Remember Forever
-
-Claude learns your coding patterns and applies them automatically.
-
-```bash
-# Teach once
-/as-you:learn "Use environment variables for API keys"
-
-# Applied automatically in future sessions
+    Work -->|patterns| AsYou
+    AsYou -->|context| LLM
+    Work -->|requirements| WithMe
+    WithMe -->|questions| LLM
+    LLM -->|response| Work
 ```
 
-**Why use it:**
-- No external dependencies (Python standard library only)
-- 100% local—no network calls* (*except Claude Code itself, obviously), no databases
-- Privacy by design—your patterns stay on your machine
-- Works immediately after installation
+## The Approach: 6 Academic Fields, Zero Dependencies
 
-### [with-me](./plugins/with-me/README.md) — Claude Asks the Right Questions
+| Algorithm | Field | Purpose |
+|-----------|-------|---------|
+| BM25 | Information Retrieval | Relevance scoring for pattern matching |
+| SM-2 | Cognitive Science | Spaced repetition for memory scheduling |
+| Thompson Sampling | Reinforcement Learning | Exploration vs exploitation trade-off |
+| Shannon Entropy | Information Theory | Convergence detection in requirements |
+| Bayesian Update | Probability Theory | Belief refinement from answers |
+| Expected Information Gain | Decision Theory | Optimal question selection |
 
-Claude helps you clarify requirements through adaptive questioning.
+**All implemented in Python standard library only.** No NumPy. No ML frameworks. Just `math`, `json`, `pathlib`.
 
-```bash
-/with-me:good-question
-> "Is this for internal use or customer-facing?"
-# Claude adapts questions based on your answers
+## Why Standard Library Only?
+
+- **Zero-setup**: Install and use immediately—no configuration, no environment setup
+- **Portability**: Works anywhere Python runs
+- **Auditability**: Read the source—no hidden dependencies
+- **Privacy**: All processing local, zero network calls
+- **Stability**: No dependency conflicts, no supply chain risks
+
+## Quick Start
+
+Add the marketplace:
+
 ```
-
-**Why use it:**
-- No external dependencies (Python standard library only)
-- Adaptive questioning—gets smarter as you answer
-- 100% local processing* (*Claude Code does the thinking, we handle the data)
-- Works immediately after installation
-
----
-
-## Installation
-
-### Add Marketplace
-
-Add this marketplace to Claude Code:
-
-```bash
 /plugin marketplace add h315uk3/symbiosis
 ```
 
-### Install Plugins
+Install plugins:
 
-Install As You plugin:
-
-```bash
-/plugin install as-you@h315uk3-symbiosis
 ```
-
-Install With Me plugin:
-
-```bash
+/plugin install as-you@h315uk3-symbiosis
 /plugin install with-me@h315uk3-symbiosis
 ```
 
-Or use the interactive UI:
+## Usage
 
-1. Run `/plugin`
-2. Select the **Discover** tab
-3. Choose your plugin and press **Enter**
-4. Select installation scope (User/Project/Local)
+Teach a pattern (explicit learning):
 
----
+```
+/as-you:learn "Always use pathlib instead of os.path"
+```
+
+Adaptive requirement elicitation:
+
+```
+/with-me:good-question
+```
+
+## Deep Dive
+
+- [as-you: Technical Overview](./plugins/as-you/docs/technical-overview.md)
+- [with-me: Technical Overview](./plugins/with-me/docs/technical-overview.md)
 
 ## License
 
@@ -104,9 +104,4 @@ GNU AGPL v3 - [LICENSE](LICENSE)
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and contribution guidelines.
-
-## Resources
-
-- [Claude Code Plugins](https://code.claude.com/docs/en/plugins)
-- [Plugin Marketplaces](https://code.claude.com/docs/en/plugin-marketplaces)
+See [CONTRIBUTING.md](CONTRIBUTING.md)

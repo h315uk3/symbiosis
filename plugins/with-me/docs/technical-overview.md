@@ -51,19 +51,96 @@ This stateful design is optimized for Claude Code's use case (interactive requir
 
 ## Information-Theoretic Foundation
 
+### Uncertainty Convergence Process
+
+```mermaid
+graph TD
+    subgraph "5 Dimensions"
+        Purpose[Purpose]
+        Data[Data]
+        Behavior[Behavior]
+        Constraints[Constraints]
+        Quality[Quality]
+    end
+
+    subgraph "Entropy Calculation"
+        H1[H₁ entropy]
+        H2[H₂ entropy]
+        H3[H₃ entropy]
+        H4[H₄ entropy]
+        H5[H₅ entropy]
+    end
+
+    subgraph "Question Selection"
+        MaxH[Select Max Entropy]
+        EIG[Expected Information Gain]
+        Question[Best Question]
+    end
+
+    subgraph "Belief Update"
+        Answer[User Answer]
+        Likelihood[Likelihood Estimation]
+        Bayes[Bayesian Update]
+    end
+
+    Purpose --> H1
+    Data --> H2
+    Behavior --> H3
+    Constraints --> H4
+    Quality --> H5
+
+    H1 & H2 & H3 & H4 & H5 --> MaxH
+    MaxH --> EIG
+    EIG --> Question
+    Question --> Answer
+    Answer --> Likelihood
+    Likelihood --> Bayes
+    Bayes -->|entropy > 0.3| H1
+    Bayes -->|all entropy ≤ 0.3| Converged[Requirement Specification]
+```
+
+This is not a chatbot—it's a convergence engine based on information theory.
+
 The system uses Bayesian belief updating and information theory for adaptive questioning:
 
 ### Reward Function
-```
-r(Q) = EIG(Q) + 0.1 * clarity(Q) + 0.05 * importance(Q)
-```
+
+$$r(Q) = \text{EIG}(Q) + 0.1 \cdot \text{clarity}(Q) + 0.05 \cdot \text{importance}(Q)$$
 
 ### Key Concepts
 
-1. **Expected Information Gain (EIG)**: Predicts uncertainty reduction through counterfactual simulation
-2. **Shannon Entropy**: `H(h) = -Σ p(h) log₂ p(h)` - measures uncertainty in bits
-3. **Bayesian Update**: `p₁(h) = [p₀(h) * L(obs|h)] / Σ[p₀(h) * L(obs|h)]`
-4. **Information Gain**: `IG = H_before - H_after` - quantifies learning from each answer
+#### Shannon Entropy
+
+Measures uncertainty in bits:
+
+$$H(X) = -\sum_{i} p(x_i) \log_2 p(x_i)$$
+
+- $H = 0$: complete certainty (one hypothesis has probability 1)
+- $H = \log_2 N$: maximum uncertainty (uniform distribution over N hypotheses)
+
+#### Bayesian Update
+
+Updates beliefs based on new evidence:
+
+$$p(h | e) = \frac{p(e | h) \cdot p(h)}{\sum_{h'} p(e | h') \cdot p(h')}$$
+
+where $p(e | h)$ is the likelihood of observing answer $e$ given hypothesis $h$.
+
+#### Expected Information Gain (EIG)
+
+Predicts uncertainty reduction through counterfactual simulation:
+
+$$\text{EIG}(Q) = H(X) - \mathbb{E}_{a \sim p(a|Q)}[H(X | a)]$$
+
+The question $Q^*$ that maximizes EIG is selected:
+
+$$Q^* = \arg\max_Q \text{EIG}(Q)$$
+
+#### Information Gain
+
+Quantifies learning from each answer:
+
+$$\text{IG} = H_{\text{before}} - H_{\text{after}}$$
 
 This architecture enables continuous improvement through statistical analysis of question effectiveness across sessions.
 

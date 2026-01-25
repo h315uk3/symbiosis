@@ -21,6 +21,46 @@ This document provides detailed technical information about the As You plugin's 
 
 ## How It Works
 
+### Cognitive Loop Architecture
+
+```mermaid
+graph TD
+    subgraph "Encoding"
+        Learn["/as-you:learn"]
+        Hook[Event Hooks]
+        Extract[Pattern Extraction]
+    end
+
+    subgraph "Storage"
+        BM25[BM25 Relevance]
+        PMI[PMI Co-occurrence]
+        Decay[Time Decay]
+        Composite[Composite Score]
+    end
+
+    subgraph "Retrieval"
+        Bayesian[Bayesian Confidence]
+        SM2[SM-2 Scheduling]
+        Thompson[Thompson Sampling]
+        Apply["/as-you:apply"]
+    end
+
+    Learn --> Extract
+    Hook --> Extract
+    Extract --> BM25
+    Extract --> PMI
+    BM25 --> Composite
+    PMI --> Composite
+    Decay --> Composite
+    Composite --> Bayesian
+    Bayesian --> SM2
+    SM2 --> Thompson
+    Thompson --> Apply
+    Apply -->|context injection| LLM[Claude Code]
+```
+
+Your coding patterns are mathematically optimized for re-presentation at the right moment.
+
 ### Automatic Learning Flow
 
 ```
@@ -84,33 +124,48 @@ Patterns are automatically extracted from your session notes using statistical i
 The plugin uses multiple statistical approaches to identify and prioritize patterns:
 
 #### BM25 Scoring
-- **Purpose**: Relevance ranking with term saturation (replaces TF-IDF)
-- **How it works**: Accounts for term frequency saturation and document length normalization
-- **Parameters**: `k1` (term frequency saturation), `b` (length normalization)
+
+Relevance ranking with term saturation (replaces TF-IDF):
+
+$$\text{BM25}(d, q) = \sum_{t \in q} \text{IDF}(t) \cdot \frac{f(t, d) \cdot (k_1 + 1)}{f(t, d) + k_1 \cdot (1 - b + b \cdot \frac{|d|}{\text{avgdl}})}$$
+
+- $f(t, d)$: term frequency in document
+- $k_1 = 1.5$: term frequency saturation
+- $b = 0.75$: length normalization
 
 #### Time Decay
-- **Purpose**: Prioritizes recent patterns over older ones
-- **How it works**: Exponential decay with configurable half-life (default: 30 days)
-- **Formula**: `score = base_score * exp(-λ * days_since_last_seen)`
+
+Prioritizes recent patterns with exponential decay:
+
+$$\text{score}(t) = \text{base\_score} \cdot e^{-\lambda \cdot \Delta t}$$
+
+where $\lambda = \frac{\ln 2}{\text{half\_life}}$ and half-life defaults to 30 days.
 
 #### Bayesian Confidence
-- **Purpose**: Tracks certainty about pattern quality
-- **How it works**: Maintains mean, variance, and 95% confidence intervals
-- **Benefit**: High confidence patterns weighted more in recommendations
+
+Tracks certainty using posterior distribution:
+
+$$p(\theta | x) = \frac{p(x | \theta) \cdot p(\theta)}{p(x)}$$
+
+Maintains mean $\mu$, variance $\sigma^2$, and 95% confidence interval $[\mu - 1.96\sigma, \mu + 1.96\sigma]$.
 
 #### SM-2 Memory Algorithm
-- **Purpose**: Spaced repetition scheduling for optimal review timing
-- **How it works**: Adapts review intervals based on recall performance
-- **Schedule**: Patterns reviewed at increasing intervals (1, 6, 15, 37+ days)
-- **Parameters**: Easiness factor adapts to your recall success
+
+Spaced repetition with adaptive intervals:
+
+$$I(n) = \begin{cases} 1 & \text{if } n = 1 \\ 6 & \text{if } n = 2 \\ I(n-1) \cdot EF & \text{if } n > 2 \end{cases}$$
+
+where $EF$ (Easiness Factor) adapts based on recall performance: $EF' = EF + (0.1 - (5 - q) \cdot (0.08 + (5 - q) \cdot 0.02))$
 
 #### Thompson Sampling
-- **Purpose**: Balances exploration vs. exploitation
-- **How it works**: Probabilistic pattern selection based on confidence distributions
-- **Balances**:
-  - Proven patterns (high confidence, high scores)
-  - Uncertain patterns (need more data)
-- **Benefit**: Optimizes long-term knowledge building
+
+Balances exploration vs. exploitation using Beta distribution:
+
+$$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
+
+- Select pattern with highest sampled $\theta_i$
+- Update: $\alpha_i \leftarrow \alpha_i + r$, $\beta_i \leftarrow \beta_i + (1 - r)$
+- Balances proven patterns (high $\alpha$) with uncertain ones (low $\alpha + \beta$)
 
 #### Composite Scoring
 - **Purpose**: Weighted combination of multiple metrics

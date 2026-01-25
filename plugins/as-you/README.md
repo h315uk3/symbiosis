@@ -23,11 +23,11 @@ for the API key, following your established pattern.
 ## Key Features
 
 - **Automatic Pattern Learning** - Patterns emerge from your notes over time
-- **Statistical Scoring** - BM25, Bayesian confidence, time decay, and more
+- **Statistical Scoring** - BM25 relevance, Bayesian confidence, time decay
+- **Memory Scheduling** - SM-2 spaced repetition keeps patterns fresh
+- **Smart Selection** - Thompson Sampling balances proven vs. uncertain patterns
 - **Local-First** - All data stays on your machine, no external services
 - **Zero Dependencies** - Pure Python standard library only
-- **Memory Management** - Spaced repetition ensures patterns stay fresh
-- **Context-Aware** - Retrieves relevant patterns for your current task
 
 ---
 
