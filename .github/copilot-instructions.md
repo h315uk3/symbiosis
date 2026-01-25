@@ -20,9 +20,20 @@
 
 **Shell**: Minimal glue code - business logic in Python
 
-**Documentation**: Principles over implementation details
-- ❌ Forbidden: Directory structures, file paths, version numbers, code examples, step-by-step procedures
-- ✅ Required: Document "why" (principles), not "what" (implementation)
+**Documentation Responsibilities**:
+- **README.md**: User-facing marketing (simple, example-driven, < 100 lines)
+- **docs/technical-overview.md**: Theory, algorithms, configuration (for users + technical readers)
+- **CONTRIBUTING.md**: Development setup, testing, PR process (for contributors only)
+- **Code docstrings**: Implementation details, API documentation
+
+**Documentation Rules**:
+- ❌ Never mix marketing and technical content in README
+- ❌ No development setup/testing in technical docs (belongs in CONTRIBUTING.md)
+- ❌ No CHANGELOG files (Issues/PRs are the source of truth)
+- ❌ No GitHub Releases (decided in past Issues)
+- ❌ Forbidden: Directory structures, file paths, version numbers in docs
+- ✅ README links to technical-overview.md for deeper understanding
+- ✅ technical-overview.md links to CONTRIBUTING.md for development
 
 **Anti-Patterns**:
 - ❌ External dependencies (except stdlib)

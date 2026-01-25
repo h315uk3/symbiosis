@@ -4,9 +4,12 @@
 [![Tests](https://github.com/h315uk3/symbiosis/actions/workflows/test.yml/badge.svg)](https://github.com/h315uk3/symbiosis/actions/workflows/test.yml)
 [![CodeQL](https://github.com/h315uk3/symbiosis/actions/workflows/codeql.yml/badge.svg)](https://github.com/h315uk3/symbiosis/actions/workflows/codeql.yml)
 
-**Human-AI symbiotic development tools**
+**Claude Code plugins that just work**
 
-A Claude Code plugin marketplace exploring the philosophical relationship between developers and AI through complementary capabilities.
+> No setup. No dependencies. No databases. No servers.
+> Just install and start using.
+
+Two plugins to enhance your Claude Code workflow—one remembers your patterns, the other helps clarify your requirements.
 
 ## Core Principles
 
@@ -25,31 +28,40 @@ Together, they form a symbiotic development environment where human creativity a
 
 ---
 
-## Available Plugins
+## Plugins
 
-### [As You](./plugins/as-you/README.md)
+### [as-you](./plugins/as-you/README.md) — Teach Once, Remember Forever
 
-**"I (Claude) act as you"**
+Claude learns your coding patterns and applies them automatically.
 
-Claude learns from your work patterns and builds knowledge automatically from your explicit notes.
+```bash
+# Teach once
+/as-you:learn "Use environment variables for API keys"
 
-**Key Features:**
-- Pattern extraction from session notes through statistical analysis
-- Automatic skill and agent generation from repeated patterns
-- Statistical scoring (TF-IDF, PMI, time-decay)
-- Pure Python implementation with standard library only
+# Applied automatically in future sessions
+```
 
-### [With Me](./plugins/with-me/README.md)
+**Why use it:**
+- No external dependencies (Python standard library only)
+- 100% local—no network calls* (*except Claude Code itself, obviously), no databases
+- Privacy by design—your patterns stay on your machine
+- Works immediately after installation
 
-**"You work with me (Claude)"**
+### [with-me](./plugins/with-me/README.md) — Claude Asks the Right Questions
 
-Working with you, Claude elicits requirements through information theory-inspired adaptive questioning.
+Claude helps you clarify requirements through adaptive questioning.
 
-**Key Features:**
-- `/with-me:good-question` - Adaptive requirement elicitation using information theory
-- Information-theoretic approach: Shannon entropy, Bayesian updating, Expected Information Gain
-- Automatic quality control with REWARD threshold (regenerates low-quality questions)
-- Structured specification generation via forked context analysis
+```bash
+/with-me:good-question
+> "Is this for internal use or customer-facing?"
+# Claude adapts questions based on your answers
+```
+
+**Why use it:**
+- No external dependencies (Python standard library only)
+- Adaptive questioning—gets smarter as you answer
+- 100% local processing* (*Claude Code does the thinking, we handle the data)
+- Works immediately after installation
 
 ---
 
