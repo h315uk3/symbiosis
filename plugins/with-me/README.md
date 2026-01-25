@@ -41,11 +41,11 @@ fast checkout. Ready to start implementation?
 ## Key Features
 
 - **Adaptive Questioning** - Each question builds on previous answers
-- **Systematic Exploration** - Covers purpose, data, behavior, constraints, quality
-- **Automatic Convergence** - Claude knows when it has enough information
+- **5 Dimensions** - Systematically covers purpose, data, behavior, constraints, quality
+- **Information Theory** - Shannon Entropy measures uncertainty, EIG selects optimal questions
+- **Bayesian Convergence** - Beliefs update with each answer until clarity is achieved
 - **Local-First** - All data stays on your machine, no external services
 - **Zero Dependencies** - Pure Python standard library only
-- **Information Theory** - Questions maximize learning efficiency
 
 ---
 
