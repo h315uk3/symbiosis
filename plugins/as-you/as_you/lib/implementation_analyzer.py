@@ -49,6 +49,8 @@ def load_active_learning_data(claude_dir: Path) -> dict:
     """
     Load active learning data from file.
 
+    Returns empty data structure on error (graceful degradation).
+
     Examples:
         >>> import tempfile
         >>> from pathlib import Path
@@ -56,13 +58,20 @@ def load_active_learning_data(claude_dir: Path) -> dict:
         >>> load_active_learning_data(d)
         {'prompts': [], 'edits': []}
     """
+    default_data: dict = {"prompts": [], "edits": []}
     data_file = claude_dir / "as_you" / "active_learning.json"
-    if data_file.exists():
-        try:
-            return json.loads(data_file.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            pass
-    return {"prompts": [], "edits": []}
+
+    if not data_file.exists():
+        return default_data
+
+    try:
+        return json.loads(data_file.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        print(f"Warning: Corrupted active_learning.json: {e}", file=sys.stderr)
+        return default_data
+    except OSError as e:
+        print(f"Warning: Cannot read active_learning.json: {e}", file=sys.stderr)
+        return default_data
 
 
 def analyze_languages(edits: list[dict]) -> dict[str, LanguageStats]:
@@ -71,7 +80,11 @@ def analyze_languages(edits: list[dict]) -> dict[str, LanguageStats]:
 
     Examples:
         >>> edits = [
-        ...     {"language": "python", "patterns": ["error_handling"], "file_path": "/a.py"},
+        ...     {
+        ...         "language": "python",
+        ...         "patterns": ["error_handling"],
+        ...         "file_path": "/a.py",
+        ...     },
         ...     {"language": "python", "patterns": ["testing"], "file_path": "/b.py"},
         ...     {"language": "typescript", "patterns": ["async"], "file_path": "/c.ts"},
         ... ]
@@ -100,7 +113,9 @@ def analyze_languages(edits: list[dict]) -> dict[str, LanguageStats]:
             lang_stats[lang]["files"].append(file_path)
             # Keep only recent files per language
             if len(lang_stats[lang]["files"]) > _MAX_FILES_PER_LANG:
-                lang_stats[lang]["files"] = lang_stats[lang]["files"][-_MAX_FILES_PER_LANG:]
+                lang_stats[lang]["files"] = lang_stats[lang]["files"][
+                    -_MAX_FILES_PER_LANG:
+                ]
 
     return lang_stats
 
@@ -156,6 +171,8 @@ def analyze_temporal(edits: list[dict]) -> dict[int, int]:
     """
     Analyze hourly activity distribution.
 
+    Skips edits with missing or malformed timestamps.
+
     Examples:
         >>> edits = [
         ...     {"timestamp": "2026-01-25T10:30:00Z"},
@@ -169,14 +186,25 @@ def analyze_temporal(edits: list[dict]) -> dict[int, int]:
         1
     """
     hourly: dict[int, int] = defaultdict(int)
+    skipped = 0
+
     for edit in edits:
         ts = edit.get("timestamp", "")
-        if ts:
-            try:
-                dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-                hourly[dt.hour] += 1
-            except ValueError:
-                pass
+        if not ts:
+            continue
+
+        try:
+            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            hourly[dt.hour] += 1
+        except ValueError:
+            skipped += 1
+
+    if skipped > 0:
+        print(
+            f"Warning: Skipped {skipped} edits with malformed timestamps",
+            file=sys.stderr,
+        )
+
     return dict(hourly)
 
 
@@ -191,7 +219,7 @@ def analyze_edits(edits: list[dict]) -> AnalysisResult:
         ...         "patterns": ["error_handling"],
         ...         "change_type": "modify",
         ...         "timestamp": "2026-01-25T10:30:00Z",
-        ...         "file_path": "/a.py"
+        ...         "file_path": "/a.py",
         ...     }
         ... ]
         >>> result = analyze_edits(edits)

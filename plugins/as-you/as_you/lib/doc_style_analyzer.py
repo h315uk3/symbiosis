@@ -238,14 +238,10 @@ def detect_comment_conventions(content: str) -> dict[str, int]:
     conventions["XXX"] = len(re.findall(r"#\s*XXX", content, re.IGNORECASE))
 
     # Inline comments (code # comment)
-    conventions["inline_comments"] = len(
-        re.findall(r"\S+\s+#\s+\S", content)
-    )
+    conventions["inline_comments"] = len(re.findall(r"\S+\s+#\s+\S", content))
 
     # Block comments
-    conventions["block_comments"] = len(
-        re.findall(r"^#[^!]", content, re.MULTILINE)
-    )
+    conventions["block_comments"] = len(re.findall(r"^#[^!]", content, re.MULTILINE))
 
     return dict(conventions)
 
@@ -331,9 +327,11 @@ def analyze_doc_style(content: str, language: str) -> dict:
     docstring_style = None
     for detector in docstring_detectors:
         result = detector(content)
-        if result:
-            if docstring_style is None or result["confidence"] > docstring_style["confidence"]:
-                docstring_style = result
+        if result and (
+            docstring_style is None
+            or result["confidence"] > docstring_style["confidence"]
+        ):
+            docstring_style = result
 
     return {
         "docstring_style": docstring_style,

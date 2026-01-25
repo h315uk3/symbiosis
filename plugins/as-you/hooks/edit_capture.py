@@ -180,14 +180,21 @@ def detect_patterns(content: str, language: str) -> list[str]:
 
 
 def load_active_learning_data(claude_dir: Path) -> dict:
-    """Load active learning data from file."""
+    """Load active learning data from file. Returns default on error."""
+    default_data: dict = {"prompts": [], "edits": []}
     data_file = claude_dir / "as_you" / "active_learning.json"
-    if data_file.exists():
-        try:
-            return json.loads(data_file.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            pass
-    return {"prompts": [], "edits": []}
+
+    if not data_file.exists():
+        return default_data
+
+    try:
+        return json.loads(data_file.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        print(f"edit_capture: corrupted active_learning.json: {e}", file=sys.stderr)
+        return default_data
+    except OSError as e:
+        print(f"edit_capture: cannot read active_learning.json: {e}", file=sys.stderr)
+        return default_data
 
 
 def save_active_learning_data(claude_dir: Path, data: dict) -> None:
@@ -234,10 +241,16 @@ def capture_edit(tool_name: str, tool_input: dict) -> EditEntry | None:
 
 
 def main() -> dict:
-    """Hook entry point."""
+    """
+    Hook entry point.
+
+    Must always return {"continue": True} to not block Claude.
+    Errors are logged to stderr for debugging.
+    """
     try:
         config = AsYouConfig.from_environment()
-    except Exception:
+    except Exception as e:
+        print(f"edit_capture: config error: {e}", file=sys.stderr)
         return {"continue": True}
 
     if not is_active_learning_enabled(config.claude_dir):
@@ -245,7 +258,8 @@ def main() -> dict:
 
     try:
         hook_input = json.load(sys.stdin)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        print(f"edit_capture: invalid JSON input: {e}", file=sys.stderr)
         return {"continue": True}
 
     tool_name = hook_input.get("tool_name", "")
@@ -267,8 +281,8 @@ def main() -> dict:
             # Keep last 500 edits
             data["edits"] = data["edits"][-500:]
             save_active_learning_data(config.claude_dir, data)
-    except Exception:
-        pass  # Non-blocking
+    except Exception as e:
+        print(f"edit_capture: capture failed: {e}", file=sys.stderr)
 
     return {"continue": True}
 

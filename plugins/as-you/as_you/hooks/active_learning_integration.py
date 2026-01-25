@@ -147,7 +147,9 @@ def integrate_active_learning(config: AsYouConfig) -> dict:
     # Merge code patterns
     code_patterns = extract_patterns_from_edits(edits)
     for pat, count in code_patterns.items():
-        al_section["code_patterns"][pat] = al_section["code_patterns"].get(pat, 0) + count
+        al_section["code_patterns"][pat] = (
+            al_section["code_patterns"].get(pat, 0) + count
+        )
 
     # Merge intents
     intents = extract_intents(prompts)
@@ -184,7 +186,9 @@ def main() -> None:
     if result["status"] == "no_data":
         print("No active learning data to integrate")
     else:
-        print(f"Integrated {result['prompts_processed']} prompts, {result['edits_processed']} edits")
+        print(
+            f"Integrated {result['prompts_processed']} prompts, {result['edits_processed']} edits"
+        )
 
 
 if __name__ == "__main__":

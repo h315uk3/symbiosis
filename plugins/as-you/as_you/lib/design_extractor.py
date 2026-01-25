@@ -19,6 +19,11 @@ _PLUGIN_ROOT = Path(__file__).parent.parent.parent
 if str(_PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLUGIN_ROOT))
 
+# Minimum thresholds for pattern detection
+_MIN_TYPED_PARAMS = 2  # Minimum typed params to suggest dependency injection
+_MIN_FLUENT_METHODS = 2  # Minimum return self methods for builder pattern
+_MIN_OBSERVER_EVIDENCE = 2  # Minimum evidence items for observer pattern
+
 
 class DesignPattern(TypedDict):
     """Detected design pattern."""
@@ -138,7 +143,7 @@ def detect_dependency_injection(content: str, language: str) -> DesignPattern | 
             if init_match:
                 params = init_match.group(0)
                 typed_params = len(re.findall(r"\w+:\s*\w+", params))
-                if typed_params >= 2:
+                if typed_params >= _MIN_TYPED_PARAMS:
                     evidence.append(f"{typed_params} typed constructor params")
 
         # Self assignment of dependencies
@@ -189,7 +194,7 @@ def detect_builder(content: str, language: str) -> DesignPattern | None:
 
     # Methods returning self (fluent interface)
     return_self_count = len(re.findall(r"return\s+self\s*$", content, re.MULTILINE))
-    if return_self_count >= 2:
+    if return_self_count >= _MIN_FLUENT_METHODS:
         evidence.append(f"{return_self_count} fluent methods")
 
     # build() method
@@ -238,7 +243,7 @@ def detect_observer(content: str, language: str) -> DesignPattern | None:
     if re.search(r"def\s+(notify|emit|dispatch)", content):
         evidence.append("notify method")
 
-    if len(evidence) >= 2:
+    if len(evidence) >= _MIN_OBSERVER_EVIDENCE:
         return DesignPattern(
             name="observer",
             confidence=min(len(evidence) * 0.4, 1.0),

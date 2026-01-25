@@ -9,7 +9,10 @@ Extended to include active learning context (prompts and edits).
 import sys
 
 from as_you.lib.common import AsYouConfig
-from as_you.lib.context_extractor import get_active_learning_context, get_pattern_contexts
+from as_you.lib.context_extractor import (
+    get_active_learning_context,
+    get_pattern_contexts,
+)
 
 
 def main():

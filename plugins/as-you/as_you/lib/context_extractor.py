@@ -275,8 +275,12 @@ def get_active_learning_context(
         ...         {"text": "Fix login bug", "intent": "fix"},
         ...     ],
         ...     "edits": [
-        ...         {"file_path": "/auth.py", "language": "python", "patterns": ["auth"]},
-        ...     ]
+        ...         {
+        ...             "file_path": "/auth.py",
+        ...             "language": "python",
+        ...             "patterns": ["auth"],
+        ...         },
+        ...     ],
         ... }
         >>> _ = (d / "as_you" / "active_learning.json").write_text(json.dumps(data))
         >>> result = get_active_learning_context("auth", d)

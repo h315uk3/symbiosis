@@ -103,14 +103,21 @@ def classify_intent(text: str) -> str:
 
 
 def load_active_learning_data(claude_dir: Path) -> dict:
-    """Load active learning data from file."""
+    """Load active learning data from file. Returns default on error."""
+    default_data: dict = {"prompts": [], "edits": []}
     data_file = claude_dir / "as_you" / "active_learning.json"
-    if data_file.exists():
-        try:
-            return json.loads(data_file.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            pass
-    return {"prompts": [], "edits": []}
+
+    if not data_file.exists():
+        return default_data
+
+    try:
+        return json.loads(data_file.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        print(f"prompt_capture: corrupted active_learning.json: {e}", file=sys.stderr)
+        return default_data
+    except OSError as e:
+        print(f"prompt_capture: cannot read active_learning.json: {e}", file=sys.stderr)
+        return default_data
 
 
 def save_active_learning_data(claude_dir: Path, data: dict) -> None:
@@ -154,10 +161,16 @@ def capture_prompt(prompt: str) -> PromptEntry | None:
 
 
 def main() -> dict:
-    """Hook entry point."""
+    """
+    Hook entry point.
+
+    Must always return {"continue": True} to not block Claude.
+    Errors are logged to stderr for debugging.
+    """
     try:
         config = AsYouConfig.from_environment()
-    except Exception:
+    except Exception as e:
+        print(f"prompt_capture: config error: {e}", file=sys.stderr)
         return {"continue": True}
 
     if not is_active_learning_enabled(config.claude_dir):
@@ -166,7 +179,8 @@ def main() -> dict:
     try:
         hook_input = json.load(sys.stdin)
         prompt = hook_input.get("prompt", "")
-    except (json.JSONDecodeError, KeyError):
+    except (json.JSONDecodeError, KeyError) as e:
+        print(f"prompt_capture: invalid input: {e}", file=sys.stderr)
         return {"continue": True}
 
     if not prompt:
@@ -180,8 +194,8 @@ def main() -> dict:
             # Keep last 200 prompts
             data["prompts"] = data["prompts"][-200:]
             save_active_learning_data(config.claude_dir, data)
-    except Exception:
-        pass  # Non-blocking
+    except Exception as e:
+        print(f"prompt_capture: capture failed: {e}", file=sys.stderr)
 
     return {"continue": True}
 

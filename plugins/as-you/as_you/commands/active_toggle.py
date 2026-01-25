@@ -47,7 +47,7 @@ def is_enabled(config: AsYouConfig) -> bool:
         ...     tracker_file=Path("/tmp/t.json"),
         ...     archive_dir=Path("/tmp/a"),
         ...     memo_file=Path("/tmp/m.md"),
-        ...     settings={}
+        ...     settings={},
         ... )
         >>> is_enabled(config)
         False
