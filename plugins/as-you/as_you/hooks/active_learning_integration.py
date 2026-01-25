@@ -162,6 +162,11 @@ def integrate_active_learning(config: AsYouConfig) -> dict:
     # Save updated tracker
     save_tracker(config.tracker_file, tracker)
 
+    # Disable active learning after integration (auto-off at session end)
+    enabled_file = config.claude_dir / "as_you" / "active_learning.enabled"
+    if enabled_file.exists():
+        enabled_file.unlink()
+
     return {
         "status": "success",
         "prompts_processed": len(prompts),

@@ -251,6 +251,11 @@ def get_active_learning_context(
 
     Searches prompts and edits for keyword matches.
 
+    Note:
+        Prompts may contain non-English text (Japanese, Chinese, etc.)
+        as they are captured as-is. Claude should translate when
+        presenting context to users.
+
     Args:
         pattern: Pattern keyword to search for
         claude_dir: Path to .claude directory
