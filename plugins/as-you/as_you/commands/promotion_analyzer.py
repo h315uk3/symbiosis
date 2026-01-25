@@ -126,6 +126,8 @@ def analyze_promotions(tracker_file: Path) -> list[dict]:
     """
     Analyze promotion candidates and suggest type/name/description.
 
+    Considers both manual notes and active learning data (edit patterns).
+
     Args:
         tracker_file: Path to pattern_tracker.json
 
@@ -136,12 +138,17 @@ def analyze_promotions(tracker_file: Path) -> list[dict]:
         data = load_tracker(tracker_file)
         candidates = data.get("promotion_candidates", [])
         patterns = data.get("patterns", {})
+        active_learning = data.get("active_learning", {})
     except (OSError, json.JSONDecodeError):
         # Corrupted file - no candidates to show
         return []
 
     if not candidates:
         return []
+
+    # Get code patterns from active learning for boosting
+    code_patterns = active_learning.get("code_patterns", {})
+    al_keywords = active_learning.get("keywords", {})
 
     suggestions = []
 
@@ -162,6 +169,17 @@ def analyze_promotions(tracker_file: Path) -> list[dict]:
         # Generate description
         description = extract_description(contexts)
 
+        # Calculate active learning boost
+        # If pattern appears in code_patterns or keywords, boost score
+        al_boost = 0.0
+        if pattern.lower() in [k.lower() for k in code_patterns]:
+            al_boost += 0.1 * code_patterns.get(pattern, 0)
+        if pattern.lower() in [k.lower() for k in al_keywords]:
+            al_boost += 0.05 * al_keywords.get(pattern, 0)
+
+        base_score = pattern_data.get("composite_score", 0)
+        boosted_score = min(base_score + al_boost, 2.0)  # Cap at 2.0
+
         suggestions.append(
             {
                 "type": promotion_type,
@@ -171,9 +189,14 @@ def analyze_promotions(tracker_file: Path) -> list[dict]:
                 "sessions": sessions,
                 "contexts": contexts,
                 "suggested_description": description,
-                "composite_score": pattern_data.get("composite_score", 0),
+                "composite_score": base_score,
+                "boosted_score": boosted_score,
+                "al_boost": al_boost,
             }
         )
+
+    # Sort by boosted score
+    suggestions.sort(key=lambda x: x["boosted_score"], reverse=True)
 
     return suggestions
 
