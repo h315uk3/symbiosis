@@ -102,6 +102,10 @@ Or use the interactive UI:
 
 GNU AGPL v3 - [LICENSE](LICENSE)
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and contribution guidelines.
+
 ## Resources
 
 - [Claude Code Plugins](https://code.claude.com/docs/en/plugins)
