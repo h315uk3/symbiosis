@@ -2,7 +2,7 @@
 """
 Extract contexts for frequent patterns from archived memos.
 Provides both archive-based extraction and tracker-based retrieval.
-Replaces extract-contexts.sh with testable Python implementation.
+Includes active learning data integration.
 """
 
 import json
@@ -10,6 +10,26 @@ import sys
 from pathlib import Path
 
 from as_you.lib.common import AsYouConfig, load_tracker
+
+
+def load_active_learning_data(claude_dir: Path) -> dict:
+    """
+    Load active learning data from file.
+
+    Examples:
+        >>> import tempfile
+        >>> from pathlib import Path
+        >>> d = Path(tempfile.mkdtemp())
+        >>> load_active_learning_data(d)
+        {'prompts': [], 'edits': []}
+    """
+    data_file = claude_dir / "as_you" / "active_learning.json"
+    if data_file.exists():
+        try:
+            return json.loads(data_file.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {"prompts": [], "edits": []}
 
 
 def get_top_patterns(tracker: dict, limit: int = 10) -> list[str]:
@@ -221,6 +241,81 @@ def extract_contexts(
         result["patterns"][pattern] = {"count": count, "contexts": contexts}
 
     return result
+
+
+def get_active_learning_context(
+    pattern: str, claude_dir: Path, max_results: int = 5
+) -> dict:
+    """
+    Get context from active learning data for a pattern.
+
+    Searches prompts and edits for keyword matches.
+
+    Note:
+        Prompts may contain non-English text (Japanese, Chinese, etc.)
+        as they are captured as-is. Claude should translate when
+        presenting context to users.
+
+    Args:
+        pattern: Pattern keyword to search for
+        claude_dir: Path to .claude directory
+        max_results: Maximum results per category
+
+    Returns:
+        Dict with matching prompts and edits
+
+    Examples:
+        >>> import tempfile, json
+        >>> from pathlib import Path
+        >>> d = Path(tempfile.mkdtemp())
+        >>> (d / "as_you").mkdir()
+        >>> data = {
+        ...     "prompts": [
+        ...         {"text": "Add authentication feature", "intent": "feature"},
+        ...         {"text": "Fix login bug", "intent": "fix"},
+        ...     ],
+        ...     "edits": [
+        ...         {
+        ...             "file_path": "/auth.py",
+        ...             "language": "python",
+        ...             "patterns": ["auth"],
+        ...         },
+        ...     ],
+        ... }
+        >>> _ = (d / "as_you" / "active_learning.json").write_text(json.dumps(data))
+        >>> result = get_active_learning_context("auth", d)
+        >>> len(result["prompts"])
+        1
+        >>> len(result["edits"])
+        1
+        >>> import shutil
+        >>> shutil.rmtree(d)
+    """
+    data = load_active_learning_data(claude_dir)
+    pattern_lower = pattern.lower()
+
+    matching_prompts = []
+    for prompt in data.get("prompts", []):
+        text = prompt.get("text", "").lower()
+        keywords = prompt.get("keywords", [])
+        if pattern_lower in text or pattern_lower in keywords:
+            matching_prompts.append(prompt)
+            if len(matching_prompts) >= max_results:
+                break
+
+    matching_edits = []
+    for edit in data.get("edits", []):
+        file_path = edit.get("file_path", "").lower()
+        patterns = edit.get("patterns", [])
+        if pattern_lower in file_path or pattern_lower in patterns:
+            matching_edits.append(edit)
+            if len(matching_edits) >= max_results:
+                break
+
+    return {
+        "prompts": matching_prompts,
+        "edits": matching_edits,
+    }
 
 
 def main():
