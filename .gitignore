@@ -19,6 +19,9 @@ plugins/**/.claude/
 doc/
 docs/
 
+# Allow plugin-specific documentation (public)
+!plugins/*/docs/
+
 # Node modules and build artifacts
 node_modules/
 dist/

@@ -1,26 +1,40 @@
-# as-you
+# As You - Technical Documentation
 
-**Teach Once, Remember Forever**
+**Version:** 0.3.0
 
-> Claude learns your coding patterns and applies them automatically.
-> No setup. No dependencies. No databases. (Just Claude Code itself.)
+This document provides detailed technical information about the As You plugin's architecture, algorithms, configuration, and data structures.
 
-## Example
+---
+
+## Table of Contents
+
+- [How It Works](#how-it-works)
+- [Available Commands](#available-commands)
+- [Statistical Intelligence](#statistical-intelligence)
+- [Configuration](#configuration)
+- [Data Storage](#data-storage)
+- [Development](#development)
+- [References](#references)
+- [Philosophy](#philosophy)
+
+---
+
+## How It Works
+
+### Automatic Learning Flow
 
 ```
-You: /as-you:learn "Use environment variables for API keys"
-Claude: Note added
+1. During Session
+   /as-you:learn "Investigating authentication feature bug"
+   → Saved to .claude/as_you/session_notes.local.md
 
-[Later, in a new session...]
+2. On SessionEnd (Automatic)
+   → Archive session_notes.local.md
+   → Save as .claude/as_you/session_archive/2026-01-22.md
 
-<<<<<<< HEAD
-You: Add Stripe payment integration
-Claude: I'll implement the Stripe integration using environment variables 
-for the API key, following your established pattern.
-=======
 3. Pattern Analysis & Scoring (Automatic)
    → Extract patterns from archive
-   → Calculate BM25 distinctiveness scores (rare terms score higher)
+   → Calculate BM25 relevance scores
    → Apply time decay (30-day half-life)
    → Track Bayesian confidence
    → Schedule SM-2 memory reviews
@@ -59,82 +73,59 @@ Patterns are automatically extracted from your session notes using statistical i
 
 # Help
 /as-you:help             # Show detailed documentation
->>>>>>> origin/main
 ```
 
 ---
 
-## Key Features
+## Statistical Intelligence
 
-<<<<<<< HEAD
-- **Automatic Pattern Learning** - Patterns emerge from your notes over time
-- **Statistical Scoring** - BM25, Bayesian confidence, time decay, and more
-- **Local-First** - All data stays on your machine, no external services
-- **Zero Dependencies** - Pure Python standard library only
-- **Memory Management** - Spaced repetition ensures patterns stay fresh
-- **Context-Aware** - Retrieves relevant patterns for your current task
-=======
-### Local-First Architecture
-- **No auth, no backend, no external APIs** - Completely local execution
-- **Privacy by design** - Your data never leaves your machine
-- **No telemetry** - Zero tracking or analytics
+### v0.3.0 Scoring System
 
-### Statistical Intelligence (v0.3.0)
-- **BM25 Scoring** - Distinctiveness ranking based on term rarity (replaces TF-IDF)
-- **Time Decay** - Exponential decay prioritizes recent patterns (configurable half-life)
-- **Bayesian Confidence** - Tracks certainty with mean, variance, and confidence intervals
-- **SM-2 Memory** - Spaced repetition scheduling for optimal review timing
-- **Thompson Sampling** - Balances exploration (uncertain patterns) vs. exploitation (proven patterns)
-- **Composite Scoring** - Weighted combination of multiple metrics
+The plugin uses multiple statistical approaches to identify and prioritize patterns:
 
-### Pattern Management
-- **Automatic Extraction** - Patterns emerge from 3+ similar observations
-- **Automatic Merging** - Similar patterns unified using Levenshtein distance and BK-trees
-- **Context-Aware Retrieval** - Get relevant patterns for current task
-- **Workflow Capture** - Save and reuse action sequences
+#### BM25 Scoring
+- **Purpose**: Relevance ranking with term saturation (replaces TF-IDF)
+- **How it works**: Accounts for term frequency saturation and document length normalization
+- **Parameters**: `k1` (term frequency saturation), `b` (length normalization)
 
-### Interactive Commands
-- **Simple dialog interface** - Clear options, minimal friction
-- **Configurable algorithms** - Tune weights and parameters in `config/as-you.json`
-- **Pure Python implementation** - Testable, maintainable code using Python standard library
->>>>>>> origin/main
+#### Time Decay
+- **Purpose**: Prioritizes recent patterns over older ones
+- **How it works**: Exponential decay with configurable half-life (default: 30 days)
+- **Formula**: `score = base_score * exp(-λ * days_since_last_seen)`
 
----
+#### Bayesian Confidence
+- **Purpose**: Tracks certainty about pattern quality
+- **How it works**: Maintains mean, variance, and 95% confidence intervals
+- **Benefit**: High confidence patterns weighted more in recommendations
 
-## Documentation
+#### SM-2 Memory Algorithm
+- **Purpose**: Spaced repetition scheduling for optimal review timing
+- **How it works**: Adapts review intervals based on recall performance
+- **Schedule**: Patterns reviewed at increasing intervals (1, 6, 15, 37+ days)
+- **Parameters**: Easiness factor adapts to your recall success
 
-<<<<<<< HEAD
-- **[Technical Overview](./docs/technical-overview.md)** - Algorithms, configuration, data structures, and development guide
-=======
-### Enhanced Scoring System
-- **BM25** replaces TF-IDF for distinctiveness ranking (rare terms score higher)
-- **Time Decay** with configurable half-life (default: 30 days)
-- **Composite Score** combines BM25 (40%) + PMI (30%) + Time Decay (30%)
-- Weights configurable in `config/as-you.json`
-
-### Confidence Tracking
-- **Bayesian Learning** tracks pattern quality with mean and variance
-- **95% Confidence Intervals** show probability ranges
-- High confidence patterns weighted more in recommendations
-
-### Memory Management
-- **SM-2 Algorithm** schedules optimal review intervals
-- **Easiness Factor** adapts to your recall performance
-- Patterns reviewed at increasing intervals (1, 6, 15, 37+ days)
-
-### Exploration-Exploitation Balance
-- **Thompson Sampling** selects patterns probabilistically
-- Balances:
+#### Thompson Sampling
+- **Purpose**: Balances exploration vs. exploitation
+- **How it works**: Probabilistic pattern selection based on confidence distributions
+- **Balances**:
   - Proven patterns (high confidence, high scores)
   - Uncertain patterns (need more data)
-- Optimizes long-term knowledge building
+- **Benefit**: Optimizes long-term knowledge building
 
-### Unified Commands
-- **7 → 4 commands** for simpler, more focused workflows
-- `/learn` combines note-taking and pattern viewing
-- `/memory` enhanced with all v0.3.0 scoring
-- `/apply` integrates workflows and context retrieval
-- `/help` updated with comprehensive documentation
+#### Composite Scoring
+- **Purpose**: Weighted combination of multiple metrics
+- **Default weights**:
+  - BM25: 40% (relevance)
+  - PMI: 30% (co-occurrence)
+  - Time Decay: 30% (recency)
+- **Configurable**: Adjust in `config/as-you.json`
+
+### Pattern Management
+
+- **Automatic Extraction**: Patterns emerge from 3+ similar observations
+- **Automatic Merging**: Similar patterns unified using Levenshtein distance and BK-trees
+- **Context-Aware Retrieval**: Get relevant patterns for current task
+- **Workflow Capture**: Save and reuse action sequences
 
 ---
 
@@ -161,7 +152,7 @@ Patterns are automatically extracted from your session notes using statistical i
       "half_life_days": 30  // Adjust for faster/slower decay
     },
     "weights": {
-      "bm25": 0.4,          // Distinctiveness weight
+      "bm25": 0.4,          // Relevance weight
       "pmi": 0.3,           // Co-occurrence weight
       "time_decay": 0.3     // Recency weight
     }
@@ -199,7 +190,7 @@ Patterns are automatically extracted from your session notes using statistical i
 - Lower `half_life_days` (e.g., 15)
 - Increase `time_decay` weight (e.g., 0.4)
 
-**Prioritize distinctiveness over recency:**
+**Prioritize relevance over recency:**
 - Increase `bm25` weight (e.g., 0.5)
 - Decrease `time_decay` weight (e.g., 0.2)
 
@@ -258,20 +249,43 @@ Patterns are automatically extracted from your session notes using statistical i
   "cooccurrences": [...]
 }
 ```
->>>>>>> origin/main
 
 ---
 
-## Installation
+## References
 
-See [main README](../../README.md#installation) for installation instructions.
+### Algorithms
 
-**Requirements:**
-- Python 3.11+
-- Claude Code CLI
+- **BM25**: Robertson & Zaragoza (2009). "The Probabilistic Relevance Framework: BM25 and Beyond"
+- **SM-2**: Wozniak (1990). "Optimization of Learning" - SuperMemo algorithm
+- **Bayesian Inference**: Bishop (2006). "Pattern Recognition and Machine Learning"
+- **Thompson Sampling**: Agrawal & Goyal (2012). "Analysis of Thompson Sampling for the Multi-armed Bandit Problem"
+
+### Implementation
+
+- Python standard library only
+- No ML frameworks (TensorFlow, PyTorch, etc.)
+- No NLP libraries (NLTK, spaCy, transformers)
+- Transparent, auditable algorithms
 
 ---
 
-## License
+## Philosophy
 
-GNU AGPL v3 - [LICENSE](../../LICENSE)
+### Explicit Over Implicit
+You choose what to capture. No automatic surveillance or passive tracking.
+
+### Statistical Intelligence
+Proven mathematical approaches, not black-box models. Every score is explainable.
+
+### Local-First
+Your data stays on your machine. No cloud services, no authentication required.
+
+### Progressive Accumulation
+Knowledge builds gradually from repeated patterns. Quality emerges from quantity.
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](../../../CONTRIBUTING.md) for development setup, testing, and contribution guidelines.

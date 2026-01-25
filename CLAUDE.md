@@ -47,6 +47,49 @@ Every component must be independently testable:
 - Don't add analytics "just for metrics"
 - Don't share patterns without explicit user action
 
+## Documentation Responsibilities
+
+Clear separation of documentation purposes:
+
+### README.md (User-Facing Marketing)
+- **Purpose**: First impression, quick start, concrete examples
+- **Length**: < 100 lines
+- **Content**: Problem → Solution → Example → Key Features
+- **Style**: Simple, concise, example-driven
+- **Links to**: technical-overview.md for details
+
+### docs/technical-overview.md (Theory & Configuration)
+- **Purpose**: Deep understanding of algorithms, configuration, data structures
+- **Audience**: Users + technical readers who want to understand "how it works"
+- **Content**: Algorithms, information theory, configuration options, tuning guides
+- **Links to**: CONTRIBUTING.md for development
+
+### CONTRIBUTING.md (Contributor Guide)
+- **Purpose**: How to develop, test, and contribute
+- **Audience**: Contributors and maintainers only
+- **Content**: Setup, testing, code style, PR process
+- **Never includes**: User-facing documentation, algorithm theory
+
+### Code Docstrings
+- **Purpose**: Implementation details, API contracts
+- **Audience**: Developers reading the code
+- **Content**: Function behavior, parameters, return values, examples (doctests)
+
+## Documentation Rules
+
+**Never Do:**
+- ❌ Mix marketing and technical content in README
+- ❌ Put development setup/testing in technical docs
+- ❌ Create CHANGELOG files (Issues/PRs are source of truth)
+- ❌ Create GitHub Releases (decided in past Issues)
+- ❌ Document directory structures, file paths, version numbers
+
+**Always Do:**
+- ✅ Keep README simple and example-driven
+- ✅ Separate theory (technical-overview.md) from process (CONTRIBUTING.md)
+- ✅ Link between docs appropriately (README → technical → CONTRIBUTING)
+- ✅ Use docstrings for implementation details
+
 ---
 
 **Note**: For development constraints, code style, testing, and contribution process, see `.claude/rules/` and `CONTRIBUTING.md`.
