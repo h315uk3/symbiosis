@@ -158,7 +158,7 @@ def main():
             sys.exit(1)
         return
 
-    print("Question Reward Calculator v0.3.0")
+    print("Question Reward Calculator")
     print("\nAll computation has been moved to skills.")
     print("Use the following skills for reward calculation:")
     print("  - /with-me:question-clarity")

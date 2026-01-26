@@ -291,20 +291,7 @@ $$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
 
 **Location:** `.claude/as_you/`
 
-**Structure:**
-```
-.claude/as_you/
-├── session_notes.local.md          # Current session (not committed)
-├── session_archive/
-│   ├── 2026-01-20.md
-│   ├── 2026-01-21.md
-│   └── 2026-01-22.md
-├── pattern_tracker.json            # Pattern database with scores
-├── workflows/
-│   ├── api-endpoint-setup.md
-│   └── react-component-testing.md
-└── skill-usage-stats.json          # Knowledge base metrics
-```
+See `/as-you:help` for file descriptions. Explore the directory for actual structure.
 
 **Pattern Tracker Schema:**
 ```json

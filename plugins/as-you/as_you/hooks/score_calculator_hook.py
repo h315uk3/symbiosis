@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Score calculator hook for As You plugin (v0.3.0).
+Score calculator hook for As You plugin.
 Uses AnalysisOrchestrator with BM25, time decay, and composite scoring.
 """
 
@@ -17,7 +17,7 @@ from as_you.lib.common import AsYouConfig
 
 
 def main():
-    """CLI entry point for score calculation (v0.3.0)."""
+    """CLI entry point for score calculation."""
     # Get paths from environment using common config
     config = AsYouConfig.from_environment()
 
@@ -29,7 +29,7 @@ def main():
         result = orchestrator.run_analysis(skip_merge=True)
 
         print(
-            f"v0.3.0 Scoring complete: {result.patterns_analyzed} patterns analyzed, "
+            f"Scoring complete: {result.patterns_analyzed} patterns analyzed, "
             f"{result.scores_updated} scores updated "
             f"({result.duration_ms:.1f}ms)"
         )

@@ -1,9 +1,9 @@
 ---
-description: "As You v0.3.2: pattern learning and external memory"
+description: "As You: pattern learning and external memory"
 allowed-tools: []
 ---
 
-# As You v0.3.2
+# As You
 
 Pattern learning plugin. Captures observations, detects patterns, applies learned habits.
 

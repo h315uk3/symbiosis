@@ -228,7 +228,7 @@ def merge_similar_patterns_batch(
                 {"keep": keep, "merge": merge, "distance": distance, "error": str(e)}
             )
 
-    # Recalculate all scores using v0.3.0 orchestrator
+    # Recalculate all scores using orchestrator
     try:
         archive_dir = tracker_file.parent / "session_archive"
         if archive_dir.exists():

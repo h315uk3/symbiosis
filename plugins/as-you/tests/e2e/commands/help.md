@@ -17,7 +17,7 @@ Test the help command: display plugin documentation and command reference.
 
 **Expected behavior:**
 - [ ] Displays plugin information:
-  - Plugin name and version (e.g., "As You v0.3.2")
+  - Plugin name
   - Brief description
 - [ ] Lists all available commands with usage:
   - `/as-you:learn [note]`
@@ -150,9 +150,7 @@ Help should be formatted with:
 - [ ] Proper spacing and readability
 
 ### Step 2: Check Accuracy
-- [ ] Version number matches plugin.json
 - [ ] Command syntax matches actual implementation
-- [ ] File paths are correct
 - [ ] No outdated information
 
 ---

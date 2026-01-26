@@ -342,7 +342,7 @@ class AnalysisOrchestrator:
                 }
                 scores_updated += 1
 
-        # 6. SM-2 state initialization (quality updates deferred to v0.3.1)
+        # 6. SM-2 state initialization
         memory_config = config.settings.get("memory", {})
         sm2_config = memory_config.get("sm2", {})
         if sm2_config.get("enabled", True):
