@@ -157,17 +157,17 @@ Maintains mean $\mu$, variance $\sigma^2$, and 95% confidence interval $[\mu - 1
 
 #### SM-2 Memory Algorithm
 
-Spaced repetition with adaptive intervals:
+Spaced repetition with adaptive intervals based on consecutive successful reviews:
 
-$$I(n) = \begin{cases} 1 & \text{if } n = 1 \\ 6 & \text{if } n = 2 \\ I(n-1) \cdot EF & \text{if } n > 2 \end{cases}$$
+$$I(r) = \begin{cases} 1 & \text{if } r = 0 \\ 6 & \text{if } r = 1 \\ I_{\text{prev}} \cdot EF & \text{if } r \geq 2 \end{cases}$$
 
-where $EF$ (Easiness Factor) adapts based on quality assessment: $EF' = EF + (0.1 - (5 - q) \cdot (0.08 + (5 - q) \cdot 0.02))$
+where $r$ is the number of consecutive successful reviews (repetitions), $I_{\text{prev}}$ is the previous interval, and $EF$ (Easiness Factor) adapts based on quality assessment: $EF' = \max(1.3, EF + (0.1 - (5 - q) \cdot (0.08 + (5 - q) \cdot 0.02)))$
 
 **Interactive Review:**
 - Patterns are scheduled for review based on SM-2 intervals
-- Access review workflow via `/as-you:memory` → "Review due patterns"
+- Access review workflow via `/as-you:memory` → "Review pattern quality"
 - Quality ratings (0-5) assess pattern usefulness and update next review date
-- Low quality assessment (quality < 3) resets interval to 1 day for re-evaluation
+- Low quality assessment ($q < 3$) resets: $I = 1$, $r = 0$
 
 #### Thompson Sampling
 

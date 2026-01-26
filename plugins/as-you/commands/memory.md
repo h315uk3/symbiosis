@@ -118,7 +118,6 @@ Explore pattern memory, analyze confidence, and manage knowledge base.
          - If "✓ Updated": Extract and show "next review in X days (EF: X.XX)"
          - If "✗ Error": Show error and continue to next pattern
      - After review session:
-       - Display summary: reviewed count, successful/failed counts
        - Return to step 3
 
    **If "Analyze active edits":**

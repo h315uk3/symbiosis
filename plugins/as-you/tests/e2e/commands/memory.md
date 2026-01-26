@@ -253,18 +253,20 @@ python3 -m as_you.commands.pattern_review find-due
 - [ ] Applies feedback with quality=4
 - [ ] Updates SM-2 state:
   - Increases easiness factor
-  - Increases interval (previous × EF)
-  - Increments repetitions
+  - Increments repetitions (e.g., 2 → 3)
+  - Calculates interval based on SM-2 algorithm:
+    - If repetitions was 1 (now 2): interval = 6 (fixed)
+    - If repetitions was 2 (now 3): interval = previous × EF (e.g., 6 × 2.5 = 15)
   - Sets new next_review date
-- [ ] Displays result: "✓ Good quality assessment! Next review in X days (EF: X.XX)"
+- [ ] Displays result: "✓ Updated: next review in X days (EF: X.XX)"
 
 **Verification:**
 ```bash
 export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
 python3 -m as_you.commands.pattern_review verify-pattern "Use pathlib for file operations"
 ```
-- [ ] Interval increased (should be > 6 days)
-- [ ] Repetitions = 3
+- [ ] Interval calculated correctly based on repetitions
+- [ ] Repetitions incremented
 - [ ] Easiness factor increased slightly
 
 #### Step 6.3: Review Second Pattern with Low Quality
@@ -290,18 +292,19 @@ python3 -m as_you.commands.pattern_review verify-pattern "Use type hints for fun
 
 #### Step 6.4: Complete Review Session
 **Expected behavior:**
-- [ ] After reviewing all due patterns, displays summary:
-  - Reviewed: X patterns
-  - Successful (≥3): X
-  - Need practice (<3): X
-  - Next due: Today X, Soon X
-- [ ] Returns to main menu
+- [ ] After reviewing all due patterns, returns to main menu
+- [ ] Note: Implementation does not display a review summary automatically
+  - "Successful/Failed" refers to whether apply_quality_feedback() succeeded (not quality threshold)
+  - All quality ratings (0-5) count as "successful" if applied without errors
 
 **Verification:**
 ```bash
 export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
 python3 -m as_you.commands.pattern_review summary
 ```
+- [ ] Overdue count should be 0 after review
+- [ ] Due soon count should reflect new intervals
+- [ ] Average easiness factor should reflect updates
 
 ---
 
