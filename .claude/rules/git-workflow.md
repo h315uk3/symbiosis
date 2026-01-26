@@ -41,6 +41,40 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
 **Merge strategy**: Squash and merge (preferred) for clean history
 
+## Destructive Git Operations
+
+**CRITICAL: These commands permanently delete data. NEVER run without explicit user confirmation.**
+
+### Commands that permanently delete uncommitted work:
+- `git checkout -- <file>` - Discards all uncommitted changes to file (IRREVERSIBLE)
+- `git reset --hard` - Discards all uncommitted changes in working directory
+- `git clean -fd` - Deletes all untracked files and directories
+- `git restore --staged --worktree <file>` - Discards changes (newer alternative to checkout)
+
+### Commands that rewrite history:
+- `git reset --hard <commit>` - Moves HEAD and discards commits
+- `git push --force` - Overwrites remote history
+- `git rebase -i` - Rewrites commit history
+
+### Mandatory confirmation process:
+1. **STOP**: Identify if the command is destructive
+2. **VERIFY**: Run `git status` and `git diff` to see what will be lost
+3. **ASK**: Show user exactly what will be deleted/changed
+4. **WAIT**: Get explicit "yes" or "proceed" from user
+5. **EXECUTE**: Only after confirmation
+
+### Safe alternatives:
+- Instead of `git checkout -- <file>`: Ask user "Do you want to discard changes to <file>?"
+- Instead of `git reset --hard`: Use `git stash` to preserve work
+- Instead of `git clean -fd`: List files first with `git clean -n`, then ask
+
+**Example scenario:**
+```
+User: "unstage the files"
+❌ BAD: git checkout -- file.txt
+✅ GOOD: git status → show changes → ask "Discard these changes?" → wait for confirmation
+```
+
 ## Safety Rules
 
 **NEVER**:
