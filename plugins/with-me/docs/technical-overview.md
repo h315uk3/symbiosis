@@ -1,7 +1,5 @@
 # With Me - Technical Documentation
 
-**Version:** 0.2.0
-
 This document provides detailed technical information about the With Me plugin's architecture, algorithms, configuration, and design principles.
 
 ---

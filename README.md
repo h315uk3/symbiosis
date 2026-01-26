@@ -43,18 +43,16 @@ graph TD
     LLM -->|response| Work
 ```
 
-## The Approach: 6 Academic Fields, Zero Dependencies
+## The Approach
 
-| Algorithm | Field | Purpose |
-|-----------|-------|---------|
-| BM25 | Information Retrieval | Relevance scoring for pattern matching |
-| SM-2 | Cognitive Science | Spaced repetition for memory scheduling |
-| Thompson Sampling | Reinforcement Learning | Exploration vs exploitation trade-off |
-| Shannon Entropy | Information Theory | Convergence detection in requirements |
-| Bayesian Update | Probability Theory | Belief refinement from answers |
-| Expected Information Gain | Decision Theory | Optimal question selection |
+Built with proven algorithms from information theory, cognitive science, and machine learning—**all using Python's standard library only.**
 
-**All implemented in Python standard library only.** No NumPy. No ML frameworks. Just `math`, `json`, `pathlib`.
+- **Pattern scoring**: BM25 + PMI + Ebbinghaus forgetting curve
+- **Memory system**: SM-2 spaced repetition + Thompson sampling
+- **Adaptive questions**: Shannon entropy + Bayesian updates + expected information gain
+- **Optimization**: Levenshtein distance + BK-tree for fast similarity search
+
+**Zero external dependencies.** No NumPy. No ML frameworks. Just `math`, `json`, `pathlib`.
 
 ## Why Standard Library Only?
 
@@ -81,14 +79,45 @@ Install plugins:
 
 ## Usage
 
-Teach a pattern (explicit learning):
+### as-you: Pattern Learning
 
+Add notes and build knowledge:
 ```
 /as-you:learn "Always use pathlib instead of os.path"
 ```
+```
+/as-you:learn
+```
 
-Adaptive requirement elicitation:
+Analyze memory and patterns:
+```
+/as-you:memory
+```
 
+Apply patterns or save workflows:
+```
+/as-you:apply
+```
+```
+/as-you:apply "workflow-name"
+```
+
+Toggle automatic capture of prompts and edits:
+```
+/as-you:active on
+```
+```
+/as-you:active off
+```
+
+Check capture status:
+```
+/as-you:active status
+```
+
+### with-me: Requirement Elicitation
+
+Start adaptive questioning session:
 ```
 /with-me:good-question
 ```
