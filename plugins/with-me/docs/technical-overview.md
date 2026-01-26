@@ -176,8 +176,8 @@ The system uses several configurable thresholds in `config/dimensions.json`:
 
 ### Question Limits
 
-- **max_questions** (default: 50): Safety limit to prevent infinite loops
-- **min_questions** (default: 5): Minimum questions before allowing early termination
+- `max_questions` (default: 50): Safety limit to prevent infinite loops
+- `min_questions` (default: 5): Minimum questions before allowing early termination
 
 ### Likelihood Validation
 

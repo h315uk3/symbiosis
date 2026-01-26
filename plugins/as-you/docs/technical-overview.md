@@ -137,9 +137,9 @@ $$\text{BM25}(d, q) = \sum_{t \in q} \text{IDF}(t) \cdot \frac{f(t, d) \cdot (k_
 
 Prioritizes recent patterns with exponential decay:
 
-$$\text{score}(t) = \text{base\_score} \cdot e^{-\lambda \cdot \Delta t}$$
+$$\text{score}(t) = \text{base score} \cdot e^{-\lambda \cdot \Delta t}$$
 
-where $\lambda = \frac{\ln 2}{\text{half\_life}}$ and half-life defaults to 30 days.
+where $\lambda = \frac{\ln 2}{\text{half life}}$ and half-life defaults to 30 days.
 
 #### Bayesian Confidence
 
