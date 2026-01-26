@@ -16,7 +16,7 @@ Without argument: Interactive dashboard (add/view/analyze notes).
 
 ### /as-you:memory
 
-Pattern analysis dashboard.
+Pattern analysis and SM-2 review dashboard.
 
 ### /as-you:apply [workflow]
 

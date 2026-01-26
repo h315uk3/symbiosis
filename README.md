@@ -16,7 +16,7 @@ It's still in its early stages, but it has already become indispensable for my o
 
 Two plugins that extend Claude Code:
 
-- **as-you** — Your extended memory. Learns patterns, retrieves them when relevant.
+- **as-you** — Your extended memory. Learns patterns, makes them accessible via commands.
 - **with-me** — Your thinking partner. Asks the right questions to clarify requirements.
 
 ## Architecture
@@ -48,7 +48,8 @@ graph TD
 Built with proven algorithms from information theory, cognitive science, and machine learning—**all using Python's standard library only.**
 
 - **Pattern scoring**: BM25 + PMI + Ebbinghaus forgetting curve
-- **Memory system**: SM-2 spaced repetition + Thompson sampling
+- **Pattern selection**: Thompson sampling (exploration-exploitation balance)
+- **Memory review**: SM-2 spaced repetition (optimal review scheduling)
 - **Adaptive questions**: Shannon entropy + Bayesian updates + expected information gain
 - **Optimization**: Levenshtein distance + BK-tree for fast similarity search
 
@@ -84,34 +85,24 @@ Install plugins:
 Add notes and build knowledge:
 ```
 /as-you:learn "Always use pathlib instead of os.path"
-```
-```
 /as-you:learn
 ```
 
-Analyze memory and patterns:
+Analyze memory and review patterns (SM-2):
 ```
 /as-you:memory
 ```
 
-Apply patterns or save workflows:
+Get pattern context (Thompson Sampling) or save workflows:
 ```
 /as-you:apply
-```
-```
 /as-you:apply "workflow-name"
 ```
 
 Toggle automatic capture of prompts and edits:
 ```
 /as-you:active on
-```
-```
 /as-you:active off
-```
-
-Check capture status:
-```
 /as-you:active status
 ```
 
