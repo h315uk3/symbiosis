@@ -289,7 +289,11 @@ def extract_contexts_for_pattern(
 
 
 def extract_contexts(
-    tracker_file: Path, archive_dir: Path, top_n: int = 10, max_contexts: int = 5
+    tracker_file: Path,
+    archive_dir: Path,
+    top_n: int = 10,
+    max_contexts: int = 5,
+    use_thompson: bool = True,
 ) -> dict:
     """
     Extract contexts for top N patterns.
@@ -299,6 +303,7 @@ def extract_contexts(
         archive_dir: Path to session archive directory
         top_n: Number of top patterns to process
         max_contexts: Maximum contexts per pattern
+        use_thompson: Use Thompson Sampling for pattern selection (default: True)
 
     Returns:
         Dictionary with pattern contexts
@@ -313,7 +318,7 @@ def extract_contexts(
         ...     json.dump(tracker_data, f)
         ...     tracker_path = Path(f.name)
         >>> archive_path = Path(tempfile.mkdtemp())
-        >>> result = extract_contexts(tracker_path, archive_path)
+        >>> result = extract_contexts(tracker_path, archive_path, use_thompson=False)
         >>> "patterns" in result
         True
         >>> tracker_path.unlink()
@@ -324,8 +329,15 @@ def extract_contexts(
     if not tracker:
         return {}
 
-    # Get top patterns
-    top_patterns = get_top_patterns(tracker, limit=top_n)
+    # Get top patterns (Thompson Sampling or count-based)
+    if use_thompson:
+        top_patterns = get_top_patterns_thompson(tracker, limit=top_n)
+        # Fallback to count-based if no Thompson states
+        if not top_patterns:
+            top_patterns = get_top_patterns(tracker, limit=top_n)
+    else:
+        top_patterns = get_top_patterns(tracker, limit=top_n)
+
     if not top_patterns:
         return {}
 
