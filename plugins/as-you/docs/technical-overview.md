@@ -102,8 +102,8 @@ Patterns are automatically extracted from your session notes using statistical i
 /as-you:learn "text"     # Add timestamped note
 /as-you:learn            # Learning dashboard (interactive)
 
-# Memory (pattern analysis + confidence tracking)
-/as-you:memory           # Memory dashboard with pattern analysis
+# Memory (pattern analysis + SM-2 review + confidence tracking)
+/as-you:memory           # Memory dashboard: analysis, review, promotion
 
 # Apply (workflows + pattern context)
 /as-you:apply "name"     # Save workflow
@@ -161,7 +161,13 @@ Spaced repetition with adaptive intervals:
 
 $$I(n) = \begin{cases} 1 & \text{if } n = 1 \\ 6 & \text{if } n = 2 \\ I(n-1) \cdot EF & \text{if } n > 2 \end{cases}$$
 
-where $EF$ (Easiness Factor) adapts based on recall performance: $EF' = EF + (0.1 - (5 - q) \cdot (0.08 + (5 - q) \cdot 0.02))$
+where $EF$ (Easiness Factor) adapts based on quality assessment: $EF' = EF + (0.1 - (5 - q) \cdot (0.08 + (5 - q) \cdot 0.02))$
+
+**Interactive Review:**
+- Patterns are scheduled for review based on SM-2 intervals
+- Access review workflow via `/as-you:memory` → "Review due patterns"
+- Quality ratings (0-5) assess pattern usefulness and update next review date
+- Low quality assessment (quality < 3) resets interval to 1 day for re-evaluation
 
 #### Thompson Sampling
 
@@ -172,6 +178,13 @@ $$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
 - Select pattern with highest sampled $\theta_i$
 - Update: $\alpha_i \leftarrow \alpha_i + r$, $\beta_i \leftarrow \beta_i + (1 - r)$
 - Balances proven patterns (high $\alpha$) with uncertain ones (low $\alpha + \beta$)
+
+**Usage:**
+- Thompson states are automatically updated during pattern analysis
+- Pattern selection uses Thompson Sampling via `/as-you:apply` → "Get pattern context"
+- Each pattern samples from Beta($\alpha$, $\beta$) and highest samples are selected
+- High-confidence patterns (large $\alpha$) are likely selected (exploitation)
+- Low-confidence patterns (small $\alpha + \beta$) have chances to explore
 
 #### Composite Scoring
 - **Purpose**: Weighted combination of multiple metrics

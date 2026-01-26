@@ -23,15 +23,13 @@ Test the memory analysis dashboard: pattern exploration, confidence tracking, an
   - **Pattern Analysis**: Detected patterns, BM25 scores, Ebbinghaus scores, Shannon Entropy scores, Composite scores, Promotion candidates
   - **Habit Extraction**: Indexed notes, Habit clusters
   - **Confidence Tracking**: High/Medium/Low confidence pattern counts
-  - **Knowledge Base**: Skills count, Agents count, Memory (SM-2) tracked patterns
-- [ ] Presents AskUserQuestion menu with 7 options:
+  - **Knowledge Base**: Skills count, Agents count
+  - **Memory Review (SM-2)**: Tracked patterns, Overdue for review, Due today, Due soon (7 days)
+- [ ] Presents AskUserQuestion menu with 4 options:
+  - "Analyze active edits"
   - "View top patterns"
-  - "Analyze confidence"
   - "Review promotion candidates"
-  - "Detect similar patterns"
-  - "Memory review (SM-2)"
-  - "Deep analysis"
-  - "Exit"
+  - "Review pattern quality"
 
 **Verification:**
 ```bash
@@ -169,38 +167,141 @@ Verify that duplicate patterns have been consolidated.
 
 ---
 
-## Scenario 6: Memory Review (SM-2)
+## Scenario 6: SM-2 Spaced Repetition Review
 
 ### Prerequisites
-- [ ] Patterns with SM-2 state (easiness_factor, interval, repetitions, next_review)
-- [ ] Some patterns overdue for review (adjust dates if needed for testing)
+- [ ] Create test patterns with SM-2 state (some overdue for testing)
+
+#### Setup Test Data
+```bash
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -c "
+import json
+from datetime import datetime, timedelta
+from pathlib import Path
+
+tracker_file = Path('.claude/as_you/pattern_tracker.json')
+tracker = json.loads(tracker_file.read_text()) if tracker_file.exists() else {}
+
+# Ensure patterns dict exists
+if 'patterns' not in tracker:
+    tracker['patterns'] = {}
+
+# Add test patterns with SM-2 state
+test_patterns = {
+    'Use pathlib for file operations': {
+        'count': 5,
+        'last_seen': (datetime.now() - timedelta(days=10)).strftime('%Y-%m-%d'),
+        'composite_score': 0.75,
+        'sm2_state': {
+            'easiness_factor': 2.5,
+            'interval': 6,
+            'repetitions': 2,
+            'last_review': (datetime.now() - timedelta(days=8)).strftime('%Y-%m-%d'),
+            'next_review': (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')  # Overdue by 2 days
+        }
+    },
+    'Use type hints for function parameters': {
+        'count': 3,
+        'last_seen': datetime.now().strftime('%Y-%m-%d'),
+        'composite_score': 0.65,
+        'sm2_state': {
+            'easiness_factor': 2.2,
+            'interval': 1,
+            'repetitions': 1,
+            'last_review': (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d'),
+            'next_review': datetime.now().strftime('%Y-%m-%d')  # Due today
+        }
+    }
+}
+
+tracker['patterns'].update(test_patterns)
+tracker_file.write_text(json.dumps(tracker, indent=2))
+print('Test patterns created')
+"
+```
 
 ### Test Steps
 
-#### Step 6.1: Check Spaced Repetition Schedule
-From dashboard menu, select "Memory review (SM-2)".
+#### Step 6.1: Access Review Menu
+From dashboard menu, select "Review pattern quality".
 
 **Expected behavior:**
-- [ ] Reads pattern_tracker.json
-- [ ] For patterns with SM-2 state:
-  - Calculates if review is due (interval elapsed since last_review)
-  - Orders patterns by:
-    1. Overdue (days past due)
-    2. Due today
-    3. Due soon (next 7 days)
-- [ ] For each pattern shows:
+- [ ] Checks if pattern_tracker.json exists
+- [ ] Finds patterns due for review
+- [ ] Displays count and list of due patterns with days overdue
+
+**Verification:**
+```bash
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m as_you.commands.pattern_review find-due
+```
+
+#### Step 6.2: Review First Pattern
+**Expected behavior:**
+- [ ] Displays SM-2 explanation (quality ratings 0-5)
+- [ ] Shows first pattern context:
   - Pattern text
-  - Easiness factor (2.5 = default)
-  - Current interval (days)
-  - Repetitions count
-  - Next review date
-- [ ] Explains: "Review helps strengthen memory. Patterns you use successfully get longer intervals."
+  - Usage count
+  - Last seen date
+  - Current state (interval, repetitions, easiness factor)
+- [ ] Presents quality rating options via AskUserQuestion
+
+**Select:** "4 - Good" (good quality assessment)
+
+**Expected behavior:**
+- [ ] Applies feedback with quality=4
+- [ ] Updates SM-2 state:
+  - Increases easiness factor
+  - Increases interval (previous × EF)
+  - Increments repetitions
+  - Sets new next_review date
+- [ ] Displays result: "✓ Good quality assessment! Next review in X days (EF: X.XX)"
+
+**Verification:**
+```bash
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m as_you.commands.pattern_review verify-pattern "Use pathlib for file operations"
+```
+- [ ] Interval increased (should be > 6 days)
+- [ ] Repetitions = 3
+- [ ] Easiness factor increased slightly
+
+#### Step 6.3: Review Second Pattern with Low Quality
+**Select:** "2 - Poor" (low quality assessment)
+
+**Expected behavior:**
+- [ ] Applies feedback with quality=2
+- [ ] Updates SM-2 state:
+  - Decreases easiness factor
+  - **Resets interval to 1** (low quality assessment)
+  - **Resets repetitions to 0**
+  - Sets next_review to tomorrow
+- [ ] Displays result: "○ Needs more practice. Interval reset to 1 day for reinforcement."
+
+**Verification:**
+```bash
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m as_you.commands.pattern_review verify-pattern "Use type hints for function parameters"
+```
+- [ ] Interval = 1 day
+- [ ] Repetitions = 0
+- [ ] Easiness factor decreased
+
+#### Step 6.4: Complete Review Session
+**Expected behavior:**
+- [ ] After reviewing all due patterns, displays summary:
+  - Reviewed: X patterns
+  - Successful (≥3): X
+  - Need practice (<3): X
+  - Next due: Today X, Soon X
 - [ ] Returns to main menu
 
 **Verification:**
-- [ ] Patterns are sorted correctly by due date
-- [ ] Easiness factors are reasonable (1.3 to 2.5+)
-- [ ] Intervals increase with repetitions
+```bash
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m as_you.commands.pattern_review summary
+```
 
 ---
 
@@ -217,7 +318,7 @@ From dashboard menu, select "Deep analysis".
 
 **Expected behavior:**
 - [ ] Launches memory-analyzer agent via Task tool
-- [ ] Agent analyzes pattern_tracker.json using v0.3.0 scoring
+- [ ] Agent analyzes pattern_tracker.json using statistical scoring
 - [ ] Agent provides insights on:
   1. High-value patterns (composite score > 0.7)
   2. Patterns with high uncertainty (Bayesian variance > 0.1)
@@ -379,6 +480,229 @@ cp .claude/as_you/pattern_tracker.json /tmp/pattern_tracker_backup.json
 
 # Reset pattern tracker (caution: loses all patterns)
 # rm .claude/as_you/pattern_tracker.json
+```
+
+---
+
+## Scenario 9: SM-2 Edge Cases
+
+### Test Case 9.1: No Patterns Due
+
+#### Setup
+```bash
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -c "
+import json
+from datetime import datetime, timedelta
+from pathlib import Path
+
+tracker_file = Path('.claude/as_you/pattern_tracker.json')
+tracker = json.loads(tracker_file.read_text()) if tracker_file.exists() else {}
+
+if 'patterns' not in tracker:
+    tracker['patterns'] = {}
+
+# Add pattern not due yet
+tracker['patterns']['Future pattern'] = {
+    'count': 3,
+    'last_seen': datetime.now().strftime('%Y-%m-%d'),
+    'composite_score': 0.6,
+    'sm2_state': {
+        'easiness_factor': 2.5,
+        'interval': 7,
+        'repetitions': 2,
+        'last_review': datetime.now().strftime('%Y-%m-%d'),
+        'next_review': (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d')
+    }
+}
+
+tracker_file.write_text(json.dumps(tracker, indent=2))
+print('Future pattern created')
+"
+```
+
+#### Test Steps
+From dashboard menu, select "Review pattern quality".
+
+**Expected behavior:**
+- [ ] Finds no patterns due for review
+- [ ] Displays message: "No patterns due for review yet."
+- [ ] Shows next 5 upcoming reviews with dates
+- [ ] Returns to main menu
+
+**Verification:**
+```bash
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -c "
+from datetime import datetime
+from pathlib import Path
+from as_you.commands.pattern_review import find_due_patterns
+
+due = find_due_patterns(Path('.claude/as_you/pattern_tracker.json'), datetime.now())
+print(f'Due patterns: {len(due)} (should be 0)')
+"
+```
+
+---
+
+### Test Case 9.2: Invalid Quality Rating
+
+#### Setup
+Use test patterns from Scenario 6.
+
+#### Test Steps
+From review workflow, attempt to provide invalid quality rating.
+
+**Expected behavior:**
+- [ ] Quality ratings are constrained by AskUserQuestion options (0-5)
+- [ ] If invalid quality somehow provided, apply_quality_feedback returns error
+- [ ] Error message: "Quality must be 0-5, got X"
+
+**Verification:**
+```bash
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -c "
+from pathlib import Path
+from as_you.commands.pattern_review import apply_quality_feedback
+
+# Try invalid quality
+result = apply_quality_feedback(
+    Path('.claude/as_you/pattern_tracker.json'),
+    'Use pathlib for file operations',
+    10
+)
+
+print(f'Success: {result[\"success\"]} (should be False)')
+print(f'Error: {result.get(\"error\", \"\")}')
+"
+```
+- [ ] Success = False
+- [ ] Error contains "Quality must be 0-5"
+
+---
+
+### Test Case 9.3: Pattern Not Found
+
+#### Test Steps
+Attempt to apply feedback to non-existent pattern.
+
+**Expected behavior:**
+- [ ] Returns error: "Pattern not found"
+
+**Verification:**
+```bash
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -c "
+from pathlib import Path
+from as_you.commands.pattern_review import apply_quality_feedback
+
+result = apply_quality_feedback(
+    Path('.claude/as_you/pattern_tracker.json'),
+    'Non-existent pattern',
+    4
+)
+
+print(f'Success: {result[\"success\"]} (should be False)')
+print(f'Error: {result.get(\"error\", \"\")}')
+"
+```
+- [ ] Success = False
+- [ ] Error = "Pattern not found"
+
+---
+
+### Test Case 9.4: Tracker Not Initialized
+
+#### Setup
+Temporarily move pattern_tracker.json.
+
+```bash
+mv .claude/as_you/pattern_tracker.json .claude/as_you/pattern_tracker.json.backup
+```
+
+#### Test Steps
+From dashboard menu, select "Review pattern quality".
+
+**Expected behavior:**
+- [ ] Checks if pattern_tracker.json exists
+- [ ] Displays message: "Pattern tracker not initialized."
+- [ ] Shows setup instructions (enable active learning, work, exit session)
+- [ ] Returns to main menu
+
+#### Cleanup
+```bash
+mv .claude/as_you/pattern_tracker.json.backup .claude/as_you/pattern_tracker.json
+```
+
+---
+
+### Test Case 9.5: All Quality Levels (0-5)
+
+#### Setup
+Use test pattern from Scenario 6.
+
+#### Test Steps
+Test each quality level:
+
+**Quality 5 (Perfect):**
+- [ ] Easiness factor increases most
+- [ ] Interval increases (previous × new EF)
+- [ ] Repetitions increments
+
+**Quality 4 (Good):**
+- [ ] Easiness factor increases
+- [ ] Interval increases
+- [ ] Repetitions increments
+
+**Quality 3 (Adequate - minimum pass):**
+- [ ] Easiness factor decreases slightly
+- [ ] Interval still increases (EF ≥ 1.3)
+- [ ] Repetitions increments
+
+**Quality 2 (Poor):**
+- [ ] Easiness factor decreases
+- [ ] **Interval resets to 1**
+- [ ] **Repetitions resets to 0**
+
+**Quality 1 (Very poor):**
+- [ ] Similar to quality 2
+- [ ] Interval = 1
+- [ ] Repetitions = 0
+
+**Quality 0 (No usefulness):**
+- [ ] Easiness factor decreases most
+- [ ] Interval = 1
+- [ ] Repetitions = 0
+
+**Verification:**
+```bash
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -c "
+from pathlib import Path
+from as_you.commands.pattern_review import apply_quality_feedback
+
+# Test quality 3 (pass threshold)
+result = apply_quality_feedback(
+    Path('.claude/as_you/pattern_tracker.json'),
+    'Use pathlib for file operations',
+    3
+)
+
+print(f'Quality 3 (pass):')
+print(f'  Interval: {result[\"new_interval\"]} (should be > 1)')
+print(f'  Repetitions: {result[\"new_repetitions\"]} (should increment)')
+
+# Test quality 2 (fail threshold)
+result2 = apply_quality_feedback(
+    Path('.claude/as_you/pattern_tracker.json'),
+    'Use type hints for function parameters',
+    2
+)
+
+print(f'Quality 2 (fail):')
+print(f'  Interval: {result2[\"new_interval\"]} (should be 1)')
+print(f'  Repetitions: {result2[\"new_repetitions\"]} (should be 0)')
+"
 ```
 
 ---
