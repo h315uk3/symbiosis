@@ -2,10 +2,11 @@
 """
 Extract contexts for frequent patterns from archived memos.
 Provides both archive-based extraction and tracker-based retrieval.
-Includes active learning data integration.
+Includes active learning data integration and Thompson Sampling for pattern selection.
 """
 
 import json
+import random
 import sys
 from pathlib import Path
 
@@ -65,6 +66,103 @@ def get_top_patterns(tracker: dict, limit: int = 10) -> list[str]:
 
     # Return top N pattern names
     return [name for name, _ in sorted_patterns[:limit]]
+
+
+def get_top_patterns_thompson(
+    tracker: dict, limit: int = 10, seed: int | None = None
+) -> list[str]:
+    """
+    Get top N patterns using Thompson Sampling.
+
+    Balances exploration (uncertain patterns) with exploitation (proven patterns)
+    by sampling from each pattern's Beta distribution. This implements the
+    exploration-exploitation trade-off from multi-armed bandit theory.
+
+    Args:
+        tracker: Tracker data dictionary with thompson_state
+        limit: Maximum number of patterns to return
+        seed: Random seed for reproducibility (optional, for testing)
+
+    Returns:
+        List of pattern names sorted by Thompson sample value (descending)
+
+    Examples:
+        >>> tracker = {
+        ...     "patterns": {
+        ...         "proven": {
+        ...             "count": 10,
+        ...             "composite_score": 0.8,
+        ...             "thompson_state": {"alpha": 10.0, "beta": 2.0},
+        ...         },
+        ...         "uncertain": {
+        ...             "count": 3,
+        ...             "composite_score": 0.6,
+        ...             "thompson_state": {"alpha": 2.0, "beta": 1.0},
+        ...         },
+        ...         "no_thompson": {"count": 5, "composite_score": 0.7},
+        ...     }
+        ... }
+        >>> random.seed(42)
+        >>> patterns = get_top_patterns_thompson(tracker, limit=3)
+        >>> len(patterns)
+        2
+        >>> "proven" in patterns
+        True
+        >>> "uncertain" in patterns
+        True
+        >>> "no_thompson" in patterns  # Skipped (no thompson_state)
+        False
+
+        >>> # Test with seed for reproducibility
+        >>> random.seed(42)
+        >>> p1 = get_top_patterns_thompson(tracker, limit=3, seed=42)
+        >>> random.seed(42)
+        >>> p2 = get_top_patterns_thompson(tracker, limit=3, seed=42)
+        >>> p1 == p2
+        True
+
+        >>> # Empty tracker
+        >>> get_top_patterns_thompson({"patterns": {}}, limit=5)
+        []
+
+        >>> # All patterns without thompson_state
+        >>> tracker_no_ts = {"patterns": {"a": {"count": 5}, "b": {"count": 3}}}
+        >>> get_top_patterns_thompson(tracker_no_ts, limit=5)
+        []
+    """
+    if seed is not None:
+        random.seed(seed)
+
+    patterns = tracker.get("patterns", {})
+
+    # Sample from each pattern's Thompson state
+    pattern_samples = []
+
+    for name, data in patterns.items():
+        thompson_state = data.get("thompson_state")
+        if not thompson_state:
+            # Skip patterns without Thompson state
+            continue
+
+        alpha = thompson_state.get("alpha", 1.0)
+        beta = thompson_state.get("beta", 1.0)
+
+        # Sample from Beta(alpha, beta) using Gamma ratio method
+        try:
+            x = random.gammavariate(alpha, 1.0)
+            y = random.gammavariate(beta, 1.0)
+            sample = x / (x + y)
+        except (ValueError, ZeroDivisionError):
+            # Fallback to mean if sampling fails
+            sample = alpha / (alpha + beta)
+
+        pattern_samples.append((name, sample))
+
+    # Sort by sample value (descending)
+    pattern_samples.sort(key=lambda x: x[1], reverse=True)
+
+    # Return top N pattern names
+    return [name for name, _ in pattern_samples[:limit]]
 
 
 def get_pattern_contexts(pattern_name: str, tracker_file: Path) -> list[str]:
