@@ -9,7 +9,7 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Self, TypedDict
+from typing import NotRequired, Self, TypedDict
 
 
 @dataclass(frozen=True)
@@ -233,7 +233,16 @@ def validate_settings(settings: dict) -> bool:
     return True
 
 
-class TrackerData(TypedDict, total=False):
+class ActiveLearningData(TypedDict):
+    """Type definition for active learning data in tracker."""
+
+    keywords: dict[str, int]
+    code_patterns: dict[str, int]
+    intents: dict[str, int]
+    languages: dict[str, int]
+
+
+class TrackerData(TypedDict):
     """Type definition for tracker JSON structure."""
 
     patterns: dict[str, dict]
@@ -241,6 +250,7 @@ class TrackerData(TypedDict, total=False):
     cooccurrences: list[dict]
     notes: list[dict]
     clusters: dict[str, dict]
+    active_learning: NotRequired[ActiveLearningData]
 
 
 def load_tracker(tracker_file: Path) -> TrackerData:

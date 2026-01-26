@@ -121,8 +121,8 @@ class BKTree:
         if self.root is None:
             return []
 
-        results = []
-        candidates = [(self.root, None)]  # (node, distance_to_query)
+        results: list[tuple[str, int]] = []
+        candidates: list[tuple[BKTreeNode, int | None]] = [(self.root, None)]
 
         while candidates:
             node, _ = candidates.pop()
@@ -180,7 +180,8 @@ class BKTree:
                     continue
 
                 # Ensure consistent ordering to avoid duplicates
-                pair = tuple(sorted([word, match_word]))
+                sorted_pair = sorted([word, match_word])
+                pair: tuple[str, str] = (sorted_pair[0], sorted_pair[1])
 
                 if pair not in seen_pairs:
                     seen_pairs.add(pair)

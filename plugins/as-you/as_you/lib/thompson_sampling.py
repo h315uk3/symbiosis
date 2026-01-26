@@ -217,7 +217,7 @@ def select_pattern(states: dict[str, ThompsonState]) -> str:
         raise ValueError(msg)
 
     samples = {pattern: sample_from_state(state) for pattern, state in states.items()}
-    return max(samples, key=samples.get)
+    return max(samples, key=lambda p: samples.get(p, 0.0))
 
 
 def create_initial_state(
@@ -250,13 +250,13 @@ def create_initial_state(
         0.4
     """
     if initial_alpha is None:
-        initial_alpha = DEFAULT_SETTINGS["confidence"]["thompson_sampling"][
-            "initial_alpha"
-        ]
+        initial_alpha = float(
+            DEFAULT_SETTINGS["confidence"]["thompson_sampling"]["initial_alpha"]
+        )
     if initial_beta is None:
-        initial_beta = DEFAULT_SETTINGS["confidence"]["thompson_sampling"][
-            "initial_beta"
-        ]
+        initial_beta = float(
+            DEFAULT_SETTINGS["confidence"]["thompson_sampling"]["initial_beta"]
+        )
 
     return ThompsonState(alpha=initial_alpha, beta=initial_beta)
 

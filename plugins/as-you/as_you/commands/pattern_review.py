@@ -343,7 +343,9 @@ def apply_quality_feedback(tracker_file: Path, pattern_text: str, quality: int) 
     if error_msg:
         return {"success": False, "error": error_msg}
 
-    sm2_state_dict = pattern_data["sm2_state"]
+    # Type narrowing: pattern_data and sm2_state are guaranteed to exist here
+    assert pattern_data is not None
+    sm2_state_dict = pattern_data.get("sm2_state", {})
 
     # Construct current state
     current_state = SM2State(

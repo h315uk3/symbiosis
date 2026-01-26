@@ -83,7 +83,7 @@ class SessionOrchestrator:
         # Session state (initialized in initialize_session)
         self.session_id: str | None = None
         self.beliefs: dict[str, HypothesisSet] = {}
-        self.question_history: list[str] = []
+        self.question_history: list[dict[str, Any]] = []
         self.question_count = 0
 
     def initialize_session(self) -> str:
@@ -271,6 +271,37 @@ class SessionOrchestrator:
     #
     # See commands/good-question.md Step 2.3 for new workflow
 
+    def update_beliefs(
+        self, dimension: str, question: str, answer: str
+    ) -> dict[str, Any]:
+        """
+        Update beliefs for a dimension based on answer.
+
+        Note: This is a stub for testing. Actual belief updates are performed
+        by the CLI (session.py) using Bayesian updates with LLM-generated likelihoods.
+
+        Args:
+            dimension: Dimension ID to update
+            question: Question that was asked
+            answer: Answer received
+
+        Returns:
+            Dictionary with update results (stub values for demo)
+
+        Examples:
+            >>> orch = SessionOrchestrator()
+            >>> _ = orch.initialize_session()
+            >>> result = orch.update_beliefs("purpose", "What?", "Web app")
+            >>> "information_gain" in result
+            True
+        """
+        self.question_count += 1
+        return {
+            "information_gain": 0.0,
+            "entropy_before": 1.0,
+            "entropy_after": 1.0,
+        }
+
     def get_current_state(self) -> dict[str, Any]:
         """
         Get current session state for display.
@@ -359,7 +390,7 @@ class SessionOrchestrator:
             final_dimension_beliefs={k: v.to_dict() for k, v in self.beliefs.items()},
         )
 
-        return summary
+        return dict(summary)
 
 
 # CLI interface for testing
@@ -389,6 +420,9 @@ def main():
 
         # Generate first question
         dim, question = orch.select_next_question()
+        if dim is None or question is None:
+            print("No question available")
+            sys.exit(1)
         print(f"\nNext question (targeting {dim}): {question}")
 
         # Simulate answer

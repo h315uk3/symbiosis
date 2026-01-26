@@ -156,9 +156,11 @@ def create_initial_bayesian_state(
         0.01
     """
     if initial_mean is None:
-        initial_mean = DEFAULT_SETTINGS["confidence"]["bayesian"]["prior_mean"]
+        initial_mean = float(DEFAULT_SETTINGS["confidence"]["bayesian"]["prior_mean"])
     if initial_variance is None:
-        initial_variance = DEFAULT_SETTINGS["confidence"]["bayesian"]["prior_variance"]
+        initial_variance = float(
+            DEFAULT_SETTINGS["confidence"]["bayesian"]["prior_variance"]
+        )
 
     return BayesianState(mean=initial_mean, variance=initial_variance)
 

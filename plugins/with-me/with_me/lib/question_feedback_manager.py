@@ -11,7 +11,7 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 # Thresholds
 UNCERTAINTY_RESOLVED_THRESHOLD = 0.3  # Uncertainty threshold for dimension resolution
@@ -62,7 +62,7 @@ class WithMeConfig:
         )
 
 
-class QuestionData(TypedDict, total=False):
+class QuestionData(TypedDict):
     """
     Type definition for a single question
 
@@ -74,12 +74,12 @@ class QuestionData(TypedDict, total=False):
     question: str
     dimension: str
     timestamp: str
-    context: dict[str, Any]
-    answer: dict[str, Any]
-    reward_scores: dict[str, float]
+    context: NotRequired[dict[str, Any]]
+    answer: NotRequired[dict[str, Any]]
+    reward_scores: dict[str, Any]  # Can contain nested dicts like {"components": {...}}
     # Bayesian belief tracking
-    dimension_beliefs_before: dict[str, dict] | None  # Serialized HypothesisSet
-    dimension_beliefs_after: dict[str, dict] | None  # Serialized HypothesisSet
+    dimension_beliefs_before: NotRequired[dict[str, dict] | None]
+    dimension_beliefs_after: NotRequired[dict[str, dict] | None]
 
 
 class SessionSummary(TypedDict):
@@ -93,7 +93,7 @@ class SessionSummary(TypedDict):
     session_efficiency: float
 
 
-class SessionData(TypedDict, total=False):
+class SessionData(TypedDict):
     """
     Type definition for a session
 
@@ -104,16 +104,16 @@ class SessionData(TypedDict, total=False):
 
     session_id: str
     started_at: str
-    completed_at: str | None
-    duration_seconds: int | None
+    completed_at: NotRequired[str | None]
+    duration_seconds: NotRequired[int | None]
     questions: list[QuestionData]
-    summary: SessionSummary | None
+    summary: NotRequired[SessionSummary | None]
     # Bayesian belief tracking
-    initial_dimension_beliefs: dict[str, dict] | None  # Serialized HypothesisSet
-    final_dimension_beliefs: dict[str, dict] | None  # Serialized HypothesisSet
+    initial_dimension_beliefs: NotRequired[dict[str, dict] | None]
+    final_dimension_beliefs: NotRequired[dict[str, dict] | None]
 
 
-class FeedbackData(TypedDict, total=False):
+class FeedbackData(TypedDict):
     """Type definition for feedback file structure"""
 
     sessions: list[SessionData]
@@ -489,8 +489,8 @@ class QuestionFeedbackManager:
                 resolved_sessions = [
                     s
                     for s in completed_sessions
-                    if s.get("summary")
-                    and dim in s["summary"].get("dimensions_resolved", [])
+                    if (summary := s.get("summary")) is not None
+                    and dim in summary.get("dimensions_resolved", [])
                 ]
                 avg_questions_to_resolve = (
                     sum(
