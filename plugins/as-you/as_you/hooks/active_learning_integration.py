@@ -28,6 +28,27 @@ def load_active_learning_data(claude_dir: Path) -> dict:
     return {"prompts": [], "edits": []}
 
 
+def save_active_learning_data(claude_dir: Path, data: dict) -> None:
+    """
+    Save active learning data to file.
+
+    Examples:
+        >>> import tempfile
+        >>> with tempfile.TemporaryDirectory() as tmp:
+        ...     tmp_path = Path(tmp)
+        ...     as_you_dir = tmp_path / "as_you"
+        ...     as_you_dir.mkdir()
+        ...     data = {"prompts": [{"text": "test", "integrated": True}], "edits": []}
+        ...     save_active_learning_data(tmp_path, data)
+        ...     loaded = load_active_learning_data(tmp_path)
+        ...     loaded["prompts"][0]["integrated"]
+        True
+    """
+    data_file = claude_dir / "as_you" / "active_learning.json"
+    data_file.parent.mkdir(parents=True, exist_ok=True)
+    data_file.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def extract_keywords_from_prompts(prompts: list[dict]) -> Counter[str]:
     """
     Extract keyword frequencies from prompts.
@@ -116,12 +137,20 @@ def integrate_active_learning(config: AsYouConfig) -> dict:
     """
     Integrate active learning data into pattern tracker.
 
+    Only processes items that have not been integrated yet (integrated != True).
+    After integration, marks all items with integrated: True to prevent
+    duplicate counting in future sessions.
+
     Returns:
         Summary of integration results
     """
     al_data = load_active_learning_data(config.claude_dir)
-    prompts = al_data.get("prompts", [])
-    edits = al_data.get("edits", [])
+
+    # Filter out already-integrated items
+    all_prompts = al_data.get("prompts", [])
+    all_edits = al_data.get("edits", [])
+    prompts = [p for p in all_prompts if not p.get("integrated")]
+    edits = [e for e in all_edits if not e.get("integrated")]
 
     if not prompts and not edits:
         return {"status": "no_data"}
@@ -163,6 +192,15 @@ def integrate_active_learning(config: AsYouConfig) -> dict:
 
     # Save updated tracker
     save_tracker(config.tracker_file, tracker)
+
+    # Mark all items as integrated to prevent duplicate counting
+    for p in all_prompts:
+        p["integrated"] = True
+    for e in all_edits:
+        e["integrated"] = True
+
+    # Save updated active learning data with integration flags
+    save_active_learning_data(config.claude_dir, al_data)
 
     # Disable active learning after integration (auto-off at session end)
     enabled_file = config.claude_dir / "as_you" / "active_learning.enabled"
