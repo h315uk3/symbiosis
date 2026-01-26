@@ -174,9 +174,9 @@ def calculate_bm25_scores(
     """
     # Get parameters from config or use defaults
     if k1 is None:
-        k1 = DEFAULT_SETTINGS["scoring"]["bm25"]["k1"]
+        k1 = float(DEFAULT_SETTINGS["scoring"]["bm25"]["k1"])
     if b is None:
-        b = DEFAULT_SETTINGS["scoring"]["bm25"]["b"]
+        b = float(DEFAULT_SETTINGS["scoring"]["bm25"]["b"])
 
     # Build document collection
     documents = []

@@ -10,7 +10,7 @@ import random
 import sys
 from pathlib import Path
 
-from as_you.lib.common import AsYouConfig, load_tracker
+from as_you.lib.common import AsYouConfig, TrackerData, load_tracker
 
 
 def load_active_learning_data(claude_dir: Path) -> dict:
@@ -33,7 +33,7 @@ def load_active_learning_data(claude_dir: Path) -> dict:
     return {"prompts": [], "edits": []}
 
 
-def get_top_patterns(tracker: dict, limit: int = 10) -> list[str]:
+def get_top_patterns(tracker: TrackerData, limit: int = 10) -> list[str]:
     """
     Get top N patterns by count.
 
@@ -69,7 +69,7 @@ def get_top_patterns(tracker: dict, limit: int = 10) -> list[str]:
 
 
 def get_top_patterns_thompson(
-    tracker: dict, limit: int = 10, seed: int | None = None
+    tracker: TrackerData, limit: int = 10, seed: int | None = None
 ) -> list[str]:
     """
     Get top N patterns using Thompson Sampling.

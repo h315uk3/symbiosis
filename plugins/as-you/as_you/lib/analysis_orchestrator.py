@@ -188,9 +188,9 @@ class AnalysisOrchestrator:
         start_time = time.perf_counter()
 
         # Load data
-        self.load_data()
+        data = self.load_data()
 
-        patterns = self.data.get("patterns", {})
+        patterns = data.get("patterns", {})
         patterns_analyzed = len(patterns)
         patterns_merged = 0
         scores_updated = 0
@@ -377,7 +377,8 @@ class AnalysisOrchestrator:
             patterns_merged += merged_count
 
             # Update tracker data with merged patterns
-            self.data["patterns"] = patterns
+            data["patterns"] = patterns
+            self.data = data
 
         # Save results
         self.save_data()

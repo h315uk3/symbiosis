@@ -3,6 +3,7 @@
 [tools]
 python = "3.13.11"    # Python 3.11+ required (using latest stable)
 ruff = "0.14.10"      # Python linter and formatter
+"npm:pyright" = "1.1.408"  # Python type checker (Pylance CLI)
 
 [tasks.test]
 description = "Run all Python doctests"
@@ -28,6 +29,10 @@ done
 [tasks.lint]
 description = "Lint Python code with ruff"
 run = "ruff check plugins/*/as_you plugins/*/with_me"
+
+[tasks.typecheck]
+description = "Type check Python code with pyright"
+run = "pyright plugins/*/as_you plugins/*/with_me"
 
 [tasks.format]
 description = "Format Python code with ruff"

@@ -40,7 +40,7 @@ def extract_patterns(text: str) -> list[str]:
 
 def detect_patterns_from_archives(
     archive_dir: Path, top_n: int = 20
-) -> list[dict[str, any]]:
+) -> list[dict[str, str | int]]:
     """
     Detect frequent patterns from all markdown files in archive directory.
 

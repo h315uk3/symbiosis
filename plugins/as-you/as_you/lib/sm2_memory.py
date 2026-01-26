@@ -253,7 +253,7 @@ def create_initial_state(
         2.0
     """
     if initial_ef is None:
-        initial_ef = DEFAULT_SETTINGS["memory"]["sm2"]["initial_easiness"]
+        initial_ef = float(DEFAULT_SETTINGS["memory"]["sm2"]["initial_easiness"])
 
     return SM2State(
         easiness_factor=initial_ef,

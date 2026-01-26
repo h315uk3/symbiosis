@@ -167,7 +167,8 @@ def calculate_composite_scores(
         True
     """
     if weights is None:
-        weights = DEFAULT_SETTINGS["scoring"]["weights"]
+        default_weights = DEFAULT_SETTINGS["scoring"]["weights"]
+        weights = dict(default_weights) if default_weights else {"bm25": 0.4, "pmi": 0.3, "ebbinghaus": 0.3}
 
     # Collect all scores by dimension
     dimension_scores: dict[str, dict[str, float]] = {}

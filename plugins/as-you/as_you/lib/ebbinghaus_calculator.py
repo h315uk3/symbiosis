@@ -231,9 +231,13 @@ def calculate_ebbinghaus_scores(
         True
     """
     if base_strength is None:
-        base_strength = DEFAULT_SETTINGS["memory"]["ebbinghaus"]["base_strength"]
+        base_strength = float(
+            DEFAULT_SETTINGS["memory"]["ebbinghaus"]["base_strength"]
+        )
     if growth_factor is None:
-        growth_factor = DEFAULT_SETTINGS["memory"]["ebbinghaus"]["growth_factor"]
+        growth_factor = float(
+            DEFAULT_SETTINGS["memory"]["ebbinghaus"]["growth_factor"]
+        )
 
     if current is None:
         current = datetime.now()
