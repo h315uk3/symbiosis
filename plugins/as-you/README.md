@@ -2,7 +2,7 @@
 
 **Teach Once, Remember Forever**
 
-> Claude learns your coding patterns and applies them automatically.
+> Claude learns your coding patterns and makes them accessible when needed.
 > No setup. No dependencies. No databases. (Just Claude Code itself.)
 
 ## Example
@@ -13,10 +13,17 @@ Claude: Note added
 
 [Later, in a new session...]
 
+You: /as-you:apply
+Claude: [Shows top patterns using Thompson Sampling]
+        1. Use environment variables for API keys
+        2. ...
+
 You: Add Stripe payment integration
-Claude: I'll implement the Stripe integration using environment variables 
+Claude: I'll implement the Stripe integration using environment variables
 for the API key, following your established pattern.
 ```
+
+> **How it works**: Patterns are presented as context when you use `/as-you:apply`. Claude considers them based on relevance to your current task. Pattern selection uses Thompson Sampling to balance proven patterns with exploration of uncertain ones.
 
 ---
 
@@ -24,7 +31,7 @@ for the API key, following your established pattern.
 
 - **Automatic Pattern Learning** - Patterns emerge from your notes over time
 - **Statistical Scoring** - BM25 relevance, Bayesian confidence, time decay
-- **Memory Scheduling** - SM-2 spaced repetition keeps patterns fresh
+- **Memory Review** - SM-2 spaced repetition schedules pattern reviews
 - **Smart Selection** - Thompson Sampling balances proven vs. uncertain patterns
 - **Local-First** - All data stays on your machine, no external services
 - **Zero Dependencies** - Pure Python standard library only

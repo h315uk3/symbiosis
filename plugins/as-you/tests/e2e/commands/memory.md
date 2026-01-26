@@ -29,7 +29,7 @@ Test the memory analysis dashboard: pattern exploration, confidence tracking, an
   - "Analyze active edits"
   - "View top patterns"
   - "Review promotion candidates"
-  - "Review due patterns"
+  - "Review pattern quality"
 
 **Verification:**
 ```bash
@@ -224,7 +224,7 @@ print('Test patterns created')
 ### Test Steps
 
 #### Step 6.1: Access Review Menu
-From dashboard menu, select "Review due patterns".
+From dashboard menu, select "Review pattern quality".
 
 **Expected behavior:**
 - [ ] Checks if pattern_tracker.json exists
@@ -318,7 +318,7 @@ From dashboard menu, select "Deep analysis".
 
 **Expected behavior:**
 - [ ] Launches memory-analyzer agent via Task tool
-- [ ] Agent analyzes pattern_tracker.json using v0.3.0 scoring
+- [ ] Agent analyzes pattern_tracker.json using statistical scoring
 - [ ] Agent provides insights on:
   1. High-value patterns (composite score > 0.7)
   2. Patterns with high uncertainty (Bayesian variance > 0.1)
@@ -522,7 +522,7 @@ print('Future pattern created')
 ```
 
 #### Test Steps
-From dashboard menu, select "Review due patterns".
+From dashboard menu, select "Review pattern quality".
 
 **Expected behavior:**
 - [ ] Finds no patterns due for review
@@ -621,7 +621,7 @@ mv .claude/as_you/pattern_tracker.json .claude/as_you/pattern_tracker.json.backu
 ```
 
 #### Test Steps
-From dashboard menu, select "Review due patterns".
+From dashboard menu, select "Review pattern quality".
 
 **Expected behavior:**
 - [ ] Checks if pattern_tracker.json exists
