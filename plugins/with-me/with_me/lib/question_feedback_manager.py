@@ -66,7 +66,7 @@ class QuestionData(TypedDict, total=False):
     """
     Type definition for a single question
 
-    v0.3.0 Extensions:
+    Extensions:
     - dimension_beliefs_before: Posterior distributions before question
     - dimension_beliefs_after: Posterior distributions after answer
     """
@@ -77,7 +77,7 @@ class QuestionData(TypedDict, total=False):
     context: dict[str, Any]
     answer: dict[str, Any]
     reward_scores: dict[str, float]
-    # v0.3.0: Bayesian belief tracking
+    # Bayesian belief tracking
     dimension_beliefs_before: dict[str, dict] | None  # Serialized HypothesisSet
     dimension_beliefs_after: dict[str, dict] | None  # Serialized HypothesisSet
 
@@ -97,7 +97,7 @@ class SessionData(TypedDict, total=False):
     """
     Type definition for a session
 
-    v0.3.0 Extensions:
+    Extensions:
     - initial_dimension_beliefs: Starting posterior distributions
     - final_dimension_beliefs: Ending posterior distributions
     """
@@ -108,7 +108,7 @@ class SessionData(TypedDict, total=False):
     duration_seconds: int | None
     questions: list[QuestionData]
     summary: SessionSummary | None
-    # v0.3.0: Bayesian belief tracking
+    # Bayesian belief tracking
     initial_dimension_beliefs: dict[str, dict] | None  # Serialized HypothesisSet
     final_dimension_beliefs: dict[str, dict] | None  # Serialized HypothesisSet
 
@@ -238,7 +238,7 @@ class QuestionFeedbackManager:
         Start a new session
 
         Args:
-            initial_dimension_beliefs: Optional initial Bayesian beliefs (v0.3.0)
+            initial_dimension_beliefs: Optional initial Bayesian beliefs
 
         Returns:
             Session ID (ISO timestamp)
@@ -287,8 +287,8 @@ class QuestionFeedbackManager:
             context: Context with uncertainties before/after
             answer: Answer data (word_count, has_examples)
             reward_scores: Reward components and total
-            dimension_beliefs_before: Optional Bayesian beliefs before question (v0.3.0)
-            dimension_beliefs_after: Optional Bayesian beliefs after answer (v0.3.0)
+            dimension_beliefs_before: Optional Bayesian beliefs before question
+            dimension_beliefs_after: Optional Bayesian beliefs after answer
         """
         session = self._find_session(session_id)
         if session is None:
@@ -321,7 +321,7 @@ class QuestionFeedbackManager:
         Args:
             session_id: Session identifier
             final_uncertainties: Final uncertainty scores
-            final_dimension_beliefs: Optional final Bayesian beliefs (v0.3.0)
+            final_dimension_beliefs: Optional final Bayesian beliefs
 
         Returns:
             Session summary
@@ -388,7 +388,7 @@ class QuestionFeedbackManager:
         end_time = datetime.fromisoformat(session["completed_at"])
         session["duration_seconds"] = int((end_time - start_time).total_seconds())
         session["summary"] = summary
-        session["final_dimension_beliefs"] = final_dimension_beliefs  # v0.3.0
+        session["final_dimension_beliefs"] = final_dimension_beliefs
 
         # Update statistics
         self._update_statistics()
