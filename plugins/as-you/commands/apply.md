@@ -25,72 +25,10 @@ Save recent work as a reusable workflow.
 
 **Execution:**
 
-1. **Analyze Recent Work**
-   - Review last 10-20 tool uses from conversation history
-   - Extract commands, files, patterns
-   - Identify abstraction opportunities
-
-2. **Gather Preferences**
-   - Use AskUserQuestion for abstraction level:
-     - Question: "How should we save this workflow?"
-     - Header: "Style"
-     - multiSelect: false
-     - Options:
-       - Label: "Specific (exact paths/commands)"
-         Description: "Save exactly as executed"
-       - Label: "Generic (abstract patterns)"
-         Description: "Generalize for reuse"
-
-3. **Ask About Scope**
-   - Question: "Which recent work should we include?"
-   - Header: "Scope"
-   - multiSelect: false
-   - Options:
-     - Label: "Last 5 actions"
-       Description: "Most recent work only"
-     - Label: "Last 10 actions"
-       Description: "Recent work session"
-     - Label: "Last 20 actions"
-       Description: "Extended work session"
-
-4. **Generate Workflow**
-   - Create workflow file at: `{pwd}/.claude/as_you/workflows/{workflow-name}.md`
-   - Format:
-     ```markdown
-     ---
-     description: "Brief description"
-     created: YYYY-MM-DD
-     usage_count: 0
-     last_used: null
-     ---
-
-     # {Workflow Name}
-
-     ## Steps
-
-     1. Step description
-        ```bash
-        command here
-        ```
-
-     2. Next step...
-
-     ## Context
-
-     Patterns used:
-     - Pattern 1
-     - Pattern 2
-
-     ## Notes
-
-     Additional context...
-     ```
-
-5. **Confirm**
-   - Display generated workflow
-   - Ask for confirmation
-   - Save if confirmed
-   - Update workflow list
+1. Analyze recent work (last 10-20 tool uses)
+2. Ask: abstraction level (Specific / Generic) and scope (Last 5/10/20 actions)
+3. Generate workflow file at `.claude/as_you/workflows/{name}.md` with frontmatter and steps
+4. Confirm and save
 
 ---
 
@@ -102,116 +40,32 @@ Browse and use saved workflows and patterns.
 
 **Execution Steps:**
 
-1. **Display Quick Access**
-   - Execute:
-     ```bash
-     pwd
-     export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
-     python3 -m as_you.commands.pattern_context
-     ```
-   - Show most relevant patterns for current context
-
-2. **List Available Workflows**
-   - Use Glob: `{pwd}/.claude/as_you/workflows/*.md`
-   - Display workflow list with:
-     - Name
-     - Description
-     - Usage count
-     - Last used date
-   - Sort by: Last used (desc), then usage count (desc)
-
-3. **Present Options** using AskUserQuestion:
-   - Question: "What would you like to do?"
-   - Header: "Action"
-   - multiSelect: false
-   - Options:
-     - Label: "View workflow"
-       Description: "Show workflow details"
-     - Label: "Execute workflow"
-       Description: "Run a saved workflow"
-     - Label: "Get pattern context"
-       Description: "Retrieve relevant patterns for current task"
-     - Label: "List all workflows"
-       Description: "Browse all saved workflows"
-     - Label: "Save new workflow"
-       Description: "Capture recent work"
-     - Label: "Exit"
-       Description: "Close apply dashboard"
+1. Use `pattern_context` module to show relevant patterns for current context
+2. List workflows from `.claude/as_you/workflows/*.md` (sorted by last used)
+3. Ask: "What would you like to do?" (View/Execute workflow, Get pattern context, List all workflows, Save new, Exit)
 
 4. **Execute Based on Selection**
 
    **If "View workflow":**
-   - Ask which workflow to view (list from step 2)
-   - Read workflow file
-   - Display contents
-   - Show usage stats
+   - Ask which workflow, read and display contents with usage stats
    - Ask: "Execute this workflow?" (Yes/No)
-   - If Yes: Continue to execution
-   - If No: Return to step 3
 
    **If "Execute workflow":**
-   - Ask which workflow to execute
-   - Read workflow file
-   - Extract steps
-   - Ask for confirmation with details:
-     - Question: "Execute '{workflow-name}'?"
-     - Header: "Confirm"
-     - Show first 3 steps preview
-     - multiSelect: false
-     - Options:
-       - Label: "Execute"
-         Description: "Run all steps"
-       - Label: "Review first"
-         Description: "Show full workflow before executing"
-       - Label: "Cancel"
-         Description: "Don't execute"
-   - If Execute:
-     - Run each step
-     - Update usage_count and last_used
-     - Show results
-   - If Review first:
-     - Show full workflow
-     - Ask for execution confirmation again
-   - If Cancel:
-     - Return to step 3
+   - Ask which workflow, extract steps, ask confirmation (Execute/Review first/Cancel)
+   - Run steps, update usage_count and last_used
 
    **If "Get pattern context":**
-   - Ask for task description:
-     - Question: "What are you working on?"
-     - Header: "Task"
-     - Prompt for context
-   - Execute:
-     ```bash
-     export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
-     python3 -m as_you.commands.pattern_context "<task-description>"
-     ```
-   - Display relevant patterns with:
-     - Pattern text
-     - Composite score
-     - Confidence
-     - Last seen
-     - Frequency
-   - Show Thompson Sampling recommendations:
-     - High-confidence patterns to exploit
-     - Uncertain patterns to explore
-   - Return to step 3
+   - Use `pattern_context --thompson 10` to get top patterns (Thompson Sampling)
+   - Display patterns with scores, confidence, Thompson state
+   - Ask: "View context for which pattern?" (Top 4 + Other + Skip)
+   - Show detailed context from notes if pattern selected
 
    **If "List all workflows":**
-   - Use Glob: `{pwd}/.claude/as_you/workflows/*.md`
-   - For each workflow, display:
-     - Name
-     - Description
-     - Created date
-     - Usage count
-     - Last used
+   - List all workflows with name, description, dates, usage count
    - Sort by usage count (desc)
-   - Show total: "X workflows available"
-   - Return to step 3
 
    **If "Save new workflow":**
-   - Ask for workflow name
-   - Continue with Mode 1 execution (steps 1-5)
-   - Return to step 3 after saving
+   - Ask for workflow name, continue with Mode 1 execution
 
    **If "Exit":**
    - Respond: "Done"

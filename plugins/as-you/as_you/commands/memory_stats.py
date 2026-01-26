@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 
+from as_you.commands.pattern_review import get_review_summary
 from as_you.lib.common import load_tracker
 
 
@@ -44,6 +45,20 @@ def collect_stats() -> dict:
         stats["candidates"] = 0
         stats["habit_notes"] = 0
         stats["habit_clusters"] = 0
+
+    # SM-2 memory review stats
+    try:
+        summary = get_review_summary(tracker_file)
+        stats["sm2_tracked"] = summary["total_tracked"]
+        stats["sm2_overdue"] = summary["overdue"]
+        stats["sm2_due_today"] = summary["due_today"]
+        stats["sm2_due_soon"] = summary["due_soon"]
+    except (OSError, json.JSONDecodeError, KeyError):
+        # Graceful degradation if tracker file missing or malformed
+        stats["sm2_tracked"] = 0
+        stats["sm2_overdue"] = 0
+        stats["sm2_due_today"] = 0
+        stats["sm2_due_soon"] = 0
 
     # Skills
     skills_dir = Path("plugins/as-you/skills")

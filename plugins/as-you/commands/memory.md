@@ -11,7 +11,7 @@ Explore pattern memory, analyze confidence, and manage knowledge base.
 
 1. **Run Analysis and Collect Statistics**
 
-   Execute analysis and gather stats:
+   Execute the following commands:
    ```bash
    pwd
    export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
@@ -19,245 +19,151 @@ Explore pattern memory, analyze confidence, and manage knowledge base.
    python3 -m as_you.commands.memory_stats
    ```
 
+   Then read the necessary files:
+   - `.claude/as_you/pattern_tracker.json` (if exists)
+   - `.claude/as_you/active_learning.json` (if exists)
+
+   Count workflows using Glob (do not read contents):
+   - `.claude/as_you/workflows/*.md`
+
 2. **Display Memory Dashboard**
 
-   Format and display comprehensive statistics:
-   ```markdown
-   # As You Memory Dashboard
+   Show sections: Current Session, Pattern Analysis, Habit Extraction, Confidence Tracking, Knowledge Base, Memory Review (SM-2)
 
-   ## Current Session
-   - Notes: X entries
-   - Archives: X days
+   Include counts for: notes, patterns, scores, confidence levels, skills/agents, SM-2 review status
 
-   ## Pattern Analysis (v0.3.0)
-   - Detected patterns: X
-   - BM25 scores: X
-   - Ebbinghaus scores: X
-   - Shannon Entropy scores: X
-   - Composite scores: X
-   - Promotion candidates: X
+3. **Present Analysis Options** using AskUserQuestion
 
-   ## Habit Extraction (v0.3.1)
-   - Indexed notes: X
-   - Habit clusters: X
-
-   ## Confidence Tracking
-   - High confidence (>0.7): X patterns
-   - Medium confidence (0.4-0.7): X patterns
-   - Low confidence (<0.4): X patterns
-
-   ## Knowledge Base
-   - Skills: X
-   - Agents: X
-   - Memory (SM-2): X patterns tracked
-   ```
-
-3. **Present Analysis Options** using AskUserQuestion:
    - Question: "What would you like to explore?"
-   - Header: "Explore"
+   - Header: "Analysis"
    - multiSelect: false
    - Options:
+     - Label: "Analyze active edits"
+       Description: "Classify semantic patterns from recent file edits"
+       (Replace with "Exit" option if no active edits need analysis)
      - Label: "View top patterns"
        Description: "Show highest-scoring patterns by composite score"
-     - Label: "Analyze confidence"
-       Description: "Review Bayesian confidence and uncertainty"
      - Label: "Review promotion candidates"
-       Description: "Patterns ready for skill/agent promotion"
-     - Label: "Detect similar patterns"
-       Description: "Find and merge similar patterns"
-     - Label: "Memory review (SM-2)"
-       Description: "Show patterns due for review using spaced repetition"
-     - Label: "Deep analysis"
-       Description: "Launch memory-analyzer agent for detailed insights"
-     - Label: "Exit"
-       Description: "Close memory dashboard"
+       Description: "Identify patterns ready to become skills or agents"
+     - Label: "Review pattern quality"
+       Description: "Assess usefulness of patterns scheduled for review"
 
 4. **Execute Based on Selection**
 
    **If "View top patterns":**
-   - Read `{pwd}/.claude/as_you/pattern_tracker.json`
-   - Sort patterns by `composite_score` (descending)
-   - Display top 10 patterns with:
-     - Pattern text
-     - Composite score
-     - BM25 score
-     - Ebbinghaus score (memory strength)
-     - Shannon Entropy score (diversity)
-     - Count (frequency)
-     - Last seen date
-   - Return to step 3
-
-   **If "Analyze confidence":**
-   - Read `{pwd}/.claude/as_you/pattern_tracker.json`
-   - For patterns with Bayesian state:
-     - Calculate confidence score
-     - Show mean, variance, std_dev
-     - Show 95% confidence interval
-   - Group by confidence level:
-     - High: mean > 0.7
-     - Medium: 0.4 ≤ mean ≤ 0.7
-     - Low: mean < 0.4
-   - Display summary and examples from each group
+   - Check if .claude/as_you/pattern_tracker.json exists
+   - If NOT exist: Display setup instructions, return to step 3
+   - Read .claude/as_you/pattern_tracker.json and sort by composite_score (descending)
+   - Display top 10 patterns with: text, composite/BM25/Ebbinghaus/Shannon scores, count, last seen
    - Return to step 3
 
    **If "Review promotion candidates":**
-   - Execute:
-     ```bash
-     export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
-     python3 -m as_you.commands.promotion_analyzer
-     ```
-   - Display candidates sorted by composite score
-   - For each candidate show:
-     - Pattern text
-     - Composite score
-     - Confidence (Bayesian mean)
-     - Frequency count
-     - Suggested category (skill/agent)
-   - Show message: "High scores + high confidence = ready for promotion"
-   - Ask if user wants to promote:
-     - If yes: Guide to `/as-you:promote` command
-     - If no: Return to step 3
+   - Check if .claude/as_you/pattern_tracker.json exists
+   - If NOT exist: Display initialization message, return to step 3
+   - Use `promotion_analyzer` module to get candidates
+   - Display candidates with: text, composite score, confidence, frequency, category
+   - Show: "High scores + high confidence = ready for promotion"
+   - If user wants to promote: Guide to `/as-you:promote` command
+   - Return to step 3
 
-   **If "Detect similar patterns":**
-   - Execute:
+   **If "Review pattern quality":**
+   - Check if .claude/as_you/pattern_tracker.json exists
+   - If NOT exist: Display setup instructions, return to step 3
+   - Execute with Bash tool to find due patterns:
      ```bash
      export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
-     python3 -m as_you.commands.similarity_detector
+     python3 -m as_you.commands.pattern_review find-due
      ```
-   - Display similar pattern pairs with:
-     - Levenshtein distance
-     - BK-tree detection results
-     - Similarity score
-   - Ask if user wants to merge:
-     - If yes:
-       - Execute:
+   - If output shows "0 patterns due":
+     - Display: "No patterns due yet. SM-2 schedules reviews at optimal intervals."
+     - Show next 5 upcoming review dates from pattern_tracker.json
+     - Return to step 3
+   - If patterns due:
+     - Display SM-2 quality scale:
+       ```
+       # Pattern Quality Assessment
+
+       SM-2 schedules pattern reviews to maintain knowledge quality.
+       Rate each pattern's usefulness and accuracy (0-5):
+
+       5 - Excellent: Very useful, accurate, would use again
+       4 - Good: Useful and accurate
+       3 - Adequate: Still useful (minimum to keep)
+       2 - Poor: Outdated or inaccurate information
+       1 - Very Poor: Rarely useful
+       0 - Obsolete: Completely wrong or irrelevant
+
+       Note: Quality < 3 resets review interval to 1 day for re-evaluation.
+       Quality ≥ 3 extends the interval based on your confidence.
+       ```
+     - For each pattern (max 10):
+       - Read .claude/as_you/pattern_tracker.json and find pattern details
+       - Display: pattern text, usage count, current SM-2 state (interval/repetitions/EF)
+       - Ask quality rating (0-5) using AskUserQuestion:
+         - Question: "How useful and accurate is this pattern? (Use Other for 0-1)"
+         - Header: "Quality"
+         - Options:
+           - "5 - Excellent" / Description: "Very useful, accurate, would use again"
+           - "4 - Good" / Description: "Useful and accurate"
+           - "3 - Adequate" / Description: "Still useful (minimum to keep)"
+           - "2 - Poor" / Description: "Outdated or inaccurate information"
+         - Note: If quality is 0 (Obsolete) or 1 (Very poor), select "Other" and enter the number
+       - Execute with Bash tool to apply feedback:
          ```bash
          export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
-         python3 -m as_you.hooks.pattern_merger
+         python3 -m as_you.commands.pattern_review apply-feedback "<pattern-text>" <quality>
          ```
-       - Show merge results
-     - If no: Return to step 3
-   - Return to step 3
+         Replace `<pattern-text>` with the exact pattern text and `<quality>` with user's rating (0-5).
+       - Parse output and display result:
+         - If "✓ Updated": Extract and show "next review in X days (EF: X.XX)"
+         - If "✗ Error": Show error and continue to next pattern
+     - After review session:
+       - Display summary: reviewed count, successful/failed counts
+       - Return to step 3
 
-   **If "Memory review (SM-2)":**
-   - Read `{pwd}/.claude/as_you/pattern_tracker.json`
-   - For patterns with SM-2 state:
-     - Calculate if review is due (interval elapsed)
-     - Show patterns ordered by:
-       1. Overdue (days past due)
-       2. Due today
-       3. Due soon (next 7 days)
-   - For each pattern show:
-     - Pattern text
-     - Easiness factor
-     - Current interval (days)
-     - Repetitions count
-     - Next review date
-   - Explain: "Review helps strengthen memory. Patterns you use successfully get longer intervals."
-   - Return to step 3
+   **If "Analyze active edits":**
+   - Read .claude/as_you/active_learning.json and count edits where `semantic_patterns` is null
+   - If count == 0: Display "All edits analyzed", return to step 3
+   - If count > 0:
+     - Launch `as-you:code-pattern-analyzer` agent via Task tool
+     - Agent analyzes edits and classifies semantic patterns
+     - Display summary: total analyzed, pattern distribution
+     - Return to step 3
 
    **If "Deep analysis":**
-   - Launch memory-analyzer agent using Task tool:
-     ```
-     subagent_type: "as-you:memory-analyzer"
-     prompt: "Analyze pattern_tracker.json using v0.3.0 scoring (BM25, Ebbinghaus, Shannon Entropy, composite scores, Bayesian confidence, Thompson Sampling). Provide detailed insights on:
-     1. High-value patterns (composite score > 0.7)
-     2. Patterns with high uncertainty (Bayesian variance > 0.1)
-     3. General-purpose vs specialized patterns (Shannon Entropy)
-     4. Patterns with strong memory (Ebbinghaus score)
-     5. Promotion recommendations with reasoning
-     6. Potential pattern merges
-
-     Working directory: {pwd} (use absolute paths)"
-     description: "Deep memory analysis"
-     ```
-   - Summarize agent output focusing on:
-     - High-value patterns (score > 0.7)
-     - Pattern stability (Bayesian variance)
-     - General vs specialized patterns (Shannon Entropy)
-     - Memory strength (Ebbinghaus score)
-     - Promotion recommendations (Tier 1/2/3)
-     - Pattern merge candidates
-     - Noise patterns (score < 0.3)
-   - Present action-oriented menu using AskUserQuestion (step 4)
+   - Check if .claude/as_you/pattern_tracker.json exists
+   - If NOT exist: Display "No pattern data available", return to step 3
+   - If exists:
+     - Launch `as-you:memory-analyzer` agent via Task tool
+     - Agent analyzes using BM25, Ebbinghaus, Shannon Entropy, Bayesian confidence
+     - Summarize: high-value patterns, uncertainty, general vs specialized, promotion recommendations
+     - Present action-oriented menu (step 4)
 
    **If "Exit":**
    - Respond: "Done"
 
-4. **Present Action-Oriented Menu** (Step 4 - after Deep Analysis)
+4. **Action Menu** (after Deep Analysis)
 
-   Using AskUserQuestion:
-   - Question: "What would you like to do next?"
-   - Header: "Next"
-   - multiSelect: false
-   - Options:
-     - Label: "Merge patterns"
-       Description: "Consolidate duplicate patterns to reduce noise"
-     - Label: "Consider skill creation"
-       Description: "Create skills recommended by analysis"
-     - Label: "Consider agent creation"
-       Description: "Create agents recommended by analysis"
-     - Label: "Exit"
-       Description: "Close memory dashboard"
+   Ask: "What would you like to do next?" (Merge patterns / Consider skill creation / Consider agent creation / Exit)
 
-5. **Execute Based on Step 4 Selection**
+5. **Execute Action**
 
    **If "Merge patterns":**
-   - Read pattern_tracker.json and identify merge candidates from analysis
-   - For each merge candidate group:
-     - Show patterns and co-occurrence count
-     - Ask if user wants to merge
-   - If yes:
-     - Execute:
-       ```bash
-       export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
-       python3 -m as_you.hooks.pattern_merger
-       ```
-     - Show merge results
+   - Identify merge candidates from analysis
+   - Show patterns and co-occurrence count
+   - Use `pattern_merger` module to merge if confirmed
    - Return to step 3
 
    **If "Consider skill creation":**
-   - Display Tier 1 promotion recommendations from analysis
-   - Show pattern group, combined occurrences, suggested skill name
-   - Ask if user wants to proceed with skill creation
-   - If yes:
-     1. Generate skill content based on analysis:
-        - Title: Pattern group name
-        - Overview: Combined patterns summary
-        - When to Use: Contexts from pattern occurrences
-        - Guidelines: Evidence-based best practices
-        - Examples: Concrete use cases from pattern history
-        - Best Practices: Key recommendations
-     2. Write content to temporary file:
-        ```bash
-        cat > /tmp/skill_content.md <<'EOF'
-        # Generated skill content here
-        EOF
-        ```
-     3. Create skill using skill_creator.py:
-        ```bash
-        export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
-        python3 -m as_you.commands.skill_creator \
-          "{skill-name}" \
-          "{description}" \
-          "$(cat /tmp/skill_content.md)" \
-          "fork" \
-          "Read,Bash,Glob"
-        ```
-     4. Display result and skill location
-     5. Clean up temporary file: `rm /tmp/skill_content.md`
-   - If no: Return to step 3
+   - Display Tier 1 promotion recommendations
+   - Generate skill content from patterns: title, overview, guidelines, examples
+   - Use `skill_creator` module to create skill
+   - Return to step 3
 
    **If "Consider agent creation":**
-   - Display Tier 2 promotion recommendations from analysis
-   - Show pattern group, PMI scores, suggested agent name
-   - Guide user to create agent file:
-     - Agent location: `agents/{agent-name}.md`
-     - Include workflow patterns and automation logic
-     - Reference promotion recommendations
-   - Ask if user wants to proceed:
-     - If yes: Guide through agent creation
-     - If no: Return to step 3
+   - Display Tier 2 promotion recommendations
+   - Guide user to create agent file at `agents/{name}.md`
+   - Return to step 3
 
    **If "Exit":**
    - Respond: "Done"
