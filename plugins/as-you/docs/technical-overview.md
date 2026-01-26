@@ -1,7 +1,5 @@
 # As You - Technical Documentation
 
-**Version:** 0.3.0
-
 This document provides detailed technical information about the As You plugin's architecture, algorithms, configuration, and data structures.
 
 ---
@@ -105,7 +103,7 @@ Patterns are automatically extracted from your session notes using statistical i
 /as-you:learn            # Learning dashboard (interactive)
 
 # Memory (pattern analysis + confidence tracking)
-/as-you:memory           # Memory dashboard with v0.3.0 scoring
+/as-you:memory           # Memory dashboard with pattern analysis
 
 # Apply (workflows + pattern context)
 /as-you:apply "name"     # Save workflow
@@ -119,7 +117,7 @@ Patterns are automatically extracted from your session notes using statistical i
 
 ## Statistical Intelligence
 
-### v0.3.0 Scoring System
+### Scoring System
 
 The plugin uses multiple statistical approaches to identify and prioritize patterns:
 
@@ -133,13 +131,21 @@ $$\text{BM25}(d, q) = \sum_{t \in q} \text{IDF}(t) \cdot \frac{f(t, d) \cdot (k_
 - $k_1 = 1.5$: term frequency saturation
 - $b = 0.75$: length normalization
 
-#### Time Decay
+#### Ebbinghaus Forgetting Curve
 
-Prioritizes recent patterns with exponential decay:
+Models memory decay with repetition-based strengthening:
 
-$$\text{score}(t) = \text{base score} \cdot e^{-\lambda \cdot \Delta t}$$
+$$R(t) = e^{-t/s}$$
 
-where $\lambda = \frac{\ln 2}{\text{half life}}$ and half-life defaults to 30 days.
+where:
+- $t$: time elapsed since last seen (days)
+- $s$: memory strength = base_strength + (growth_factor × repetition_count)
+- $R(t)$: retention rate at time $t$
+
+**Key properties:**
+- Repeated patterns have higher $s$ → slower decay
+- Single occurrences decay faster
+- Based on Ebbinghaus (1885) forgetting curve research
 
 #### Bayesian Confidence
 
@@ -172,7 +178,7 @@ $$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
 - **Default weights**:
   - BM25: 40% (relevance)
   - PMI: 30% (co-occurrence)
-  - Time Decay: 30% (recency)
+  - Ebbinghaus: 30% (memory strength)
 - **Configurable**: Adjust in `config/as-you.json`
 
 ### Pattern Management
@@ -204,15 +210,20 @@ $$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
     },
     "time_decay": {
       "enabled": true,
-      "half_life_days": 30  // Adjust for faster/slower decay
+      "half_life_days": 30  // Legacy: exponential decay parameter
     },
     "weights": {
       "bm25": 0.4,          // Relevance weight
       "pmi": 0.3,           // Co-occurrence weight
-      "time_decay": 0.3     // Recency weight
+      "ebbinghaus": 0.3     // Memory strength weight
     }
   },
   "memory": {
+    "ebbinghaus": {
+      "enabled": true,
+      "base_strength": 1.0,     // Base memory strength (days)
+      "growth_factor": 0.5      // Strength increase per repetition
+    },
     "sm2": {
       "enabled": true,
       "initial_easiness": 2.5,
@@ -242,12 +253,16 @@ $$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
 ### Tuning Tips
 
 **Increase recent pattern importance:**
-- Lower `half_life_days` (e.g., 15)
-- Increase `time_decay` weight (e.g., 0.4)
+- Lower `base_strength` (e.g., 0.5)
+- Increase `ebbinghaus` weight (e.g., 0.4)
 
-**Prioritize relevance over recency:**
+**Prioritize relevance over memory strength:**
 - Increase `bm25` weight (e.g., 0.5)
-- Decrease `time_decay` weight (e.g., 0.2)
+- Decrease `ebbinghaus` weight (e.g., 0.2)
+
+**Strengthen repetition effect:**
+- Increase `growth_factor` (e.g., 1.0)
+- Patterns gain memory strength faster with repetition
 
 **More aggressive promotion:**
 - Lower `threshold` (e.g., 0.2)
@@ -278,7 +293,7 @@ $$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
 └── skill-usage-stats.json          # Knowledge base metrics
 ```
 
-**Pattern Tracker Schema (v0.3.0):**
+**Pattern Tracker Schema:**
 ```json
 {
   "patterns": {
@@ -287,7 +302,7 @@ $$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
       "last_seen": "2026-01-22",
       "bm25_score": 0.842,
       "pmi_score": 0.651,
-      "time_decay_score": 0.945,
+      "ebbinghaus_score": 0.945,
       "composite_score": 0.812,
       "bayesian_state": {
         "mean": 0.75,
@@ -312,9 +327,13 @@ $$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
 ### Algorithms
 
 - **BM25**: Robertson & Zaragoza (2009). "The Probabilistic Relevance Framework: BM25 and Beyond"
+- **PMI (Pointwise Mutual Information)**: Church & Hanks (1990). "Word Association Norms, Mutual Information, and Lexicography"
+- **Ebbinghaus Forgetting Curve**: Ebbinghaus (1885). "Memory: A Contribution to Experimental Psychology"; Murre & Dros (2015). "Replication and Analysis of Ebbinghaus' Forgetting Curve"
 - **SM-2**: Wozniak (1990). "Optimization of Learning" - SuperMemo algorithm
 - **Bayesian Inference**: Bishop (2006). "Pattern Recognition and Machine Learning"
 - **Thompson Sampling**: Agrawal & Goyal (2012). "Analysis of Thompson Sampling for the Multi-armed Bandit Problem"
+- **Levenshtein Distance**: Levenshtein (1966). "Binary codes capable of correcting deletions, insertions, and reversals"
+- **BK-tree**: Burkhard & Keller (1973). "Some approaches to best-match file searching"
 
 ### Implementation
 
