@@ -109,6 +109,11 @@ Patterns are automatically extracted from your session notes using statistical i
 /as-you:apply "name"     # Save workflow
 /as-you:apply            # Use patterns and workflows (interactive)
 
+# Active Learning (automatic capture)
+/as-you:active on        # Enable automatic prompt and edit capture
+/as-you:active off       # Disable automatic capture
+/as-you:active status    # Show current status and statistics
+
 # Help
 /as-you:help             # Show detailed documentation
 ```
@@ -221,10 +226,6 @@ $$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
       "min_cooccurrence": 2,
       "window_size": 5
     },
-    "time_decay": {
-      "enabled": true,
-      "half_life_days": 30  // Legacy: exponential decay parameter
-    },
     "weights": {
       "bm25": 0.4,          // Relevance weight
       "pmi": 0.3,           // Co-occurrence weight
@@ -255,6 +256,29 @@ $$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
       "initial_beta": 1.0
     }
   },
+  "diversity": {
+    "shannon_entropy": {
+      "enabled": true,
+      "context_keys": ["sessions"],     // Contexts to track
+      "aggregation": "mean",            // Aggregation method
+      "max_contexts": 10                // Maximum contexts to consider
+    }
+  },
+  "categories": [
+    "preference",    // User preferences and choices
+    "style",         // Coding style and conventions
+    "process",       // Development processes
+    "decision",      // Technical decisions
+    "observation",   // General observations
+    "workflow"       // Work procedures
+  ],
+  "habits": {
+    "deduplication_threshold": 0.9,    // Similarity threshold for duplicates
+    "clustering_threshold": 0.85,      // Threshold for grouping similar notes
+    "min_confidence": 0.5,             // Minimum confidence for habit extraction
+    "min_freshness": 0.3,              // Minimum freshness score
+    "freshness_half_life_days": 30     // Days for freshness to decay to 0.5
+  },
   "promotion": {
     "threshold": 0.3,         // Minimum composite score
     "min_observations": 3,    // Minimum frequency
@@ -262,6 +286,51 @@ $$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
   }
 }
 ```
+
+### Configuration Sections Explained
+
+#### Diversity Tracking
+
+Measures pattern diversity using Shannon entropy to avoid redundant information:
+
+- **shannon_entropy.enabled**: Enable diversity scoring
+- **context_keys**: Which contexts to analyze (e.g., "sessions", "files")
+- **aggregation**: How to combine entropy values ("mean", "max", "min")
+- **max_contexts**: Maximum number of contexts to track (limits memory usage)
+
+**Use case**: Prevents presenting too many similar patterns; encourages exploration of diverse knowledge areas.
+
+#### Categories
+
+Predefined classification system for organizing notes and patterns:
+
+- **preference**: User's stated preferences and choices
+- **style**: Coding style, formatting, naming conventions
+- **process**: Development workflows and methodologies
+- **decision**: Technical architecture and design decisions
+- **observation**: General insights and learnings
+- **workflow**: Specific action sequences and procedures
+
+**Use case**: Enables semantic organization and filtering of patterns by type.
+
+#### Habits
+
+Configuration for extracting recurring behavioral patterns:
+
+- **deduplication_threshold**: Similarity score (0-1) above which notes are considered duplicates
+  - Higher value (e.g., 0.95) = more strict, only near-exact matches
+  - Lower value (e.g., 0.8) = more lenient, catches variations
+- **clustering_threshold**: Minimum similarity for grouping related notes
+  - Used to identify patterns that co-occur frequently
+- **min_confidence**: Minimum confidence score (0-1) to extract as habit
+  - Higher value requires more evidence before establishing a pattern
+- **min_freshness**: Minimum freshness score (0-1) for inclusion
+  - Filters out patterns that haven't been used recently
+- **freshness_half_life_days**: Days for freshness score to decay to 0.5
+  - Implements exponential decay: score = 2^(-days / half_life)
+  - Shorter half-life prioritizes recent activity
+
+**Use case**: Automatically identifies recurring practices and preferences from your development history.
 
 ### Tuning Tips
 
@@ -285,6 +354,16 @@ $$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
 - Raise `threshold` (e.g., 0.4)
 - Raise `min_confidence` (e.g., 0.7)
 
+**Adjust habit extraction sensitivity:**
+- Lower `deduplication_threshold` (e.g., 0.8) for stricter duplicate detection
+- Raise `clustering_threshold` (e.g., 0.9) for tighter grouping of similar notes
+- Adjust `min_confidence` (e.g., 0.7) to require higher certainty for habit extraction
+
+**Control pattern freshness decay:**
+- Increase `freshness_half_life_days` (e.g., 60) to keep patterns relevant longer
+- Decrease (e.g., 15) to prioritize very recent patterns
+- Raise `min_freshness` (e.g., 0.5) to filter out older patterns more aggressively
+
 ---
 
 ## Data Storage
@@ -294,6 +373,9 @@ $$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
 See `/as-you:help` for file descriptions. Explore the directory for actual structure.
 
 **Pattern Tracker Schema:**
+
+> **Note**: Schema shown for reference; implementation may evolve. Field names and structure are subject to change in future versions.
+
 ```json
 {
   "patterns": {
