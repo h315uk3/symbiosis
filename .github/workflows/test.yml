@@ -67,6 +67,9 @@ jobs:
       - name: Run linter (ruff)
         run: mise run lint
 
+      - name: Run type checker (pyright)
+        run: mise run typecheck
+
       - name: Run Python doctests (213 tests)
         run: mise run test
 
