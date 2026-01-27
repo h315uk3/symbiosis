@@ -189,7 +189,11 @@ def calculate_time_decay_scores(
         True
     """
     if half_life_days is None:
-        config_value = DEFAULT_SETTINGS.get("scoring", {}).get("time_decay", {}).get("half_life_days", 30.0)
+        config_value = (
+            DEFAULT_SETTINGS.get("scoring", {})
+            .get("time_decay", {})
+            .get("half_life_days", 30.0)
+        )
         half_life_days = float(config_value) if config_value is not None else 30.0
 
     if current is None:

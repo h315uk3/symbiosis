@@ -46,7 +46,9 @@ def save_active_learning_data(claude_dir: Path, data: dict) -> None:
     """
     data_file = claude_dir / "as_you" / "active_learning.json"
     data_file.parent.mkdir(parents=True, exist_ok=True)
-    data_file.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    data_file.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
 
 def extract_keywords_from_prompts(prompts: list[dict]) -> Counter[str]:

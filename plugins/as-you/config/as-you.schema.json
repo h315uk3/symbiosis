@@ -4,7 +4,7 @@
   "title": "As-You Configuration Schema",
   "description": "Configuration schema for as-you plugin v2",
   "type": "object",
-  "required": ["version", "scoring", "memory", "confidence", "promotion", "categories"],
+  "required": ["version", "scoring", "memory", "confidence", "diversity", "promotion", "categories", "habits"],
   "properties": {
     "version": {
       "type": "integer",
@@ -13,7 +13,7 @@
     },
     "scoring": {
       "type": "object",
-      "required": ["bm25", "pmi", "time_decay", "weights"],
+      "required": ["bm25", "pmi", "weights"],
       "properties": {
         "bm25": {
           "type": "object",
@@ -59,25 +59,9 @@
             }
           }
         },
-        "time_decay": {
-          "type": "object",
-          "required": ["enabled", "half_life_days"],
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "description": "Enable time decay"
-            },
-            "half_life_days": {
-              "type": "integer",
-              "minimum": 7,
-              "maximum": 180,
-              "description": "Half-life for time decay in days"
-            }
-          }
-        },
         "weights": {
           "type": "object",
-          "required": ["bm25", "pmi", "time_decay"],
+          "required": ["bm25", "pmi", "ebbinghaus"],
           "properties": {
             "bm25": {
               "type": "number",
@@ -91,11 +75,11 @@
               "maximum": 1.0,
               "description": "Weight for PMI score"
             },
-            "time_decay": {
+            "ebbinghaus": {
               "type": "number",
               "minimum": 0.0,
               "maximum": 1.0,
-              "description": "Weight for time decay"
+              "description": "Weight for Ebbinghaus memory strength"
             }
           }
         }
@@ -103,8 +87,30 @@
     },
     "memory": {
       "type": "object",
-      "required": ["sm2"],
+      "required": ["ebbinghaus", "sm2"],
       "properties": {
+        "ebbinghaus": {
+          "type": "object",
+          "required": ["enabled", "base_strength", "growth_factor"],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable Ebbinghaus forgetting curve model"
+            },
+            "base_strength": {
+              "type": "number",
+              "minimum": 0.1,
+              "maximum": 10.0,
+              "description": "Base memory strength in days"
+            },
+            "growth_factor": {
+              "type": "number",
+              "minimum": 0.1,
+              "maximum": 2.0,
+              "description": "Strength increase per repetition"
+            }
+          }
+        },
         "sm2": {
           "type": "object",
           "required": ["enabled", "initial_easiness", "min_easiness"],
@@ -179,6 +185,41 @@
         }
       }
     },
+    "diversity": {
+      "type": "object",
+      "required": ["shannon_entropy"],
+      "properties": {
+        "shannon_entropy": {
+          "type": "object",
+          "required": ["enabled", "context_keys", "aggregation", "max_contexts"],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable Shannon entropy diversity tracking"
+            },
+            "context_keys": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "description": "Context dimensions to track (e.g., sessions, files)"
+            },
+            "aggregation": {
+              "type": "string",
+              "enum": ["mean", "max", "min", "sum"],
+              "description": "Method to aggregate entropy across contexts"
+            },
+            "max_contexts": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Maximum number of contexts to track"
+            }
+          }
+        }
+      }
+    },
     "promotion": {
       "type": "object",
       "required": ["threshold", "min_observations", "min_confidence"],
@@ -212,6 +253,42 @@
       "minItems": 1,
       "uniqueItems": true,
       "description": "Learning pattern categories"
+    },
+    "habits": {
+      "type": "object",
+      "required": ["deduplication_threshold", "clustering_threshold", "min_confidence", "min_freshness", "freshness_half_life_days"],
+      "properties": {
+        "deduplication_threshold": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Similarity threshold for duplicate detection"
+        },
+        "clustering_threshold": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Threshold for grouping similar notes"
+        },
+        "min_confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Minimum confidence for habit extraction"
+        },
+        "min_freshness": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Minimum freshness score for inclusion"
+        },
+        "freshness_half_life_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365,
+          "description": "Days for freshness to decay to 0.5"
+        }
+      }
     }
   }
 }

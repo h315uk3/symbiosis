@@ -34,7 +34,7 @@ This plugin uses **persistent session state** rather than stateless API calls. T
 
 1. **Progressive Accumulation**: Each question builds on previous answers, requiring full conversation history
 2. **Session Resumption**: Users can pause and resume requirement elicitation across multiple Claude Code sessions
-3. **Token Efficiency**: Avoids re-transmitting entire belief state on every API call (CLI stores state in `.claude/with_me/sessions/`)
+3. **Token Efficiency**: Avoids re-transmitting entire belief state on every API call (CLI stores session state locally)
 4. **Audit Trail**: Complete question history preserved for requirement specification generation and debugging
 5. **Convergence Detection**: Tracks entropy trends over time to detect when sufficient clarity is achieved
 
@@ -185,6 +185,8 @@ The system validates all LLM-generated likelihood values to ensure numerical sta
 - **Normalization**: All likelihoods automatically normalized to sum=1.0
 - **Negative Clamping**: Negative values clamped to 0.0
 - **Uniform Fallback**: If all likelihoods are zero, falls back to uniform distribution
+
+> **Implementation**: See `with_me.lib.dimension_belief` and `with_me.lib.session_orchestrator` modules for likelihood validation and normalization logic.
 
 **Adjust thresholds based on**:
 - **Domain complexity**: More complex domains may need lower convergence thresholds

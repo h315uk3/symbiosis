@@ -32,9 +32,13 @@ Claude: Question 3: What's the main user goal?
 
 You: Complete checkout quickly
 
-Claude: Got it. Let's build a customer-facing application focused on 
+Claude: Got it. Let's build a customer-facing application focused on
 fast checkout. Ready to start implementation?
+
+[Claude then generates a structured requirement specification]
 ```
+
+> **After convergence**: Claude automatically generates a structured requirement specification including acceptance criteria, edge cases, and implementation guidance.
 
 ---
 

@@ -38,6 +38,16 @@ for the API key, following your established pattern.
 
 ---
 
+## Available Commands
+
+- **`/as-you:learn`** - Add notes and build knowledge from your development sessions
+- **`/as-you:memory`** - Analyze patterns, review quality, and manage your knowledge base
+- **`/as-you:apply`** - Get pattern context or save workflows for reuse
+- **`/as-you:active`** - Toggle automatic capture of prompts and file edits
+- **`/as-you:help`** - Show detailed usage documentation
+
+---
+
 ## Documentation
 
 - **[Technical Overview](./docs/technical-overview.md)** - Algorithms, configuration, data structures, and development guide
