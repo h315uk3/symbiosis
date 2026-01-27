@@ -61,6 +61,9 @@ jobs:
       - name: Install dependencies with mise
         run: mise install
 
+      - name: Check code formatting (ruff)
+        run: mise run format --check
+
       - name: Run linter (ruff)
         run: mise run lint
 
