@@ -44,10 +44,15 @@
 ## Workflow
 
 ```bash
-mise install    # Setup
-mise run test   # Doctests
-mise run lint   # Quality check
+mise install        # Setup
+mise run test       # Doctests
+mise run lint       # Lint (ruff check)
+mise run typecheck  # Type check (pyright)
+mise run format:check  # Format check
+mise run validate   # Plugin config validation
 ```
+
+**Before committing**: Run `mise run test && mise run lint && mise run typecheck`
 
 **Git**: `feature/`, `fix/`, `docs/` branches. Descriptive commits, reference issues.
 

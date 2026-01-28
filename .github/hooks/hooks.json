@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "bash": "echo '=== Available Commands ===' && echo 'mise run test        # Run doctests' && echo 'mise run lint        # Lint (ruff check)' && echo 'mise run typecheck   # Type check (pyright)' && echo 'mise run format      # Format (ruff format)' && echo 'mise run format:check # Check formatting' && echo 'mise run validate    # Validate plugin config'"
+      }
+    ],
+    "postToolUse": [
+      {
+        "tools": ["editFile"],
+        "bash": "mise run format 2>/dev/null || true && mise run lint 2>/dev/null || true && mise run typecheck 2>/dev/null || true"
+      }
+    ]
+  }
+}
