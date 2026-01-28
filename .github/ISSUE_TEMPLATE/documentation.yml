@@ -1,0 +1,45 @@
+name: Documentation
+description: Report documentation issues or suggest improvements
+labels: [documentation]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us improve our documentation!
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      description: What kind of documentation issue is this?
+      options:
+        - Missing documentation
+        - Incorrect documentation
+        - Unclear documentation
+        - Typo or grammar
+        - Suggestion for improvement
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Location
+      description: Where is this documentation located?
+      placeholder: e.g., README.md, plugins/as-you/docs/technical-overview.md
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the issue or improvement.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Change
+      description: If you have a specific suggestion, please describe it here.
