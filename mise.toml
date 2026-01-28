@@ -5,6 +5,10 @@ python = "3.13.11"    # Python 3.11+ required (using latest stable)
 ruff = "0.14.10"      # Python linter and formatter
 "npm:pyright" = "1.1.408"  # Python type checker (Pylance CLI)
 
+# ==============================================================================
+# Development Tasks (Daily use)
+# ==============================================================================
+
 [tasks.test]
 description = "Run all Python doctests"
 run = "python3 tests/run_doctests.py"
@@ -46,16 +50,224 @@ run = "ruff format --check plugins/*/as_you plugins/*/with_me"
 description = "Validate plugin configuration files"
 run = "python3 tests/validate_plugins.py"
 
-[tasks."scoring:calculate"]
-description = "Calculate all scores (TF-IDF, PMI, time decay, composite)"
-env = { PYTHONPATH = "{{config_root}}/plugins/as-you" }
-run = "python3 -m as_you.lib.score_calculator"
+# ==============================================================================
+# E2E Test Tasks (Manual testing verification)
+# ==============================================================================
 
-# Note: Individual scoring tasks (tfidf, pmi, decay, composite) have been unified
-# into a single Python implementation (score_calculator.py)
-#
-# Other scoring and pattern tasks are available as slash commands:
-#   /as-you:show-scores
-#   /as-you:detect-similar-patterns
-#   /as-you:merge-patterns
-#   (pattern promotion is automatically executed by promote commands)
+[tasks."test:e2e:verify:session"]
+description = "[E2E] Verify with-me session file structure (latest session)"
+run = """
+session_file=$(ls -t .claude/with_me/sessions/*.json 2>/dev/null | head -1)
+if [ -z "$session_file" ]; then
+  echo "No session files found"
+  exit 1
+fi
+python3 -c "
+import json, sys
+data = json.load(open('$session_file'))
+print(f'Session ID: {data.get(\"session_id\", \"N/A\")}')
+print(f'Questions: {data.get(\"question_count\", 0)}')
+print(f'Completed: {data.get(\"completed\", False)}')
+print(f'Fields: {list(data.keys())}')
+
+# Check beliefs
+beliefs = data.get('beliefs', [])
+print(f'\\nBelief dimensions: {len(beliefs)}')
+if beliefs:
+    print(f'Belief fields: {list(beliefs[0].keys())}')
+
+# Check question history
+history = data.get('question_history', [])
+print(f'Question history entries: {len(history)}')
+if history:
+    print(f'Question entry fields: {list(history[0].keys())}')
+
+# Check summary
+summary = data.get('summary', {})
+if summary:
+    print(f'Summary: total_info_gain={summary.get(\"total_info_gain\", 0):.2f} bits')
+"
+"""
+
+[tasks."test:e2e:verify:session:contradictions"]
+description = "[E2E] Check for contradictory answers (negative information gain)"
+run = """
+session_file=$(ls -t .claude/with_me/sessions/*.json 2>/dev/null | head -1)
+if [ -z "$session_file" ]; then
+  echo "No session files found"
+  exit 1
+fi
+python3 -c "
+import json
+data = json.load(open('$session_file'))
+contradictions = []
+for q in data.get('question_history', []):
+    if q.get('information_gain', 0) < 0:
+        contradictions.append({
+            'ig': q.get('information_gain'),
+            'question': q.get('question', 'unknown')[:50]
+        })
+
+if contradictions:
+    print(f'Found {len(contradictions)} contradictory answer(s):')
+    for c in contradictions:
+        print(f\"  IG: {c['ig']:.3f} bits\")
+        print(f\"  Q: {c['question']}...\")
+else:
+    print('No contradictions detected (all IG >= 0)')
+"
+"""
+
+[tasks."test:e2e:verify:patterns"]
+description = "[E2E] Verify pattern_tracker.json structure"
+run = """
+if [ ! -f .claude/as_you/pattern_tracker.json ]; then
+  echo "pattern_tracker.json not found"
+  exit 1
+fi
+python3 -c "
+import json
+data = json.load(open('.claude/as_you/pattern_tracker.json'))
+patterns = data.get('patterns', {})
+
+print(f'Total patterns: {len(patterns)}')
+if patterns:
+    pattern_text, pattern_data = list(patterns.items())[0]
+    print(f'\\nSample pattern: {pattern_text[:60]}...')
+    print(f'\\nPattern metadata:')
+    for key, value in pattern_data.items():
+        if key == 'sm2_state' and value:
+            print(f'  {key}:')
+            for sk, sv in value.items():
+                print(f'    {sk}: {sv}')
+        else:
+            print(f'  {key}: {value}')
+
+    # Validate required fields
+    required = ['count', 'last_seen', 'composite_score']
+    missing = [f for f in required if f not in pattern_data]
+    if missing:
+        print(f'\\nMISSING REQUIRED FIELDS: {missing}')
+        exit(1)
+    else:
+        print(f'\\n✓ All required fields present')
+"
+"""
+
+[tasks."test:e2e:verify:active"]
+description = "[E2E] Verify active_learning.json structure"
+run = """
+if [ ! -f .claude/as_you/active_learning.json ]; then
+  echo "active_learning.json not found"
+  exit 1
+fi
+python3 -c "
+import json
+data = json.load(open('.claude/as_you/active_learning.json'))
+prompts = data.get('prompts', [])
+print(f'Prompts captured: {len(prompts)}')
+if prompts:
+    print(f'Latest prompt fields: {list(prompts[-1].keys())}')
+print(f'\\nTop-level fields: {list(data.keys())}')
+"
+"""
+
+[tasks."test:e2e:verify:workflow"]
+description = "[E2E] Verify workflow file structure (requires WORKFLOW_FILE env var)"
+run = """
+if [ -z "$WORKFLOW_FILE" ]; then
+  echo "Error: Set WORKFLOW_FILE environment variable"
+  echo "Example: WORKFLOW_FILE=.claude/as_you/workflows/test.md mise run test:e2e:verify:workflow"
+  exit 1
+fi
+if [ ! -f "$WORKFLOW_FILE" ]; then
+  echo "Workflow file not found: $WORKFLOW_FILE"
+  exit 1
+fi
+python3 -c "
+import re, sys
+
+content = open('$WORKFLOW_FILE').read()
+
+# Check YAML frontmatter
+if not content.startswith('---'):
+    print('ERROR: Missing YAML frontmatter')
+    sys.exit(1)
+
+frontmatter = content.split('---', 2)[1]
+print('YAML frontmatter:')
+for line in frontmatter.strip().split('\\n'):
+    print(f'  {line}')
+
+# Check required fields
+required = ['description:', 'created:', 'usage_count:', 'last_used:']
+missing = [f for f in required if f not in frontmatter]
+if missing:
+    print(f'\\nMISSING FIELDS: {missing}')
+    sys.exit(1)
+
+# Check markdown structure
+body = content.split('---', 2)[2]
+if not re.search(r'^# ', body, re.MULTILINE):
+    print('\\nWARNING: No top-level heading found')
+if not re.search(r'^## Steps', body, re.MULTILINE):
+    print('\\nWARNING: No ## Steps section found')
+
+print('\\n✓ Workflow structure valid')
+"
+"""
+
+[tasks."test:e2e:verify:sm2-review"]
+description = "[E2E] Show SM-2 review summary"
+env = { PYTHONPATH = "{{config_root}}/plugins/as-you" }
+run = "python3 -m as_you.commands.pattern_review summary"
+
+[tasks."test:e2e:setup:sm2-pattern"]
+description = "[E2E] Create test pattern with SM-2 review due"
+env = { PYTHONPATH = "{{config_root}}/plugins/as-you" }
+run = """
+python3 -c "
+import json
+from datetime import datetime, timedelta
+from pathlib import Path
+
+tracker_file = Path('.claude/as_you/pattern_tracker.json')
+tracker = json.loads(tracker_file.read_text()) if tracker_file.exists() else {'patterns': {}}
+
+tracker['patterns']['Test pattern for review'] = {
+    'count': 5,
+    'last_seen': (datetime.now() - timedelta(days=10)).strftime('%Y-%m-%d'),
+    'composite_score': 0.75,
+    'sm2_state': {
+        'easiness_factor': 2.5,
+        'interval': 6,
+        'repetitions': 2,
+        'last_review': (datetime.now() - timedelta(days=8)).strftime('%Y-%m-%d'),
+        'next_review': (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
+    }
+}
+
+tracker_file.parent.mkdir(parents=True, exist_ok=True)
+tracker_file.write_text(json.dumps(tracker, indent=2))
+print('✓ Test pattern created with review due')
+print(f'  Pattern: Test pattern for review')
+print(f'  Next review: {tracker[\"patterns\"][\"Test pattern for review\"][\"sm2_state\"][\"next_review\"]}')
+"
+"""
+
+[tasks."test:e2e:cli:with-me:init"]
+description = "[E2E] Initialize with-me session via CLI"
+env = { PYTHONPATH = "{{config_root}}/plugins/with-me" }
+run = "python3 -m with_me.cli.session init"
+
+[tasks."test:e2e:cli:with-me:next-question"]
+description = "[E2E] Get next question from with-me session (requires SESSION_ID env var)"
+env = { PYTHONPATH = "{{config_root}}/plugins/with-me" }
+run = """
+if [ -z "$SESSION_ID" ]; then
+  echo "Error: Set SESSION_ID environment variable"
+  echo "Example: SESSION_ID=abc-123 mise run test:e2e:cli:with-me:next-question"
+  exit 1
+fi
+python3 -m with_me.cli.session next-question --session-id "$SESSION_ID"
+"""
