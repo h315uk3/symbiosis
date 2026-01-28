@@ -34,10 +34,16 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 3. `mise run validate`
 
 **Requirements**:
-- Clear title and description
+- Clear title and description **in English**
 - All tests passing
 - No lint errors
 - Updated documentation (if applicable)
+
+**Language Rule**:
+- **CRITICAL**: PR title and description MUST be written in English
+- This is a hard requirement for GitHub collaboration
+- Never create PRs in Japanese or other languages
+- If user provides Japanese text, translate to English before creating PR
 
 **Merge strategy**: Squash and merge (preferred) for clean history
 
