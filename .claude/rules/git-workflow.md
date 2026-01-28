@@ -39,6 +39,11 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 - No lint errors
 - Updated documentation (if applicable)
 
+**Template Rule**:
+- **CRITICAL**: Always use the PR template (`.github/PULL_REQUEST_TEMPLATE.md`)
+- Fill out all sections: Summary, Related Issues, Changes, Checklist, Testing
+- Never skip the checklist - verify each item before submitting
+
 **Language Rule**:
 - **CRITICAL**: PR title and description MUST be written in English
 - This is a hard requirement for GitHub collaboration
