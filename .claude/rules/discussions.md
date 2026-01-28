@@ -71,3 +71,29 @@ We apologize for any inconvenience.
 - Include timelines when possible
 - Update or close discussions when status changes
 - Pin important announcements
+
+## Adding Comments via CLI
+
+**CRITICAL**: Always retrieve the Discussion ID first before adding comments.
+
+```bash
+# Step 1: Get Discussion ID
+gh api graphql -f query='{
+  repository(owner: "h315uk3", name: "symbiosis") {
+    discussion(number: NUMBER) { id }
+  }
+}'
+
+# Step 2: Add comment using the retrieved ID
+gh api graphql -f query='
+mutation {
+  addDiscussionComment(input: {
+    discussionId: "RETRIEVED_ID",
+    body: "Comment content here"
+  }) {
+    comment { url }
+  }
+}'
+```
+
+Never guess or reuse Discussion IDs from previous sessions.
