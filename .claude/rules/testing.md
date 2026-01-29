@@ -49,6 +49,28 @@ mise run typecheck      # Type check all plugin code
 - Untyped dictionary access
 - Missing None checks for optional values
 
+## Coverage Measurement
+
+**Tool**: coverage.py
+
+**Why**: Visibility into untested code paths, identify missing error handling, track test quality over time.
+
+**Optional but recommended**: Coverage is not required for every PR, but periodic checks help maintain test quality.
+
+**Running**:
+```bash
+mise run coverage:all    # Run tests with coverage and show report
+mise run coverage:html   # Generate detailed HTML report
+```
+
+**Current Baseline**: 56% (established 2026-01-29)
+
+**Guidelines**:
+- Focus on testing critical paths and error handling
+- Don't chase 100% coverage - aim for meaningful tests
+- Use coverage to find gaps in edge case testing
+- Coverage reports help identify untested error branches and edge cases
+
 ## Interactive Testing
 
 **Manual testing required for**:
