@@ -16,6 +16,7 @@ Fixes #(issue number)
 
 - [ ] Tests pass locally (`mise run test`)
 - [ ] Linter passes (`mise run lint`)
+- [ ] Type checker passes (`mise run typecheck`)
 - [ ] Validation passes (`mise run validate`)
 - [ ] Type hints added for new functions
 - [ ] Doctests added for new functions
