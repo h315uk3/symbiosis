@@ -4,6 +4,7 @@
 python = "3.13.11"    # Python 3.11+ required (using latest stable)
 ruff = "0.14.10"      # Python linter and formatter
 "npm:pyright" = "1.1.408"  # Python type checker (Pylance CLI)
+"pipx:coverage" = "7.6.10"  # Test coverage measurement tool
 
 # ==============================================================================
 # Development Tasks (Daily use)
@@ -49,6 +50,22 @@ run = "ruff format --check plugins/*/as_you plugins/*/with_me"
 [tasks.validate]
 description = "Validate plugin configuration files"
 run = "python3 tests/validate_plugins.py"
+
+[tasks."coverage:run"]
+description = "Run tests with coverage measurement"
+run = "coverage run tests/run_doctests.py"
+
+[tasks."coverage:report"]
+description = "Show coverage report in terminal"
+run = "coverage report"
+
+[tasks."coverage:html"]
+description = "Generate HTML coverage report"
+run = "coverage html && echo 'Report: htmlcov/index.html'"
+
+[tasks."coverage:all"]
+description = "Run coverage and show report"
+run = "mise run coverage:run && mise run coverage:report"
 
 # ==============================================================================
 # E2E Test Tasks (Manual testing verification)
