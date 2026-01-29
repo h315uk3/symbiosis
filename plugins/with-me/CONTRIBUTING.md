@@ -46,7 +46,7 @@ with-me is a requirement elicitation plugin that:
   2. Adaptive questions are asked based on uncertainty dimensions
   3. Each question-answer pair is recorded with reward scores
   4. Session completes with summary displayed
-  5. Check `~/.claude/with_me/question_feedback.json` contains session data
+  5. Check `<workspace>/.claude/with_me/question_feedback.json` contains session data
 
 ### Skill Test Procedures
 

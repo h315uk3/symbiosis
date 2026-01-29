@@ -103,7 +103,7 @@ Or if already configured:
 ```
 
 If the script reports an error, check that:
-- You are in the project root directory (where `.claude/` should be)
+- You are in the workspace root directory (where `.claude/` is located)
 - `CLAUDE_PLUGIN_ROOT` is set correctly
 - The `.claude/` directory is writable
 

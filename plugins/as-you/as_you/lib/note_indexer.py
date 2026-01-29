@@ -325,7 +325,7 @@ def index_notes(config: AsYouConfig) -> dict:
         >>> import tempfile, json
         >>> temp_dir = Path(tempfile.mkdtemp())
         >>> config = AsYouConfig(
-        ...     project_root=temp_dir,
+        ...     workspace_root=temp_dir,
         ...     claude_dir=temp_dir / ".claude",
         ...     tracker_file=temp_dir / "tracker.json",
         ...     archive_dir=temp_dir / "archives",

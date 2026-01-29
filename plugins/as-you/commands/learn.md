@@ -57,7 +57,7 @@ View notes, patterns, and learning opportunities.
 
 1. **Display Current Session Notes**
    - Get current directory: Execute `pwd` with Bash tool
-   - Read `{pwd}/.claude/as_you/session_notes.local.md` using absolute path
+   - Read `<workspace>/.claude/as_you/session_notes.local.md` using absolute path
    - If empty or doesn't exist: "No notes in current session"
    - If exists: Display contents with "Session Notes (X entries)" header
 
@@ -109,7 +109,7 @@ View notes, patterns, and learning opportunities.
      - Return to step 3
 
    **If "View note history":**
-   - Use Glob to search `{pwd}/.claude/as_you/session_archive/*.md`
+   - Use Glob to search `<workspace>/.claude/as_you/session_archive/*.md`
    - If no archives: "No archived notes found"
    - If archives exist:
      - For each file (sorted by date, newest first, limit to 7 most recent):
@@ -141,7 +141,7 @@ View notes, patterns, and learning opportunities.
        - Label: "No, cancel"
          Description: "Keep current notes"
    - If confirmed:
-     - Execute Bash: `> {pwd}/.claude/as_you/session_notes.local.md`
+     - Execute Bash: `> <workspace>/.claude/as_you/session_notes.local.md`
      - Respond: "Session notes cleared"
    - If cancelled:
      - Respond: "Cancelled"

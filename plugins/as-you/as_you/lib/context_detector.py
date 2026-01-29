@@ -10,12 +10,12 @@ from collections import Counter
 from pathlib import Path
 
 
-def detect_project_type(project_root: Path) -> list[str]:
+def detect_project_type(workspace_root: Path) -> list[str]:
     """
     Detect project type from file markers.
 
     Args:
-        project_root: Project root directory
+        workspace_root: Project root directory
 
     Returns:
         List of project type tags
@@ -34,50 +34,52 @@ def detect_project_type(project_root: Path) -> list[str]:
     tags = []
 
     # Python project
-    if (project_root / "pyproject.toml").exists() or (
-        project_root / "setup.py"
+    if (workspace_root / "pyproject.toml").exists() or (
+        workspace_root / "setup.py"
     ).exists():
         tags.append("python")
 
     # JavaScript/TypeScript project
-    if (project_root / "package.json").exists():
+    if (workspace_root / "package.json").exists():
         # Check for TypeScript
-        if (project_root / "tsconfig.json").exists():
+        if (workspace_root / "tsconfig.json").exists():
             tags.append("typescript")
         else:
             tags.append("javascript")
 
     # Rust project
-    if (project_root / "Cargo.toml").exists():
+    if (workspace_root / "Cargo.toml").exists():
         tags.append("rust")
 
     # Go project
-    if (project_root / "go.mod").exists():
+    if (workspace_root / "go.mod").exists():
         tags.append("go")
 
     # Deno project
-    if (project_root / "deno.json").exists() or (project_root / "deno.jsonc").exists():
+    if (workspace_root / "deno.json").exists() or (
+        workspace_root / "deno.jsonc"
+    ).exists():
         tags.append("deno")
 
     # Web project (HTML/CSS)
-    if list(project_root.glob("*.html")) or (project_root / "public").exists():
+    if list(workspace_root.glob("*.html")) or (workspace_root / "public").exists():
         tags.append("web")
 
     # Git repository
-    if (project_root / ".git").exists():
+    if (workspace_root / ".git").exists():
         tags.append("git")
 
     return tags
 
 
 def extract_keywords_from_files(
-    project_root: Path, max_files: int = 10, max_keywords: int = 20
+    workspace_root: Path, max_files: int = 10, max_keywords: int = 20
 ) -> list[str]:
     """
     Extract keywords from recently modified files.
 
     Args:
-        project_root: Project root directory
+        workspace_root: Project root directory
         max_files: Maximum files to scan (default: 10)
         max_keywords: Maximum keywords to extract (default: 20)
 
@@ -112,7 +114,7 @@ def extract_keywords_from_files(
     # Collect recent files
     files = []
     for ext in ["*.py", "*.js", "*.ts", "*.rs", "*.go", "*.md"]:
-        for file in project_root.rglob(ext):
+        for file in workspace_root.rglob(ext):
             # Skip excluded directories
             if any(excluded in file.parts for excluded in exclude_patterns):
                 continue
@@ -224,19 +226,20 @@ if __name__ == "__main__":
             print(f"\n✗ {results.failed}/{results.attempted} doctests failed")
             sys.exit(1)
     else:
-        # Standalone execution - detect current project context
-        import os
+        # Standalone execution - detect current workspace context
+        from as_you.lib.common import AsYouConfig
 
-        project_root = Path(os.getenv("PROJECT_ROOT", os.getcwd()))
+        config = AsYouConfig.from_environment()
+        workspace_root = config.workspace_root
 
-        print("Detecting project context...")
-        print(f"Root: {project_root}")
+        print("Detecting workspace context...")
+        print(f"Root: {workspace_root}")
         print("-" * 50)
 
-        tags = detect_project_type(project_root)
+        tags = detect_project_type(workspace_root)
         print(f"Project types: {', '.join(tags) if tags else 'unknown'}")
 
-        keywords = extract_keywords_from_files(project_root)
+        keywords = extract_keywords_from_files(workspace_root)
         print(f"Top keywords: {', '.join(keywords[:10])}")
 
         query = build_context_query(tags, keywords)

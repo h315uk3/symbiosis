@@ -42,7 +42,7 @@ def is_enabled(config: AsYouConfig) -> bool:
         >>> import tempfile
         >>> from pathlib import Path
         >>> config = AsYouConfig(
-        ...     project_root=Path(tempfile.mkdtemp()),
+        ...     workspace_root=Path(tempfile.mkdtemp()),
         ...     claude_dir=Path(tempfile.mkdtemp()),
         ...     tracker_file=Path("/tmp/t.json"),
         ...     archive_dir=Path("/tmp/a"),

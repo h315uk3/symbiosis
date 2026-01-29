@@ -21,7 +21,7 @@ UNCERTAINTY_RESOLVED_THRESHOLD = 0.3  # Uncertainty threshold for dimension reso
 class WithMeConfig:
     """Immutable configuration for with-me plugin"""
 
-    project_root: Path
+    workspace_root: Path
     claude_dir: Path
     with_me_dir: Path
     feedback_file: Path
@@ -36,26 +36,16 @@ class WithMeConfig:
             >>> config.feedback_file.name
             'question_feedback.json'
         """
-        # Use PROJECT_ROOT if available, otherwise find git root
-        if "PROJECT_ROOT" in os.environ:
-            project_root = Path(os.environ["PROJECT_ROOT"])
-        else:
-            # Try to find git root from current directory
-            current = Path.cwd()
-            project_root = current
-            for parent in [current, *current.parents]:
-                if (parent / ".git").exists():
-                    project_root = parent
-                    break
-
-        claude_dir = Path(
-            os.getenv("CLAUDE_DIR", os.path.join(project_root, ".claude"))
-        )
+        # Use PWD (shell working directory) for workspace root detection
+        # More stable than os.getcwd() across subprocess calls
+        workspace_root_str = os.getenv("PWD") or os.getcwd()
+        workspace_root_path = Path(workspace_root_str)
+        claude_dir = workspace_root_path / ".claude"
         with_me_dir = claude_dir / "with_me"
         feedback_file = with_me_dir / "question_feedback.json"
 
         return cls(
-            project_root=project_root,
+            workspace_root=workspace_root_path,
             claude_dir=claude_dir,
             with_me_dir=with_me_dir,
             feedback_file=feedback_file,

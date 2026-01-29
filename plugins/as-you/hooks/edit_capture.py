@@ -25,8 +25,8 @@ from pathlib import Path
 from typing import TypedDict
 
 HOOK_DIR = Path(__file__).parent.resolve()
-REPO_ROOT = HOOK_DIR.parent
-sys.path.insert(0, str(REPO_ROOT))
+PLUGIN_ROOT = HOOK_DIR.parent
+sys.path.insert(0, str(PLUGIN_ROOT))
 
 from as_you.lib.common import AsYouConfig
 

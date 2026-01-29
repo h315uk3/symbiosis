@@ -6,12 +6,13 @@ Uses itertools.combinations for efficient pair generation.
 """
 
 import json
-import os
 import re
 import sys
 from collections import Counter
 from itertools import combinations
 from pathlib import Path
+
+from as_you.lib.common import AsYouConfig
 
 
 def extract_words(text: str, min_length: int = 3) -> list[str]:
@@ -135,10 +136,8 @@ def detect_cooccurrences(archive_dir: Path, top_n: int = 20) -> list[dict]:
 
 def main():
     """CLI entry point."""
-    # Get paths from environment or defaults
-    project_root = os.getenv("PROJECT_ROOT", os.getcwd())
-    claude_dir = Path(os.getenv("CLAUDE_DIR", os.path.join(project_root, ".claude")))
-    archive_dir = claude_dir / "as_you" / "session_archive"
+    config = AsYouConfig.from_environment()
+    archive_dir = config.archive_dir
 
     # Detect co-occurrences
     cooccurrences = detect_cooccurrences(archive_dir, top_n=20)

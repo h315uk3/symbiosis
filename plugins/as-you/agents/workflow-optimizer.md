@@ -80,7 +80,7 @@ Analyze saved workflows in the `commands/` directory and suggest optimizations f
 ## Optimization Criteria
 
 ### Code Quality
-- No hardcoded paths (use relative paths or PROJECT_ROOT)
+- No hardcoded paths (use relative paths or workspace_root)
 - Proper error messages
 - Clear step descriptions
 - Tool restrictions properly defined

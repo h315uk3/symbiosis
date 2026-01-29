@@ -14,7 +14,7 @@ When enabled, As You automatically captures:
 - **Prompts**: Your requests, questions, and instructions
 - **Edits**: File changes made via Edit/Write tools
 
-This data is stored locally in `.claude/as_you/active_learning.json` and used to improve pattern recognition and skill generation.
+This data is stored locally in `<workspace>/.claude/as_you/active_learning.json` (where `<workspace>` is your Claude Code workspace root) and used to improve pattern recognition and skill generation.
 
 ## Usage
 
@@ -64,7 +64,7 @@ python3 -m as_you.commands.active_toggle status
 ## Privacy
 
 - All data remains local (no external services)
-- Data stored in `~/.claude/as_you/active_learning.json`
+- Data stored in `<workspace>/.claude/as_you/active_learning.json`
 - Default: OFF (opt-in)
 - Clear data anytime by deleting the file
 
