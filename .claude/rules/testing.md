@@ -27,6 +27,28 @@ mise run test:verbose   # Verbose output
 mise run test:watch     # Auto-run on changes
 ```
 
+## Type Checking
+
+**Tool**: Pyright (Pylance CLI)
+
+**Why**: Catch type errors before runtime, improve code quality, enable better IDE support.
+
+**Requirements**:
+- All public functions must have type hints
+- Use Python 3.11+ syntax: `list[str]`, `dict[str, Any]`
+- Avoid `Any` unless truly necessary
+
+**Running**:
+```bash
+mise run typecheck      # Type check all plugin code
+```
+
+**Common Issues**:
+- Missing return type annotations
+- Incorrect parameter types
+- Untyped dictionary access
+- Missing None checks for optional values
+
 ## Interactive Testing
 
 **Manual testing required for**:
@@ -45,8 +67,9 @@ mise run test:watch     # Auto-run on changes
 
 All checks must pass before merging:
 1. `mise run lint`
-2. `mise run test`
-3. `mise run validate`
+2. `mise run typecheck`
+3. `mise run test`
+4. `mise run validate`
 
 ## Test-First Workflow
 
