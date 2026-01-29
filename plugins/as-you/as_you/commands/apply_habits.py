@@ -27,8 +27,8 @@ from pathlib import Path
 
 # Add plugin root to Python path
 COMMAND_DIR = Path(__file__).parent.resolve()
-REPO_ROOT = COMMAND_DIR.parent.parent
-sys.path.insert(0, str(REPO_ROOT))
+PLUGIN_ROOT = COMMAND_DIR.parent.parent
+sys.path.insert(0, str(PLUGIN_ROOT))
 
 from as_you.lib.common import AsYouConfig
 from as_you.lib.context_detector import (
@@ -61,8 +61,8 @@ def main():
     else:
         # Auto-detect context
         print("Auto-detecting project context...")
-        tags = detect_project_type(config.project_root)
-        keywords = extract_keywords_from_files(config.project_root)
+        tags = detect_project_type(config.workspace_root)
+        keywords = extract_keywords_from_files(config.workspace_root)
         query = build_context_query(tags, keywords)
         print(f"Detected query: '{query}'")
 

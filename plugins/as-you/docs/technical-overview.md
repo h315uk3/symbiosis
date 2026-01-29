@@ -64,11 +64,11 @@ Your coding patterns are mathematically optimized for re-presentation at the rig
 ```
 1. During Session
    /as-you:learn "Investigating authentication feature bug"
-   → Saved to .claude/as_you/session_notes.local.md
+   → Saved to <workspace>/.claude/as_you/session_notes.local.md
 
 2. On SessionEnd (Automatic)
    → Archive session_notes.local.md
-   → Save as .claude/as_you/session_archive/2026-01-22.md
+   → Save as <workspace>/.claude/as_you/session_archive/2026-01-22.md
 
 3. Pattern Analysis & Scoring (Automatic)
    → Extract patterns from archive
@@ -78,7 +78,7 @@ Your coding patterns are mathematically optimized for re-presentation at the rig
    → Schedule SM-2 memory reviews
    → Compute composite scores
    → Auto-merge similar patterns (Levenshtein distance)
-   → Save to .claude/as_you/pattern_tracker.json
+   → Save to <workspace>/.claude/as_you/pattern_tracker.json
 
 4. Promotion Notification (Automatic)
    → Display patterns with high composite scores + confidence
@@ -368,7 +368,9 @@ Configuration for extracting recurring behavioral patterns:
 
 ## Data Storage
 
-**Location:** `.claude/as_you/`
+**Location:** `<workspace>/.claude/as_you/`
+
+(Where `<workspace>` is your Claude Code workspace root directory)
 
 See `/as-you:help` for file descriptions. Explore the directory for actual structure.
 

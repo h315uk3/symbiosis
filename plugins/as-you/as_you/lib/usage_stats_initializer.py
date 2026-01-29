@@ -5,10 +5,11 @@ Replaces init-usage-stats.sh with testable Python implementation.
 """
 
 import json
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
+
+from as_you.lib.common import AsYouConfig
 
 
 def load_stats(stats_file: Path) -> dict:
@@ -217,12 +218,10 @@ def init_usage_stats(
 
 def main():
     """CLI entry point."""
-    # Get paths from defaults
-    project_root = os.getenv("PROJECT_ROOT", os.getcwd())
-    claude_dir = os.getenv("CLAUDE_DIR", os.path.join(project_root, ".claude"))
-    stats_file = Path(claude_dir) / "as_you" / "skill-usage-stats.json"
-    skills_dir = Path(project_root) / "skills"
-    agents_dir = Path(project_root) / "agents"
+    config = AsYouConfig.from_environment()
+    stats_file = config.claude_dir / "as_you" / "skill-usage-stats.json"
+    skills_dir = config.workspace_root / "skills"
+    agents_dir = config.workspace_root / "agents"
 
     # Initialize stats
     result = init_usage_stats(stats_file, skills_dir, agents_dir)

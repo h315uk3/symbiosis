@@ -102,7 +102,7 @@ Agents are invoked automatically. Test by triggering their conditions:
 - Invalid YAML: Check indentation and quotes
 
 **Script Path Errors:**
-- Verify path from PROJECT_ROOT
+- Verify path from workspace root
 - Test script directly before integrating
 
 **AskUserQuestion Errors:**

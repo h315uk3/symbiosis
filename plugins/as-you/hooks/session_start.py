@@ -11,8 +11,8 @@ import time
 
 # Add plugin root to Python path
 HOOK_DIR = Path(__file__).parent.resolve()
-REPO_ROOT = HOOK_DIR.parent
-sys.path.insert(0, str(REPO_ROOT))
+PLUGIN_ROOT = HOOK_DIR.parent
+sys.path.insert(0, str(PLUGIN_ROOT))
 
 from as_you.lib.common import AsYouConfig
 
@@ -149,10 +149,6 @@ def main() -> dict:
     Returns:
         Hook output dict for Claude Code
     """
-    # Ensure PROJECT_ROOT is set correctly for hook execution
-    if "PROJECT_ROOT" not in os.environ:
-        os.environ["PROJECT_ROOT"] = str(REPO_ROOT)
-
     try:
         config = AsYouConfig.from_environment()
     except Exception as e:
@@ -186,7 +182,7 @@ def main() -> dict:
 
     # 3. Analyze and display promotion candidates
     if config.tracker_file.exists():
-        summary = fetch_promotion_summary_from_analyzer(REPO_ROOT, error_log)
+        summary = fetch_promotion_summary_from_analyzer(PLUGIN_ROOT, error_log)
         if summary:
             display_promotion_info(summary)
 
@@ -200,8 +196,8 @@ def main() -> dict:
         from as_you.lib.habit_searcher import search_habits
 
         # Detect context
-        tags = detect_project_type(config.project_root)
-        keywords = extract_keywords_from_files(config.project_root)
+        tags = detect_project_type(config.workspace_root)
+        keywords = extract_keywords_from_files(config.workspace_root)
         query = build_context_query(tags, keywords)
 
         # Get settings

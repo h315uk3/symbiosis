@@ -10,8 +10,8 @@ from pathlib import Path
 
 # Add plugin root to Python path
 HOOK_DIR = Path(__file__).parent.resolve()
-REPO_ROOT = HOOK_DIR.parent
-sys.path.insert(0, str(REPO_ROOT))
+PLUGIN_ROOT = HOOK_DIR.parent
+sys.path.insert(0, str(PLUGIN_ROOT))
 
 from as_you.lib.common import AsYouConfig
 from as_you.lib.note_indexer import index_notes

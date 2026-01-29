@@ -16,7 +16,7 @@ from typing import NotRequired, Self, TypedDict
 class AsYouConfig:
     """Immutable configuration with type safety (Python 3.11+ syntax)."""
 
-    project_root: Path
+    workspace_root: Path
     claude_dir: Path
     tracker_file: Path
     archive_dir: Path
@@ -26,11 +26,11 @@ class AsYouConfig:
     @classmethod
     def from_environment(cls) -> Self:
         """
-        Load configuration from environment variables and config file.
+        Load configuration from environment.
 
-        Replaces duplicated code in 13 files:
-            project_root = os.getenv("PROJECT_ROOT", os.getcwd())
-            claude_dir = os.getenv("CLAUDE_DIR", ...)
+        Uses PWD environment variable (shell working directory) instead of
+        os.getcwd() for more stable workspace root detection across
+        subprocess calls and directory changes.
 
         Returns:
             Immutable configuration object with loaded settings
@@ -44,18 +44,19 @@ class AsYouConfig:
             >>> "scoring" in config.settings
             True
         """
-        project_root = Path(os.getenv("PROJECT_ROOT", os.getcwd()))
-        claude_dir = Path(
-            os.getenv("CLAUDE_DIR", os.path.join(project_root, ".claude"))
-        )
+        # Use PWD (shell working directory) instead of os.getcwd()
+        # PWD is more stable across subprocess calls and directory changes
+        workspace_root_str = os.getenv("PWD") or os.getcwd()
+        workspace_root = Path(workspace_root_str)
+        claude_dir = workspace_root / ".claude"
 
         as_you_dir = claude_dir / "as_you"
 
         # Load algorithm settings
-        settings = load_settings(project_root)
+        settings = load_settings(workspace_root)
 
         return cls(
-            project_root=project_root,
+            workspace_root=workspace_root,
             claude_dir=claude_dir,
             tracker_file=as_you_dir / "pattern_tracker.json",
             archive_dir=as_you_dir / "session_archive",
@@ -112,7 +113,7 @@ DEFAULT_SETTINGS = {
 }
 
 
-def load_settings(project_root: Path) -> dict:
+def load_settings(workspace_root: Path) -> dict:
     """
     Load algorithm settings from config file.
 
@@ -121,7 +122,7 @@ def load_settings(project_root: Path) -> dict:
     2. .claude/as_you/config.json (user override)
 
     Args:
-        project_root: Project root directory
+        workspace_root: Workspace root directory
 
     Returns:
         Settings dictionary (merged with defaults)
@@ -139,7 +140,7 @@ def load_settings(project_root: Path) -> dict:
         >>> shutil.rmtree(temp_dir)
     """
     # Try plugin default config
-    plugin_config = project_root / "plugins/as-you/config/as-you.json"
+    plugin_config = workspace_root / "plugins/as-you/config/as-you.json"
 
     if plugin_config.exists():
         try:

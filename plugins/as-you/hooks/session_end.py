@@ -10,8 +10,8 @@ from pathlib import Path
 
 # Add plugin root to Python path
 HOOK_DIR = Path(__file__).parent.resolve()
-REPO_ROOT = HOOK_DIR.parent
-sys.path.insert(0, str(REPO_ROOT))
+PLUGIN_ROOT = HOOK_DIR.parent
+sys.path.insert(0, str(PLUGIN_ROOT))
 
 from as_you.lib.common import AsYouConfig
 
@@ -136,10 +136,8 @@ def run_python_script(
 
     # Inherit environment and ensure PYTHONPATH includes plugin root
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(REPO_ROOT)
-    # Ensure PROJECT_ROOT is set for child processes
-    if "PROJECT_ROOT" not in env:
-        env["PROJECT_ROOT"] = os.getcwd()
+    env["PYTHONPATH"] = str(PLUGIN_ROOT)
+    # Child processes inherit environment from parent
 
     try:
         result = subprocess.run(
@@ -147,7 +145,7 @@ def run_python_script(
             capture_output=True,
             text=True,
             timeout=timeout,
-            cwd=os.environ.get("PROJECT_ROOT", os.getcwd()),
+            cwd=os.getcwd(),
             env=env
         )
 
@@ -216,10 +214,6 @@ def main() -> dict:
     Returns:
         Hook output dict for Claude Code
     """
-    # Ensure PROJECT_ROOT is set correctly for hook execution
-    if "PROJECT_ROOT" not in os.environ:
-        os.environ["PROJECT_ROOT"] = os.getcwd()
-
     try:
         config = AsYouConfig.from_environment()
     except Exception as e:
@@ -234,7 +228,7 @@ def main() -> dict:
 
     # 1. Archive session notes
     result = run_python_script(
-        REPO_ROOT / "as_you/hooks/note_archiver.py",
+        PLUGIN_ROOT / "as_you/hooks/note_archiver.py",
         error_log=error_log,
         timeout=10
     )
@@ -243,7 +237,7 @@ def main() -> dict:
 
     # 1.5. Index notes from archives (Phase 1 of Issue #83)
     result = run_python_script(
-        REPO_ROOT / "as_you/hooks/note_indexer_hook.py",
+        PLUGIN_ROOT / "as_you/hooks/note_indexer_hook.py",
         error_log=error_log,
         timeout=20
     )
@@ -252,7 +246,7 @@ def main() -> dict:
 
     # 2. Update pattern tracker (detect patterns, extract contexts, update tracker)
     result = run_python_script(
-        REPO_ROOT / "as_you/hooks/pattern_tracker_update.py",
+        PLUGIN_ROOT / "as_you/hooks/pattern_tracker_update.py",
         error_log=error_log,
         timeout=30
     )
@@ -262,7 +256,7 @@ def main() -> dict:
 
     # 3. Calculate pattern scores (independent from tracker update)
     result = run_python_script(
-        REPO_ROOT / "as_you/hooks/score_calculator_hook.py",
+        PLUGIN_ROOT / "as_you/hooks/score_calculator_hook.py",
         error_log=error_log,
         timeout=30
     )
@@ -272,7 +266,7 @@ def main() -> dict:
 
     # 3.5. Update habit freshness (Phase 4 of Issue #83)
     result = run_python_script(
-        REPO_ROOT / "as_you/hooks/habit_freshness_update.py",
+        PLUGIN_ROOT / "as_you/hooks/habit_freshness_update.py",
         error_log=error_log,
         timeout=10
     )
@@ -281,7 +275,7 @@ def main() -> dict:
 
     # 3.6. Integrate active learning data (Issue #93)
     result = run_python_script(
-        REPO_ROOT / "as_you/hooks/active_learning_integration.py",
+        PLUGIN_ROOT / "as_you/hooks/active_learning_integration.py",
         error_log=error_log,
         timeout=15
     )
@@ -297,7 +291,7 @@ def main() -> dict:
         print(f"Running periodic pattern merge (session {session_num})...")
 
         result = run_python_script(
-            REPO_ROOT / "as_you/hooks/pattern_merger.py",
+            PLUGIN_ROOT / "as_you/hooks/pattern_merger.py",
             error_log=error_log,
             timeout=60
         )

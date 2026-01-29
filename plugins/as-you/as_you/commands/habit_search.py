@@ -26,8 +26,8 @@ from pathlib import Path
 
 # Add plugin root to Python path
 COMMAND_DIR = Path(__file__).parent.resolve()
-REPO_ROOT = COMMAND_DIR.parent.parent
-sys.path.insert(0, str(REPO_ROOT))
+PLUGIN_ROOT = COMMAND_DIR.parent.parent
+sys.path.insert(0, str(PLUGIN_ROOT))
 
 from as_you.lib.common import AsYouConfig
 from as_you.lib.habit_searcher import search_habits
