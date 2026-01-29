@@ -49,6 +49,70 @@ mise run typecheck      # Type check all plugin code
 - Untyped dictionary access
 - Missing None checks for optional values
 
+## Coverage Measurement
+
+**Tool**: coverage.py
+
+**Why**: Visibility into untested code paths, identify missing error handling, track test quality over time.
+
+**Optional but recommended**: Coverage is not required for every PR, but periodic checks help maintain test quality.
+
+**Running**:
+```bash
+mise run coverage:all    # Run tests with coverage and show report
+mise run coverage:html   # Generate detailed HTML report
+```
+
+**Current Baseline**: 56% (established 2026-01-29)
+
+### Understanding the 56% Baseline
+
+**This is structurally appropriate, not a problem to fix.** The coverage reflects doctest-driven development constraints:
+
+**High Coverage (70-89%) - Core algorithms:**
+- BM25, Thompson Sampling, SM-2, Bayesian learning
+- Pure computational logic (well-suited for doctests)
+- These are the critical paths and are well-tested
+
+**Low Coverage (11-41%) - CLI commands:**
+- `pattern_context.py` (11%), `memory_stats.py` (15%), etc.
+- These modules handle:
+  - `sys.argv` parsing (command-line arguments)
+  - `sys.exit()` calls (process termination)
+  - File I/O with real filesystem
+  - User interaction flows
+- **Doctests cannot easily test these** without complex mocking
+
+**Why not chase higher coverage:**
+- CLI layer is intentionally thin (delegates to lib/)
+- Core business logic in lib/ is well-tested (60-89%)
+- Adding integration tests for CLI would increase complexity
+- Manual testing covers CLI behavior adequately
+
+### Guidelines
+
+**Do:**
+- Focus on testing critical paths and error handling in lib/
+- Use coverage to find gaps in edge case testing
+- Check coverage after adding new algorithms or core logic
+- Aim for 70%+ coverage in lib/ modules
+
+**Don't:**
+- Chase 100% coverage (diminishing returns)
+- Write complex mocks just to test CLI argument parsing
+- Feel obligated to test every `sys.exit()` branch
+- Add coverage checks to CI/CD (it's a periodic quality tool, not a gate)
+
+**When to investigate low coverage:**
+- Core algorithm modules (lib/) below 60%
+- Missing error handling in critical paths
+- New features without doctests
+
+**When to accept low coverage:**
+- CLI entry points (commands/ modules)
+- Hook handlers (event-driven code)
+- File I/O wrappers
+
 ## Interactive Testing
 
 **Manual testing required for**:
