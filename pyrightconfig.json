@@ -1,0 +1,45 @@
+{
+  "include": [
+    "plugins/as-you/as_you",
+    "plugins/with-me/with_me",
+    "tests"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/*.pyc",
+    "**/.venv",
+    "**/venv",
+    "**/node_modules",
+    "**/.git",
+    "**/dist",
+    "**/build"
+  ],
+  "extraPaths": [
+    "plugins/as-you",
+    "plugins/with-me"
+  ],
+  "typeCheckingMode": "standard",
+  "pythonVersion": "3.11",
+  "pythonPlatform": "All",
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+  "reportUnusedImport": true,
+  "reportUnusedVariable": true,
+  "reportDuplicateImport": true,
+  "reportUntypedFunctionDecorator": false,
+  "reportPrivateUsage": false,
+  "reportConstantRedefinition": true,
+  "reportIncompatibleMethodOverride": true,
+  "reportIncompatibleVariableOverride": true,
+  "reportOverlappingOverload": true,
+  "reportUnnecessaryIsInstance": true,
+  "reportUnnecessaryCast": true,
+  "reportUnnecessaryComparison": true,
+  "reportUnnecessaryContains": true,
+  "reportImplicitStringConcatenation": false,
+  "reportUnusedCallResult": false,
+  "reportUnusedCoroutine": true,
+  "reportUnusedExpression": false,
+  "reportUnnecessaryTypeIgnoreComment": true,
+  "reportMatchNotExhaustive": true
+}
