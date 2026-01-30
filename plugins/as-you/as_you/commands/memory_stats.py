@@ -61,7 +61,7 @@ def collect_stats() -> dict:
         stats["sm2_due_soon"] = 0
 
     # Skills
-    skills_dir = Path("plugins/as-you/skills")
+    skills_dir = Path(".claude/skills")
     if skills_dir.exists():
         # Count SKILL.md files in subdirectories (Claude Code skill format)
         stats["skills"] = len(list(skills_dir.glob("*/SKILL.md")))
@@ -69,7 +69,7 @@ def collect_stats() -> dict:
         stats["skills"] = 0
 
     # Agents
-    agents_dir = Path("agents")
+    agents_dir = Path(".claude/agents")
     if agents_dir.exists():
         stats["agents"] = len(list(agents_dir.glob("*.md")))
     else:

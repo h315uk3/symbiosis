@@ -24,7 +24,7 @@ Explore pattern memory, analyze confidence, and manage knowledge base.
    - `.claude/as_you/active_learning.json` (if exists)
 
    Count workflows using Glob (do not read contents):
-   - `.claude/as_you/workflows/*.md`
+   - `.claude/commands/*.md`
 
 2. **Display Memory Dashboard**
 
@@ -156,12 +156,16 @@ Explore pattern memory, analyze confidence, and manage knowledge base.
    **If "Consider skill creation":**
    - Display Tier 1 promotion recommendations
    - Generate skill content from patterns: title, overview, guidelines, examples
-   - Use `skill_creator` module to create skill
+   - Ensure skill name has `u-` prefix (e.g., `u-python-patterns`)
+   - Use `skill_creator` module to create skill (auto-adds `u-` prefix and `source: as-you`)
    - Return to step 3
 
    **If "Consider agent creation":**
    - Display Tier 2 promotion recommendations
-   - Guide user to create agent file at `agents/{name}.md`
+   - Generate agent content from patterns: name, description, tools, execution steps
+   - Ensure agent name has `u-` prefix (e.g., `u-lint-fix`)
+   - Launch `as-you:component-generator` agent via Task tool to create agent at `.claude/agents/u-{name}.md`
+   - Launch `as-you:promotion-reviewer` agent via Task tool to validate
    - Return to step 3
 
    **If "Exit":**

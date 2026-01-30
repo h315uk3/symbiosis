@@ -27,8 +27,9 @@ Save recent work as a reusable workflow.
 
 1. Analyze recent work (last 10-20 tool uses)
 2. Ask: abstraction level (Specific / Generic) and scope (Last 5/10/20 actions)
-3. Generate workflow file at `.claude/as_you/workflows/{name}.md` with frontmatter and steps
-4. Confirm and save
+3. Ensure workflow name has `u-` prefix (e.g., `u-api-endpoint-setup`)
+4. Generate workflow file at `.claude/commands/u-{name}.md` with frontmatter including `source: as-you`
+5. Confirm and save
 
 ---
 
@@ -41,7 +42,7 @@ Browse and use saved workflows and patterns.
 **Execution Steps:**
 
 1. Use `pattern_context` module to show relevant patterns for current context
-2. List workflows from `.claude/as_you/workflows/*.md` (sorted by last used)
+2. List as-you workflows from `.claude/commands/u-*.md` (sorted by last used)
 3. Ask: "What would you like to do?" (View/Execute workflow, Get pattern context, List all workflows, Save new, Exit)
 
 4. **Execute Based on Selection**

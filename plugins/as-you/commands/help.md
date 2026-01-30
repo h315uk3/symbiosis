@@ -41,7 +41,11 @@ Location: `.claude/as_you/`
 - `session_archive/*.md` - Archived notes
 - `pattern_tracker.json` - Pattern database
 - `active_learning.json` - Captured prompts/edits
-- `workflows/*.md` - Saved workflows
+
+**Knowledge Base** (generated artifacts use `u-` prefix):
+- Skills: `.claude/skills/u-*/SKILL.md`
+- Agents: `.claude/agents/u-*.md`
+- Workflows: `.claude/commands/u-*.md`
 
 All data stays local.
 

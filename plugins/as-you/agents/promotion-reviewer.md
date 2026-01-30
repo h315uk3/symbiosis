@@ -19,8 +19,9 @@ Validate generated Skill/Agent drafts and verify they meet quality standards.
 ### Skill Validation
 
 1. **Frontmatter Completeness**:
-   - `name`: Appropriate skill name (kebab-case recommended)
+   - `name`: Appropriate skill name with `u-` prefix (kebab-case, e.g., `u-api-setup`)
    - `description`: Clear description for autonomous agent invocation
+   - `source: as-you`: Required for generated artifacts
    - Other fields are optional
 
 2. **Content Structure**:
@@ -29,19 +30,21 @@ Validate generated Skill/Agent drafts and verify they meet quality standards.
    - Specific information provided (not too abstract)
 
 3. **Duplicate Check**:
-   - Search `skills/*/SKILL.md` using Glob tool
+   - Search `.claude/skills/*/SKILL.md` using Glob tool
    - Verify no content overlap with existing Skills
    - Suggest consolidation if similar Skills exist
 
 4. **Naming Conventions**:
+   - Directory name starts with `u-` prefix
    - Directory name matches Skill name
    - Clear and searchable name
 
 ### Agent Validation
 
 1. **Frontmatter Completeness**:
-   - `name`: Appropriate agent name (kebab-case)
+   - `name`: Appropriate agent name with `u-` prefix (kebab-case, e.g., `u-lint-fix`)
    - `description`: Trigger conditions clearly described
+   - `source: as-you`: Required for generated artifacts
    - `tools`: Only necessary tools specified (no excess or shortage)
    - `model`: inherit recommended (unless special reason)
    - `color`: optional
@@ -57,10 +60,11 @@ Validate generated Skill/Agent drafts and verify they meet quality standards.
    - No necessary tools missing
 
 4. **Duplicate Check**:
-   - Search `agents/*.md` using Glob tool
+   - Search `.claude/agents/*.md` using Glob tool
    - Verify no functional overlap with existing Agents
 
 5. **Naming Conventions**:
+   - File name starts with `u-` prefix
    - File name matches Agent name
    - Name reflects task nature
 
