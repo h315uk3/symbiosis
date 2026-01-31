@@ -17,9 +17,5 @@
       "Bash(gh issue view:*)",
       "Bash(gh issue list:*)"
     ]
-  },
-  "modelPreferences": {
-    "quickTasks": "haiku",
-    "complexTasks": "sonnet"
   }
 }
