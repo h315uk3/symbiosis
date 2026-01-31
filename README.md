@@ -90,15 +90,15 @@ Add notes and build knowledge:
 /as-you:learn
 ```
 
-Analyze memory and review patterns (SM-2):
+Manage patterns: analyze, review (SM-2), and promote to skills/agents:
 ```
-/as-you:memory
+/as-you:patterns
 ```
 
-Get pattern context (Thompson Sampling) or save workflows:
+Manage workflows: save procedures, view, and execute:
 ```
-/as-you:apply
-/as-you:apply "workflow-name"
+/as-you:workflows
+/as-you:workflows "workflow-name"
 ```
 
 Toggle automatic capture of prompts and edits:

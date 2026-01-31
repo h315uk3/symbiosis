@@ -13,17 +13,19 @@ Claude: Note added
 
 [Later, in a new session...]
 
-You: /as-you:apply
-Claude: [Shows top patterns using Thompson Sampling]
-        1. Use environment variables for API keys
-        2. ...
+You: /as-you:patterns
+Claude: [Shows pattern analysis and options]
+        1. Review pattern quality (SM-2)
+        2. View top patterns
+        3. Promote to skill/agent
+        ...
 
 You: Add Stripe payment integration
 Claude: I'll implement the Stripe integration using environment variables
 for the API key, following your established pattern.
 ```
 
-> **How it works**: Patterns are presented as context when you use `/as-you:apply`. Claude considers them based on relevance to your current task. Pattern selection uses Thompson Sampling to balance proven patterns with exploration of uncertain ones.
+> **How it works**: Patterns are analyzed and scored automatically. Claude considers relevant patterns based on your current task. Pattern selection uses Thompson Sampling to balance proven patterns with exploration of uncertain ones.
 
 ---
 
@@ -41,8 +43,8 @@ for the API key, following your established pattern.
 ## Available Commands
 
 - **`/as-you:learn`** - Add notes and build knowledge from your development sessions
-- **`/as-you:memory`** - Analyze patterns, review quality, and manage your knowledge base
-- **`/as-you:apply`** - Get pattern context or save workflows for reuse
+- **`/as-you:patterns`** - Analyze patterns, review quality (SM-2), and promote to skills/agents
+- **`/as-you:workflows`** - Save, view, and execute reusable workflows
 - **`/as-you:active`** - Toggle automatic capture of prompts and file edits
 - **`/as-you:help`** - Show detailed usage documentation
 
