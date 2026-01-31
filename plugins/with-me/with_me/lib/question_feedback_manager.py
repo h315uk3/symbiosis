@@ -32,9 +32,24 @@ class WithMeConfig:
         Load configuration from environment variables
 
         Examples:
-            >>> config = WithMeConfig.from_environment()
+            >>> import tempfile
+            >>> from pathlib import Path
+            >>> # Create isolated test directory
+            >>> temp_root = Path(tempfile.mkdtemp())
+            >>> claude_dir = temp_root / ".claude"
+            >>> with_me_dir = claude_dir / "with_me"
+            >>> with_me_dir.mkdir(parents=True)
+            >>> # Test direct instantiation (demonstrates structure)
+            >>> config = WithMeConfig(
+            ...     workspace_root=temp_root,
+            ...     claude_dir=claude_dir,
+            ...     with_me_dir=with_me_dir,
+            ...     feedback_file=with_me_dir / "question_feedback.json",
+            ... )
             >>> config.feedback_file.name
             'question_feedback.json'
+            >>> import shutil
+            >>> shutil.rmtree(temp_root)
         """
         # Use PWD (shell working directory) for workspace root detection
         # More stable than os.getcwd() across subprocess calls
