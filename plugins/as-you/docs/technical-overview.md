@@ -40,7 +40,7 @@ graph TD
         Bayesian[Bayesian Confidence]
         SM2[SM-2 Scheduling]
         Thompson[Thompson Sampling]
-        Apply["/as-you:apply"]
+        Apply["/as-you:workflows"]
     end
 
     Learn --> Extract
@@ -82,12 +82,12 @@ Your coding patterns are mathematically optimized for re-presentation at the rig
 
 4. Promotion Notification (Automatic)
    → Display patterns with high composite scores + confidence
-   → Viewable with /as-you:memory
+   → Viewable with /as-you:patterns
    → Thompson Sampling balances proven vs. uncertain patterns
 
 5. Knowledge Application (Manual)
-   → /as-you:apply to get pattern context
-   → /as-you:memory to promote patterns to skills/agents
+   → /as-you:workflows to manage workflows
+   → /as-you:patterns to promote patterns to skills/agents
    → Save workflows for reuse
 ```
 
@@ -102,12 +102,12 @@ Patterns are automatically extracted from your session notes using statistical i
 /as-you:learn "text"     # Add timestamped note
 /as-you:learn            # Learning dashboard (interactive)
 
-# Memory (pattern analysis + SM-2 review + confidence tracking)
-/as-you:memory           # Memory dashboard: analysis, review, promotion
+# Patterns (pattern analysis + SM-2 review + confidence tracking + promotion)
+/as-you:patterns         # Pattern dashboard: analysis, review, promotion
 
-# Apply (workflows + pattern context)
-/as-you:apply "name"     # Save workflow
-/as-you:apply            # Use patterns and workflows (interactive)
+# Workflows (save and execute procedures)
+/as-you:workflows "name" # Save workflow
+/as-you:workflows        # View and execute workflows (interactive)
 
 # Active Learning (automatic capture)
 /as-you:active on        # Enable automatic prompt and edit capture
@@ -170,7 +170,7 @@ where $r$ is the number of consecutive successful reviews (repetitions), $I_{\te
 
 **Interactive Review:**
 - Patterns are scheduled for review based on SM-2 intervals
-- Access review workflow via `/as-you:memory` → "Review pattern quality"
+- Access review workflow via `/as-you:patterns` → "Review pattern quality"
 - Quality ratings (0-5) assess pattern usefulness and update next review date
 - Low quality assessment ($q < 3$) resets: $I = 1$, $r = 0$
 
@@ -186,7 +186,7 @@ $$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
 
 **Usage:**
 - Thompson states are automatically updated during pattern analysis
-- Pattern selection uses Thompson Sampling via `/as-you:apply` → "Get pattern context"
+- Pattern selection uses Thompson Sampling when retrieving pattern context
 - Each pattern samples from Beta($\alpha$, $\beta$) and highest samples are selected
 - High-confidence patterns (large $\alpha$) are likely selected (exploitation)
 - Low-confidence patterns (small $\alpha + \beta$) have chances to explore

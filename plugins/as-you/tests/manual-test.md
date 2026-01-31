@@ -155,7 +155,7 @@ Select: "Analyze patterns"
 
 **Expected:**
 - Displays promotion candidates with scores
-- Message about `/as-you:memory` for details
+- Message about `/as-you:patterns` for details
 - Returns to menu
 
 ---
@@ -292,14 +292,14 @@ cat .claude/as_you/active_learning.json | jq .
 
 ---
 
-## /as-you:apply
+## /as-you:workflows
 
 ### Basic: Save Workflow
 
 **Note:** Requires work history (previous tests provide enough)
 
 ```
-/as-you:apply "test-workflow"
+/as-you:workflows "test-workflow"
 ```
 
 **Expected:**
@@ -333,7 +333,7 @@ Should contain markdown sections:
 ### Edge Case: Duplicate Workflow Name
 
 ```
-/as-you:apply "test-workflow"
+/as-you:workflows "test-workflow"
 ```
 
 **Expected:** Detects duplicate, asks to overwrite or rename
@@ -343,7 +343,7 @@ Should contain markdown sections:
 ### Dashboard: Open
 
 ```
-/as-you:apply
+/as-you:workflows
 ```
 
 **Expected:**
@@ -358,7 +358,7 @@ Should contain markdown sections:
 ### Dashboard: View Workflow
 
 ```
-/as-you:apply
+/as-you:workflows
 ```
 
 Select: "View workflow" → Choose "test-workflow" → "No"
@@ -370,7 +370,7 @@ Select: "View workflow" → Choose "test-workflow" → "No"
 ### Dashboard: Execute Workflow
 
 ```
-/as-you:apply
+/as-you:workflows
 ```
 
 Select: "Execute workflow" → Choose workflow → "Execute"
@@ -388,7 +388,7 @@ Should show: usage_count incremented, last_used updated
 ### Dashboard: Get Pattern Context
 
 ```
-/as-you:apply
+/as-you:workflows
 ```
 
 Select: "Get pattern context"
@@ -404,7 +404,7 @@ Enter: "Building a REST API with authentication"
 ### Dashboard: List All Workflows
 
 ```
-/as-you:apply
+/as-you:workflows
 ```
 
 Select: "List all workflows"
@@ -416,7 +416,7 @@ Select: "List all workflows"
 ### Dashboard: Save New Workflow
 
 ```
-/as-you:apply
+/as-you:workflows
 ```
 
 Select: "Save new workflow"
@@ -446,7 +446,7 @@ Should contain: YAML frontmatter with all required fields, markdown structure
 
 Start fresh session:
 ```
-/as-you:apply "empty-workflow"
+/as-you:workflows "empty-workflow"
 ```
 
 **Expected:** Detects insufficient history, suggests adding work first
@@ -460,19 +460,19 @@ rm -rf .claude/commands/*.md
 ```
 
 ```
-/as-you:apply
+/as-you:workflows
 ```
 
 **Expected:** Shows "No workflows available", menu still offers "Save new workflow"
 
 ---
 
-## /as-you:memory
+## /as-you:patterns
 
 ### Dashboard: Open
 
 ```
-/as-you:memory
+/as-you:patterns
 ```
 
 **Expected:**
@@ -564,7 +564,7 @@ mise run test:e2e:setup:sm2-pattern
 ### SM-2 Review Execute
 
 ```
-/as-you:memory
+/as-you:patterns
 ```
 
 Select: "Review pattern quality"
@@ -593,7 +593,7 @@ rm .claude/as_you/pattern_tracker.json
 ```
 
 ```
-/as-you:memory
+/as-you:patterns
 ```
 
 **Expected:** Shows zero patterns, no errors, menu handles empty state
@@ -654,12 +654,12 @@ rm -rf .claude/commands/
 - [ ] /as-you:active - Enable/disable/status
 - [ ] /as-you:active - Capture verification
 - [ ] /as-you:active - Edge cases
-- [ ] /as-you:apply - Save workflow
-- [ ] /as-you:apply - Dashboard all menus
-- [ ] /as-you:apply - Edge cases
-- [ ] /as-you:memory - Dashboard
-- [ ] /as-you:memory - Top patterns
-- [ ] /as-you:memory - SM-2 review
+- [ ] /as-you:workflows - Save workflow
+- [ ] /as-you:workflows - Dashboard all menus
+- [ ] /as-you:workflows - Edge cases
+- [ ] /as-you:patterns - Dashboard
+- [ ] /as-you:patterns - Top patterns
+- [ ] /as-you:patterns - SM-2 review
 - [ ] /as-you:help - Display
 - [ ] All cleanup completed
 

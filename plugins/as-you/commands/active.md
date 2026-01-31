@@ -71,5 +71,5 @@ python3 -m as_you.commands.active_toggle status
 ## Related Commands
 
 - `/as-you:learn` - Add notes manually
-- `/as-you:memory` - View captured patterns
-- `/as-you:apply` - Apply learned patterns
+- `/as-you:patterns` - Analyze and manage patterns
+- `/as-you:workflows` - Manage workflows
