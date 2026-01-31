@@ -6,6 +6,35 @@
 
 **Types**: `feature/*`, `fix/*`, `docs/*`, `refactor/*`, `test/*`
 
+### CRITICAL: Never Push to main Branch
+
+**Before ANY commit or push operation**:
+1. **CHECK current branch**: Run `git branch --show-current`
+2. **IF on main/master branch**: STOP and create a feature branch
+3. **NEVER commit directly to main**: Always work on feature branches
+4. **NEVER push to main**: All changes must go through Pull Requests
+
+**Workflow**:
+```bash
+# 1. Check current branch (REQUIRED before any git operation)
+git branch --show-current
+
+# 2. If on main, create feature branch
+git checkout -b fix/description-of-change
+
+# 3. Make changes, commit, push to feature branch
+git add <files>
+git commit -m "fix: description"
+git push -u origin fix/description-of-change
+
+# 4. Create Pull Request (never push to main)
+gh pr create --title "..." --body "..."
+```
+
+**Exception**: Only push to main when:
+- User explicitly says "push to main" or "merge to main"
+- Even then, confirm: "Are you sure you want to push directly to main? This bypasses PR review."
+
 ## Commit Guidelines
 
 **Format**:
@@ -88,21 +117,30 @@ User: "unstage the files"
 
 ## Safety Rules
 
+**BEFORE ANY GIT OPERATION (commit, push, PR)**:
+1. **Run `git branch --show-current`** - Check which branch you're on
+2. **IF on main/master**: STOP and create feature branch first
+3. Show changes to user (`git status`, `git diff`)
+4. Wait for explicit confirmation
+
 **NEVER**:
+- **Commit to main/master branch** (use feature branches)
+- **Push to main/master branch** (use Pull Requests)
 - Force push to main/master
-- Commit to main directly
 - Rebase shared branches
 - Commit secrets or API keys
-- **Create and push files without explicit user instruction**
-- **Push to GitHub without explicit user confirmation**
+- Create and push files without explicit user instruction
+- Push to GitHub without explicit user confirmation
 
 **ALWAYS**:
+- **Check current branch before every git operation**
+- Create feature branch if on main
 - Review changes before committing (`git diff`)
 - Test before pushing
 - Keep commits focused
 - Update documentation with code
-- **Show changes locally first, then ask for push permission**
-- **Get explicit confirmation before any GitHub operation (commit, push, PR, Issue)**
+- Show changes locally first, then ask for push permission
+- Get explicit confirmation before any GitHub operation (commit, push, PR, Issue)
 
 ## Critical: GitHub Operations
 
