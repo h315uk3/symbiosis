@@ -151,15 +151,24 @@ def main() -> dict:
     """
     try:
         config = AsYouConfig.from_environment()
+    except RuntimeError as e:
+        # .claude/ directory not found - not an error, just not in workspace
+        return {
+            "continue": True,
+            "suppressOutput": True
+        }
     except Exception as e:
+        # Other config errors - report but continue
         return {
             "continue": True,
             "systemMessage": f"As You: Config error: {e}"
         }
 
+    # Ensure .claude/as_you/ exists (should already exist if .claude/ found)
     as_you_dir = config.claude_dir / "as_you"
+    as_you_dir.mkdir(parents=True, exist_ok=True)
+
     error_log = as_you_dir / "errors.log"
-    error_log.parent.mkdir(parents=True, exist_ok=True)
 
     # 1. Cleanup old archives
     try:
