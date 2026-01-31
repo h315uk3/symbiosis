@@ -11,10 +11,15 @@
       "min_cooccurrence": 2,
       "window_size": 5
     },
+    "time_decay": {
+      "enabled": true,
+      "half_life_days": 30
+    },
     "weights": {
-      "bm25": 0.4,
-      "pmi": 0.3,
-      "ebbinghaus": 0.3
+      "bm25": 0.3,
+      "pmi": 0.2,
+      "ebbinghaus": 0.3,
+      "time_decay": 0.2
     }
   },
   "memory": {

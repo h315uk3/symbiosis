@@ -44,6 +44,9 @@ from as_you.lib.thompson_sampling import (  # noqa: E402
     ThompsonState,
     update_thompson_state,
 )
+from as_you.lib.time_decay_calculator import (  # noqa: E402
+    calculate_time_decay_scores,
+)
 
 # Constants
 THOMPSON_SUCCESS_THRESHOLD = 0.5  # Threshold for treating composite score as "success"
@@ -245,6 +248,18 @@ class AnalysisOrchestrator:
             for pattern_text, score in ebbinghaus_scores.items():
                 if pattern_text in patterns:
                     patterns[pattern_text]["ebbinghaus_score"] = score
+                    scores_updated += 1
+
+        # 3.25. Time decay calculation (information freshness)
+        time_decay_config = scoring_config.get("time_decay", {})
+        if time_decay_config.get("enabled", True):
+            time_decay_scores = calculate_time_decay_scores(
+                patterns,
+                half_life_days=time_decay_config.get("half_life_days", 30.0),
+            )
+            for pattern_text, score in time_decay_scores.items():
+                if pattern_text in patterns:
+                    patterns[pattern_text]["time_decay_score"] = score
                     scores_updated += 1
 
         # 3.5. Shannon Entropy calculation (pattern diversity)

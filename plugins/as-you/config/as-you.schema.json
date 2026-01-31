@@ -13,7 +13,7 @@
     },
     "scoring": {
       "type": "object",
-      "required": ["bm25", "pmi", "weights"],
+      "required": ["bm25", "pmi", "time_decay", "weights"],
       "properties": {
         "bm25": {
           "type": "object",
@@ -59,9 +59,25 @@
             }
           }
         },
+        "time_decay": {
+          "type": "object",
+          "required": ["enabled", "half_life_days"],
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable time decay scoring"
+            },
+            "half_life_days": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 365,
+              "description": "Half-life in days for exponential decay"
+            }
+          }
+        },
         "weights": {
           "type": "object",
-          "required": ["bm25", "pmi", "ebbinghaus"],
+          "required": ["bm25", "pmi", "ebbinghaus", "time_decay"],
           "properties": {
             "bm25": {
               "type": "number",
@@ -80,6 +96,12 @@
               "minimum": 0.0,
               "maximum": 1.0,
               "description": "Weight for Ebbinghaus memory strength"
+            },
+            "time_decay": {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "description": "Weight for time decay freshness"
             }
           }
         }

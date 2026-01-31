@@ -1,6 +1,6 @@
 {
   "name": "as-you",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Local pattern learning and external memory plugin for Claude Code with positive/negative learning, meta-development tools, and custom workflows",
   "author": {
     "name": "h315uk3"
