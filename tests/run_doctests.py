@@ -5,6 +5,9 @@ Doctest runner for all plugins.
 Discovers and runs doctests from all Python files in plugin scripts directories.
 Uses only Python standard library to maintain zero external dependencies.
 
+Runs tests in isolated temporary directory to avoid polluting developer's
+.claude/ directory with test data.
+
 Usage:
     python3 tests/run_doctests.py           # Run all doctests
     python3 tests/run_doctests.py --verbose # Run with verbose output
@@ -16,13 +19,18 @@ Examples:
 
 import doctest
 import importlib.util
+import os
 import sys
+import tempfile
 from pathlib import Path
 
 
 def discover_and_test(root: Path, verbose: bool = False) -> tuple[int, int]:
     """
     Discover and run doctests from all plugin Python files.
+
+    Runs tests in isolated temporary directory to prevent test data
+    from being written to developer's .claude/ directory.
 
     Args:
         root: Project root directory
@@ -37,74 +45,94 @@ def discover_and_test(root: Path, verbose: bool = False) -> tuple[int, int]:
         >>> isinstance(tests, int) and isinstance(failures, int)
         True
     """
-    total_tests = 0
-    total_failures = 0
+    # Create temporary directory for test isolation
+    # This prevents tests from writing to developer's .claude/ directory
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create .claude directory in temp location
+        test_claude_dir = Path(tmpdir) / ".claude"
+        test_claude_dir.mkdir()
 
-    plugins = [
-        ("as-you", "as_you"),
-        ("with-me", "with_me")
-    ]
+        # Redirect PWD to temporary directory
+        # from_environment() uses PWD for workspace detection
+        original_pwd = os.environ.get('PWD')
+        os.environ['PWD'] = tmpdir
 
-    for plugin_dir, plugin_pkg in plugins:
-        plugin_root = root / "plugins" / plugin_dir
-        if not plugin_root.exists():
-            continue
+        try:
+            total_tests = 0
+            total_failures = 0
 
-        print(f"Testing plugins/{plugin_dir}...")
+            plugins = [
+                ("as-you", "as_you"),
+                ("with-me", "with_me")
+            ]
 
-        # Add plugin root to path for imports (for as_you.* / with_me.* imports)
-        sys.path.insert(0, str(plugin_root))
-
-        # Find all Python files, prioritizing lib/ first for dependencies
-        py_files = []
-
-        # First add lib/ files (dependencies)
-        lib_dir = plugin_root / plugin_pkg / "lib"
-        if lib_dir.exists():
-            py_files.extend(sorted(lib_dir.glob("*.py")))
-
-        # Then add other files
-        for subdir in ["commands", "hooks"]:
-            subdir_path = plugin_root / plugin_pkg / subdir
-            if subdir_path.exists():
-                py_files.extend(sorted(subdir_path.glob("*.py")))
-
-        for py_file in py_files:
-            # Skip __init__.py files (shouldn't exist but check anyway)
-            if py_file.name == "__init__.py":
-                continue
-
-            # Import module dynamically with proper module name
-            # Calculate relative path from plugin package root
-            rel_parts = py_file.relative_to(plugin_root / plugin_pkg).parts
-            module_name = f"{plugin_pkg}.{'.'.join(rel_parts[:-1])}.{py_file.stem}" if len(rel_parts) > 1 else f"{plugin_pkg}.{py_file.stem}"
-
-            spec = importlib.util.spec_from_file_location(module_name, py_file)
-            if spec and spec.loader:
-                module = importlib.util.module_from_spec(spec)
-                sys.modules[module_name] = module
-                try:
-                    spec.loader.exec_module(module)
-                except Exception as e:
-                    print(f"  ✗ {py_file.name} (import failed: {e})")
-                    total_failures += 1
+            for plugin_dir, plugin_pkg in plugins:
+                plugin_root = root / "plugins" / plugin_dir
+                if not plugin_root.exists():
                     continue
 
-                # Run doctest on the module
-                result = doctest.testmod(
-                    module,
-                    verbose=verbose,
-                    optionflags=doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE,
-                )
+                print(f"Testing plugins/{plugin_dir}...")
 
-                total_tests += result.attempted
-                total_failures += result.failed
+                # Add plugin root to path for imports (for as_you.* / with_me.* imports)
+                sys.path.insert(0, str(plugin_root))
 
-                # Show status
-                status = "✓" if result.failed == 0 else "✗"
-                print(f"  {status} {py_file.name}")
+                # Find all Python files, prioritizing lib/ first for dependencies
+                py_files = []
 
-    return total_tests, total_failures
+                # First add lib/ files (dependencies)
+                lib_dir = plugin_root / plugin_pkg / "lib"
+                if lib_dir.exists():
+                    py_files.extend(sorted(lib_dir.glob("*.py")))
+
+                # Then add other files
+                for subdir in ["commands", "hooks"]:
+                    subdir_path = plugin_root / plugin_pkg / subdir
+                    if subdir_path.exists():
+                        py_files.extend(sorted(subdir_path.glob("*.py")))
+
+                for py_file in py_files:
+                    # Skip __init__.py files (shouldn't exist but check anyway)
+                    if py_file.name == "__init__.py":
+                        continue
+
+                    # Import module dynamically with proper module name
+                    # Calculate relative path from plugin package root
+                    rel_parts = py_file.relative_to(plugin_root / plugin_pkg).parts
+                    module_name = f"{plugin_pkg}.{'.'.join(rel_parts[:-1])}.{py_file.stem}" if len(rel_parts) > 1 else f"{plugin_pkg}.{py_file.stem}"
+
+                    spec = importlib.util.spec_from_file_location(module_name, py_file)
+                    if spec and spec.loader:
+                        module = importlib.util.module_from_spec(spec)
+                        sys.modules[module_name] = module
+                        try:
+                            spec.loader.exec_module(module)
+                        except Exception as e:
+                            print(f"  ✗ {py_file.name} (import failed: {e})")
+                            total_failures += 1
+                            continue
+
+                        # Run doctest on the module
+                        result = doctest.testmod(
+                            module,
+                            verbose=verbose,
+                            optionflags=doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE,
+                        )
+
+                        total_tests += result.attempted
+                        total_failures += result.failed
+
+                        # Show status
+                        status = "✓" if result.failed == 0 else "✗"
+                        print(f"  {status} {py_file.name}")
+
+            return total_tests, total_failures
+
+        finally:
+            # Restore original PWD
+            if original_pwd:
+                os.environ['PWD'] = original_pwd
+            else:
+                os.environ.pop('PWD', None)
 
 
 def main() -> int:
@@ -117,7 +145,7 @@ def main() -> int:
     root = Path(__file__).parent.parent
     verbose = "--verbose" in sys.argv
 
-    tests, failures = discover_and_test(root, verbose)
+    _, failures = discover_and_test(root, verbose)
 
     # Print summary
     print()
