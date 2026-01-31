@@ -15,7 +15,7 @@ as-you is a pattern learning plugin that:
 **Key Components:**
 - **Hooks**: SessionStart/SessionEnd lifecycle, UserPromptSubmit, PostToolUse
 - **Commands**: User-facing slash commands (`/as-you:learn`, `/as-you:apply`, etc.)
-- **Agents**: Autonomous task handlers (pattern-learner, memory-analyzer, etc.)
+- **Agents**: Autonomous task handlers (code-pattern-analyzer, memory-analyzer, component-generator, promotion-reviewer, workflow-optimizer)
 - **Library**: Shared Python modules for scoring, pattern detection, and data management
 
 **Data Flow:**

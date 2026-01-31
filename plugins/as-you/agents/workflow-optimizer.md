@@ -12,7 +12,7 @@ You are a specialized agent for analyzing and optimizing As You plugin workflows
 
 ## Responsibilities
 
-Analyze saved workflows in the `commands/` directory and suggest optimizations for:
+Analyze saved workflows in the `.claude/commands/` directory and suggest optimizations for:
 - Redundancy elimination
 - Error handling improvements
 - Performance optimization
@@ -22,8 +22,8 @@ Analyze saved workflows in the `commands/` directory and suggest optimizations f
 ## Execution Steps
 
 1. **Discover Workflows**
-   - Use Glob tool to find all `.md` files in `commands/` directory
-   - Filter for user-created workflows (exclude built-in as-you commands)
+   - Use Glob tool to find all `.md` files matching `.claude/commands/u-*.md`
+   - These are user-created workflows (u- prefix identifies as-you generated artifacts)
 
 2. **Analyze Each Workflow**
    For each workflow, evaluate:

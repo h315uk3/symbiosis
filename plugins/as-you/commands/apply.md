@@ -43,7 +43,7 @@ Browse and use saved workflows and patterns.
 
 1. Use `pattern_context` module to show relevant patterns for current context
 2. List as-you workflows from `.claude/commands/u-*.md` (sorted by last used)
-3. Ask: "What would you like to do?" (View/Execute workflow, Get pattern context, List all workflows, Save new, Exit)
+3. Ask: "What would you like to do?" (View/Execute workflow, Get pattern context, List all workflows, Optimize workflows, Save new, Exit)
 
 4. **Execute Based on Selection**
 
@@ -64,6 +64,19 @@ Browse and use saved workflows and patterns.
    **If "List all workflows":**
    - List all workflows with name, description, dates, usage count
    - Sort by usage count (desc)
+
+   **If "Optimize workflows":**
+   - Check if workflows exist in `.claude/commands/u-*.md`
+   - If no workflows: Display "No workflows to optimize yet", return to step 3
+   - If workflows exist:
+     - Launch `as-you:workflow-optimizer` agent via Task tool
+     - Agent analyzes all u-*.md workflows in `.claude/commands/`
+     - Display optimization report with:
+       - Quality issues (hardcoded paths, missing error handling, unclear steps)
+       - Consolidation opportunities (similar workflows to merge)
+       - Documentation gaps (missing prerequisites, tools)
+       - Success rate warnings (if tracking implemented)
+     - Return to step 3
 
    **If "Save new workflow":**
    - Ask for workflow name, continue with Mode 1 execution
