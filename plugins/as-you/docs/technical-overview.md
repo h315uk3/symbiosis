@@ -152,6 +152,27 @@ where:
 - Single occurrences decay faster
 - Based on Ebbinghaus (1885) forgetting curve research
 
+#### Time Decay
+
+Models information freshness with exponential decay:
+
+$$D(t) = 0.5^{t/h}$$
+
+where:
+- $t$: time elapsed since last seen (days)
+- $h$: half-life (default: 30 days)
+- $D(t)$: freshness score at time $t$
+
+**Key properties:**
+- Uniform decay rate regardless of repetition
+- Measures temporal relevance (recency)
+- Complements Ebbinghaus by adding freshness dimension
+
+**Difference from Ebbinghaus:**
+- **Ebbinghaus**: Evaluates learning quality (how well it's learned)
+- **Time Decay**: Evaluates information freshness (how recent it is)
+- **Combined**: Balances established knowledge with recent trends
+
 #### Bayesian Confidence
 
 Tracks certainty using posterior distribution:
@@ -194,9 +215,10 @@ $$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
 #### Composite Scoring
 - **Purpose**: Weighted combination of multiple metrics
 - **Default weights**:
-  - BM25: 40% (relevance)
-  - PMI: 30% (co-occurrence)
+  - BM25: 30% (relevance)
+  - PMI: 20% (co-occurrence)
   - Ebbinghaus: 30% (memory strength)
+  - Time Decay: 20% (freshness)
 - **Configurable**: Adjust in `config/as-you.json`
 
 ### Pattern Management
@@ -226,10 +248,15 @@ $$\theta_i \sim \text{Beta}(\alpha_i, \beta_i)$$
       "min_cooccurrence": 2,
       "window_size": 5
     },
+    "time_decay": {
+      "enabled": true,
+      "half_life_days": 30  // Days for score to decay to 50%
+    },
     "weights": {
-      "bm25": 0.4,          // Relevance weight
-      "pmi": 0.3,           // Co-occurrence weight
-      "ebbinghaus": 0.3     // Memory strength weight
+      "bm25": 0.3,          // Relevance weight
+      "pmi": 0.2,           // Co-occurrence weight
+      "ebbinghaus": 0.3,    // Memory strength weight
+      "time_decay": 0.2     // Freshness weight
     }
   },
   "memory": {
@@ -387,6 +414,7 @@ See `/as-you:help` for file descriptions. Explore the directory for actual struc
       "bm25_score": 0.842,
       "pmi_score": 0.651,
       "ebbinghaus_score": 0.945,
+      "time_decay_score": 0.887,
       "composite_score": 0.812,
       "bayesian_state": {
         "mean": 0.75,

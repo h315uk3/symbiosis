@@ -168,7 +168,8 @@ DEFAULT_SETTINGS = {
     "scoring": {
         "bm25": {"enabled": True, "k1": 1.5, "b": 0.75},
         "pmi": {"enabled": True, "min_cooccurrence": 2, "window_size": 5},
-        "weights": {"bm25": 0.4, "pmi": 0.3, "ebbinghaus": 0.3},
+        "time_decay": {"enabled": True, "half_life_days": 30},
+        "weights": {"bm25": 0.3, "pmi": 0.2, "ebbinghaus": 0.3, "time_decay": 0.2},
     },
     "memory": {
         "ebbinghaus": {"enabled": True, "base_strength": 1.0, "growth_factor": 0.5},

@@ -182,6 +182,7 @@ def calculate_composite_scores(
         "bm25": "bm25_score",
         "pmi": "pmi_score",
         "ebbinghaus": "ebbinghaus_score",
+        "time_decay": "time_decay_score",
     }
 
     # Extract scores for each dimension
