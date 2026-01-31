@@ -72,6 +72,73 @@ def calculate_pmi(tracker_file: Path, archive_dir: Path) -> None:
     Args:
         tracker_file: Path to pattern_tracker.json
         archive_dir: Path to session archive directory
+
+    Examples:
+        >>> import tempfile
+        >>> import json
+        >>> from pathlib import Path
+        >>> # Setup test environment
+        >>> with tempfile.TemporaryDirectory() as tmpdir:
+        ...     base = Path(tmpdir)
+        ...     tracker_file = base / "tracker.json"
+        ...     archive_dir = base / "archive"
+        ...     archive_dir.mkdir()
+        ...
+        ...     # Create archive with patterns
+        ...     _ = (archive_dir / "session1.md").write_text(
+        ...         "test deployment authentication system\\n" * 10, encoding="utf-8"
+        ...     )
+        ...     _ = (archive_dir / "session2.md").write_text(
+        ...         "test deployment security network\\n" * 8, encoding="utf-8"
+        ...     )
+        ...
+        ...     # Create tracker with co-occurrences
+        ...     tracker_data = {
+        ...         "patterns": {
+        ...             "test": {"count": 18},
+        ...             "deployment": {"count": 18},
+        ...             "authentication": {"count": 10},
+        ...             "system": {"count": 10},
+        ...         },
+        ...         "cooccurrences": [
+        ...             {"words": ["test", "deployment"], "count": 18},
+        ...             {"words": ["deployment", "authentication"], "count": 10},
+        ...         ],
+        ...     }
+        ...     _ = tracker_file.write_text(json.dumps(tracker_data), encoding="utf-8")
+        ...
+        ...     # Calculate PMI
+        ...     calculate_pmi(tracker_file, archive_dir)
+        ...
+        ...     # Verify PMI scores were added
+        ...     result = json.loads(tracker_file.read_text(encoding="utf-8"))
+        ...     cooccurs = result["cooccurrences"]
+        ...     all(co.get("pmi") is not None for co in cooccurs)
+        PMI scores calculated for all co-occurrences
+        True
+
+        >>> # Test with zero counts (edge case)
+        >>> with tempfile.TemporaryDirectory() as tmpdir:
+        ...     base = Path(tmpdir)
+        ...     tracker_file = base / "tracker.json"
+        ...     archive_dir = base / "archive"
+        ...     archive_dir.mkdir()
+        ...     _ = (archive_dir / "session.md").write_text("test", encoding="utf-8")
+        ...
+        ...     # Co-occurrence with zero word count
+        ...     tracker_data = {
+        ...         "patterns": {"test": {"count": 1}, "unknown": {"count": 0}},
+        ...         "cooccurrences": [{"words": ["test", "unknown"], "count": 1}],
+        ...     }
+        ...     _ = tracker_file.write_text(json.dumps(tracker_data), encoding="utf-8")
+        ...
+        ...     calculate_pmi(tracker_file, archive_dir)
+        ...
+        ...     # Verify zero count handled gracefully
+        ...     result = json.loads(tracker_file.read_text(encoding="utf-8"))
+        ...     result["cooccurrences"][0]["pmi"]
+        PMI scores calculated for all co-occurrences
+        0.0
     """
     # Load tracker data using common utility
     tracker_data = load_tracker(tracker_file)
@@ -162,6 +229,68 @@ def calculate_pmi_scores(  # noqa: PLR0912
         ...     scores = calculate_pmi_scores({}, Path(tmpdir))
         ...     scores
         {}
+
+        >>> # Test PMI calculation with co-occurring patterns
+        >>> with tempfile.TemporaryDirectory() as tmpdir:
+        ...     archive_dir = Path(tmpdir)
+        ...     # Create archive with co-occurring patterns
+        ...     _ = (archive_dir / "s1.md").write_text(
+        ...         "test deployment\\ntest authentication\\n" * 5, encoding="utf-8"
+        ...     )
+        ...     _ = (archive_dir / "s2.md").write_text(
+        ...         "deployment security\\nauthentication system\\n" * 3,
+        ...         encoding="utf-8",
+        ...     )
+        ...
+        ...     patterns = {
+        ...         "test": {"count": 10},
+        ...         "deployment": {"count": 8},
+        ...         "authentication": {"count": 8},
+        ...         "security": {"count": 3},
+        ...     }
+        ...     scores = calculate_pmi_scores(patterns, archive_dir, min_cooccurrence=2)
+        ...
+        ...     # Verify all patterns have scores
+        ...     len(scores) == len(patterns)
+        True
+
+        >>> # Verify scores are normalized [0, 1]
+        >>> with tempfile.TemporaryDirectory() as tmpdir:
+        ...     archive_dir = Path(tmpdir)
+        ...     _ = (archive_dir / "s1.md").write_text(
+        ...         "test deploy\\n" * 10, encoding="utf-8"
+        ...     )
+        ...     patterns = {"test": {"count": 10}, "deploy": {"count": 10}}
+        ...     scores = calculate_pmi_scores(patterns, archive_dir)
+        ...     all(0.0 <= score <= 1.0 for score in scores.values())
+        True
+
+        >>> # Test with no co-occurrences (patterns on separate lines)
+        >>> with tempfile.TemporaryDirectory() as tmpdir:
+        ...     archive_dir = Path(tmpdir)
+        ...     _ = (archive_dir / "s1.md").write_text(
+        ...         "word1\\nword2\\n", encoding="utf-8"
+        ...     )
+        ...     patterns = {"word1": {"count": 1}, "word2": {"count": 1}}
+        ...     scores = calculate_pmi_scores(patterns, archive_dir)
+        ...     # No co-occurrences detected, all scores are 0.0
+        ...     all(score == 0.0 for score in scores.values())
+        True
+
+        >>> # Test normalization with co-occurring patterns
+        >>> with tempfile.TemporaryDirectory() as tmpdir:
+        ...     archive_dir = Path(tmpdir)
+        ...     _ = (archive_dir / "s1.md").write_text(
+        ...         "alpha beta\\n", encoding="utf-8"
+        ...     )
+        ...     _ = (archive_dir / "s2.md").write_text(
+        ...         "alpha beta\\n", encoding="utf-8"
+        ...     )
+        ...     patterns = {"alpha": {"count": 2}, "beta": {"count": 2}}
+        ...     scores = calculate_pmi_scores(patterns, archive_dir, min_cooccurrence=2)
+        ...     # Both patterns co-occur equally, normalized to 0.5
+        ...     all(score == 0.5 for score in scores.values())
+        True
     """
     # Handle empty patterns
     if not patterns:
