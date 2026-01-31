@@ -98,8 +98,11 @@ Agents are invoked automatically. Test by triggering their conditions:
 ## Adding New Python Modules
 
 1. Follow existing module patterns in `as_you/lib/` for structure and doctest format
-2. Run `mise run test` to verify doctests pass
-3. Run `mise run lint` to ensure code style compliance
+2. Use isolated paths in doctests (temporary directories, never actual `.claude/` directory)
+3. Run `mise run test` to verify doctests pass without contaminating workspace
+4. Run `mise run lint` to ensure code style compliance
+
+**Doctest Isolation**: Use `tempfile.mkdtemp()` or explicit test paths in examples. Never assume `.claude/as_you/` directory structure exists during tests.
 
 ## Common Issues
 

@@ -96,6 +96,8 @@ mise run test:verbose   # Verbose output
 mise run test:watch     # Watch mode (auto-run on changes)
 ```
 
+**Test Isolation Principle**: Doctests must use isolated paths (temporary directories) to avoid contaminating the workspace's `.claude/` directory during test execution. This ensures tests are reproducible and don't interfere with actual plugin data or configuration.
+
 ### Code Quality
 
 ```bash

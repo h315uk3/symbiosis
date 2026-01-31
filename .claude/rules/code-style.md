@@ -45,3 +45,26 @@
 **Docstrings**: One-line summary + Examples section with doctests
 - Explain "why" not "what"
 - Include edge cases
+
+## Testing Considerations
+
+**Doctest Isolation**: Prevent test contamination of workspace `.claude/` directory
+
+**Requirements**:
+- Use isolated paths (temporary directories, explicit test paths)
+- Never assume `.claude/` directory structure exists during tests
+- Pass isolated file paths as parameters to functions that interact with `.claude/`
+- Use `tempfile.mkdtemp()` or explicit `/tmp/` paths in doctest examples
+
+**Example Pattern**:
+```python
+>>> import tempfile
+>>> from pathlib import Path
+>>> temp_root = Path(tempfile.mkdtemp())
+>>> # Use temp_root for all file operations in doctest
+>>> # Clean up at end
+>>> import shutil
+>>> shutil.rmtree(temp_root)
+```
+
+**Why**: Ensures tests are reproducible and don't leave artifacts in user's workspace

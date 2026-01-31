@@ -27,6 +27,8 @@ mise run test:verbose   # Verbose output
 mise run test:watch     # Auto-run on changes
 ```
 
+**Test Isolation**: Doctests are isolated from your project's `.claude/` directory to prevent test artifacts from contaminating actual configuration and data files. This ensures clean, reproducible test execution regardless of your local workspace state.
+
 ## Type Checking
 
 **Tool**: Pyright (Pylance CLI)
