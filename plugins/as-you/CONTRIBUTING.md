@@ -18,6 +18,24 @@ as-you is a pattern learning plugin that:
 - **Agents**: Autonomous task handlers (code-pattern-analyzer, memory-analyzer, component-generator, promotion-reviewer, workflow-optimizer)
 - **Library**: Shared Python modules for scoring, pattern detection, and data management
 
+**Responsibility Separation:**
+- **Python (lib/, commands/*.py, hooks/)**: Handles all computations, algorithms, and data persistence
+  - Statistical algorithms (BM25, Ebbinghaus, time decay, PMI, Shannon entropy)
+  - Machine learning (Bayesian updates, Thompson sampling, SM-2)
+  - Data structures (BK-trees, Levenshtein distance)
+  - JSON output for Claude to interpret
+- **Claude (commands/*.md, agents/*.md)**: Handles user interaction and workflow orchestration
+  - Executes Python scripts via Bash
+  - Interprets JSON output
+  - Presents options using AskUserQuestion
+  - Formats and explains results to user
+
+**When adding new features:**
+- Algorithms and calculations → `lib/*.py` (with doctests)
+- Data collection and output → `commands/*.py` (output JSON)
+- User interaction logic → `commands/*.md` or `agents/*.md`
+- Background automation → `hooks/*.py`
+
 **Data Flow:**
 1. User adds notes via `/as-you:learn`
 2. SessionEnd hook processes and scores patterns

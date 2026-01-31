@@ -6,6 +6,7 @@ This document provides detailed technical information about the As You plugin's 
 
 ## Table of Contents
 
+- [Architecture](#architecture)
 - [How It Works](#how-it-works)
 - [Available Commands](#available-commands)
 - [Statistical Intelligence](#statistical-intelligence)
@@ -14,6 +15,63 @@ This document provides detailed technical information about the As You plugin's 
 - [Development](#development)
 - [References](#references)
 - [Philosophy](#philosophy)
+
+---
+
+## Architecture
+
+### Hybrid Computational Architecture
+
+The as-you plugin implements a **hybrid computational architecture** where responsibilities are clearly separated:
+
+- **Python handles computations**: All mathematical algorithms (BM25, Ebbinghaus forgetting curve, time decay, PMI, Shannon entropy, Bayesian learning, Thompson sampling, SM-2) are executed in Python for efficiency and reliability
+- **Claude handles interaction**: User interface orchestration, result interpretation, and workflow coordination via commands and agents
+
+**Why this separation:**
+- **Efficiency**: Complex statistical algorithms run natively in Python with optimal performance
+- **Testability**: All calculations have comprehensive doctests and are independently verifiable
+- **Transparency**: Claude's orchestration logic is visible in markdown command files
+- **Automation**: Background hooks run pattern analysis without user intervention
+- **Zero Dependencies**: Pure Python standard library (no NumPy, SciPy, ML frameworks)
+
+**Architecture components:**
+
+1. **lib/** - Pure algorithms and calculations (26 modules)
+   - Statistical scoring: BM25, PMI, time decay, Ebbinghaus
+   - Machine learning: Bayesian updates, Thompson sampling
+   - Memory models: SM-2 spaced repetition
+   - Data structures: BK-trees, Levenshtein distance
+
+2. **commands/** - User interaction orchestration
+   - `*.md` files: Claude's instructions for user interaction
+   - `*.py` files: Data collection scripts that output JSON for Claude
+
+3. **hooks/** - Automatic background processing (7 modules)
+   - Run during lifecycle events (SessionEnd, etc.)
+   - No Claude interaction - pure Python automation
+   - Examples: note archiving, score calculation, pattern merging
+
+4. **agents/** - Specialized sub-tasks (5 files)
+   - Markdown specifications for focused analysis tasks
+   - Execute Python scripts and interpret results
+   - Generate structured reports and suggestions
+
+**Data flow:**
+```
+User Request
+    ↓
+commands/*.md (Claude orchestrates)
+    ↓
+Bash execution of Python scripts
+    ↓
+commands/*.py → lib/*.py (Python computes)
+    ↓
+JSON output to stdout
+    ↓
+Claude interprets and formats
+    ↓
+Presentation to user
+```
 
 ---
 

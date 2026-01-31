@@ -35,6 +35,7 @@ for the API key, following your established pattern.
 - **Statistical Scoring** - BM25 relevance, Bayesian confidence, time decay
 - **Memory Review** - SM-2 spaced repetition schedules pattern reviews
 - **Smart Selection** - Thompson Sampling balances proven vs. uncertain patterns
+- **Hybrid Architecture** - Python handles algorithms, Claude handles interaction
 - **Local-First** - All data stays on your machine, no external services
 - **Zero Dependencies** - Pure Python standard library only
 
