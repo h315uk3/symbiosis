@@ -1,8 +1,4 @@
 {
-  "python.analysis.extraPaths": [
-    "${workspaceFolder}/plugins/as-you",
-    "${workspaceFolder}/plugins/with-me"
-  ],
   "python.autoComplete.extraPaths": [
     "${workspaceFolder}/plugins/as-you",
     "${workspaceFolder}/plugins/with-me"
