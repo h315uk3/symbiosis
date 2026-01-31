@@ -220,8 +220,8 @@ def main():
     """CLI entry point."""
     config = AsYouConfig.from_environment()
     stats_file = config.claude_dir / "as_you" / "skill-usage-stats.json"
-    skills_dir = config.workspace_root / "skills"
-    agents_dir = config.workspace_root / "agents"
+    skills_dir = config.workspace_root / ".claude" / "skills"
+    agents_dir = config.workspace_root / ".claude" / "agents"
 
     # Initialize stats
     result = init_usage_stats(stats_file, skills_dir, agents_dir)

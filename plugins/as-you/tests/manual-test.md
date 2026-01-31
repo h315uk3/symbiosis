@@ -312,8 +312,8 @@ cat .claude/as_you/active_learning.json | jq .
 
 **Verify:**
 ```bash
-ls .claude/as_you/workflows/test-workflow.md
-WORKFLOW_FILE=.claude/as_you/workflows/test-workflow.md mise run test:e2e:verify:workflow
+ls .claude/commands/test-workflow.md
+WORKFLOW_FILE=.claude/commands/test-workflow.md mise run test:e2e:verify:workflow
 ```
 
 Should contain YAML frontmatter with:
@@ -379,7 +379,7 @@ Select: "Execute workflow" → Choose workflow → "Execute"
 
 **Verify:**
 ```bash
-WORKFLOW_FILE=.claude/as_you/workflows/test-workflow.md mise run test:e2e:verify:workflow
+WORKFLOW_FILE=.claude/commands/test-workflow.md mise run test:e2e:verify:workflow
 ```
 Should show: usage_count incremented, last_used updated
 
@@ -432,8 +432,8 @@ Select: "Save new workflow"
 
 **Verify:**
 ```bash
-ls .claude/as_you/workflows/dashboard-created-workflow.md
-WORKFLOW_FILE=.claude/as_you/workflows/dashboard-created-workflow.md mise run test:e2e:verify:workflow
+ls .claude/commands/dashboard-created-workflow.md
+WORKFLOW_FILE=.claude/commands/dashboard-created-workflow.md mise run test:e2e:verify:workflow
 ```
 
 Should contain: YAML frontmatter with all required fields, markdown structure
@@ -456,7 +456,7 @@ Start fresh session:
 ### Edge Case: No Workflows
 
 ```bash
-rm -rf .claude/as_you/workflows/*.md
+rm -rf .claude/commands/*.md
 ```
 
 ```
@@ -636,7 +636,7 @@ After testing:
 rm -f .claude/as_you/session_notes.local.md
 rm -f .claude/as_you/active_learning.enabled
 rm -f .claude/as_you/active_learning.json
-rm -rf .claude/as_you/workflows/
+rm -rf .claude/commands/
 ```
 
 **Optional: Full reset (loses all patterns)**

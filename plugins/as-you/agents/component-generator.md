@@ -14,6 +14,14 @@ You are a specialized agent for generating As You plugin components (Skills/Agen
 
 ALWAYS use absolute paths for all file operations (Read, Write). The working directory will be provided in the prompt. Use `{working_directory}/.claude/as_you/...` format for all file paths.
 
+## Naming Convention
+
+All generated artifacts MUST use the `u-` prefix to identify them as as-you generated:
+- Skills: `u-{name}` directory (e.g., `u-api-setup/SKILL.md`)
+- Agents: `u-{name}.md` file (e.g., `u-lint-fix.md`)
+
+All generated frontmatter MUST include `source: as-you` for programmatic identification.
+
 ## Responsibilities
 
 Generate appropriate skills or agents from memory patterns or user requirements.
@@ -22,13 +30,17 @@ Generate appropriate skills or agents from memory patterns or user requirements.
 
 ### For Skill Generation
 
+**Output path:** `{working_directory}/.claude/skills/u-{name}/SKILL.md`
+
 1. Understand skill name and purpose
-2. Reference patterns from `{working_directory}/.claude/as_you/session_archive/` using absolute path (if available)
-3. Generate SKILL.md with the following structure:
+2. Ensure name uses `u-` prefix (e.g., `u-python-project-setup`)
+3. Reference patterns from `{working_directory}/.claude/as_you/session_archive/` using absolute path (if available)
+4. Generate SKILL.md with the following structure:
    ```markdown
    ---
-   name: skill-name
+   name: u-skill-name
    description: "Use this skill when [specific trigger phrase]"
+   source: as-you
    ---
 
    # Skill Name
@@ -47,17 +59,21 @@ Generate appropriate skills or agents from memory patterns or user requirements.
    ## Examples
    [Specific examples]
    ```
-4. Suggest `reference/` and `examples/` content if needed
+5. Suggest `reference/` and `examples/` content if needed
 
 ### For Agent Generation
 
+**Output path:** `{working_directory}/.claude/agents/u-{name}.md`
+
 1. Understand agent name and purpose
-2. Clarify role and execution steps
-3. Generate .md file with the following structure:
+2. Ensure name uses `u-` prefix (e.g., `u-lint-fix`)
+3. Clarify role and execution steps
+4. Generate .md file with the following structure:
    ```markdown
    ---
-   name: agent-name
+   name: u-agent-name
    description: "Description with when-to-use examples"
+   source: as-you
    tools: Read, Write, Glob, Grep, Bash
    model: inherit
    color: blue

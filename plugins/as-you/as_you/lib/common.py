@@ -12,6 +12,65 @@ from pathlib import Path
 from typing import NotRequired, Self, TypedDict
 
 
+def find_workspace_root(start_path: Path | None = None) -> Path | None:
+    """
+    Find workspace root by searching upward for .claude/ directory.
+
+    Implements Claude Code's standard workspace detection by recursively
+    searching parent directories from start_path until .claude/ is found.
+
+    Args:
+        start_path: Starting directory (None = use PWD or cwd)
+
+    Returns:
+        Path to workspace root containing .claude/, or None if not found
+
+    Examples:
+        >>> import tempfile
+        >>> import os
+        >>> from pathlib import Path
+        >>> # Create test structure: temp/.claude/
+        >>> with tempfile.TemporaryDirectory() as tmpdir:
+        ...     root = Path(tmpdir).resolve()
+        ...     (root / ".claude").mkdir()
+        ...     # Test from root directory
+        ...     result = find_workspace_root(root)
+        ...     str(result) == str(root)
+        True
+        >>> # Test from subdirectory
+        >>> with tempfile.TemporaryDirectory() as tmpdir:
+        ...     root = Path(tmpdir).resolve()
+        ...     (root / ".claude").mkdir()
+        ...     subdir = root / "sub" / "deep"
+        ...     subdir.mkdir(parents=True)
+        ...     result = find_workspace_root(subdir)
+        ...     str(result) == str(root)
+        True
+        >>> # Test when .claude/ not found
+        >>> with tempfile.TemporaryDirectory() as tmpdir:
+        ...     no_claude = Path(tmpdir).resolve() / "no_claude"
+        ...     no_claude.mkdir()
+        ...     result = find_workspace_root(no_claude)
+        ...     result is None
+        True
+    """
+    if start_path is None:
+        # Use PWD (shell working directory) for stability across subprocess calls
+        start_path_str = os.getenv("PWD") or os.getcwd()
+        start_path = Path(start_path_str)
+
+    current = start_path.resolve()
+
+    # Search upward until root directory
+    while current != current.parent:
+        if (current / ".claude").exists() and (current / ".claude").is_dir():
+            return current
+        current = current.parent
+
+    # Not found
+    return None
+
+
 @dataclass(frozen=True)
 class AsYouConfig:
     """Immutable configuration with type safety (Python 3.11+ syntax)."""
@@ -28,12 +87,15 @@ class AsYouConfig:
         """
         Load configuration from environment.
 
-        Uses PWD environment variable (shell working directory) instead of
-        os.getcwd() for more stable workspace root detection across
-        subprocess calls and directory changes.
+        Searches upward from PWD (shell working directory) for .claude/
+        directory to find workspace root. This implements Claude Code's
+        standard workspace detection mechanism.
 
         Returns:
             Immutable configuration object with loaded settings
+
+        Raises:
+            RuntimeError: If .claude/ directory not found
 
         Examples:
             >>> config = AsYouConfig.from_environment()
@@ -44,12 +106,18 @@ class AsYouConfig:
             >>> "scoring" in config.settings
             True
         """
-        # Use PWD (shell working directory) instead of os.getcwd()
-        # PWD is more stable across subprocess calls and directory changes
-        workspace_root_str = os.getenv("PWD") or os.getcwd()
-        workspace_root = Path(workspace_root_str)
-        claude_dir = workspace_root / ".claude"
+        # Search upward for .claude/ directory
+        workspace_root = find_workspace_root()
 
+        if workspace_root is None:
+            start_path = Path(os.getenv("PWD") or os.getcwd())
+            msg = (
+                f".claude/ directory not found (searched from {start_path}). "
+                "Please run from within a Claude Code workspace."
+            )
+            raise RuntimeError(msg)
+
+        claude_dir = workspace_root / ".claude"
         as_you_dir = claude_dir / "as_you"
 
         # Load algorithm settings
