@@ -9,6 +9,15 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+# Plugin root path (for subprocess calls and Python path)
+HOOK_DIR = Path(__file__).parent.resolve()
+PLUGIN_ROOT = HOOK_DIR.parent
+
+# WORKAROUND: Claude Code does not set CLAUDE_PLUGIN_ROOT environment variable
+# See: https://github.com/anthropics/claude-code/issues (upstream bug)
+# This sys.path manipulation is required until the upstream issue is resolved.
+sys.path.insert(0, str(PLUGIN_ROOT))  # noqa: E402
+
 from as_you.lib.common import AsYouConfig
 from as_you.lib.context_detector import (
     build_context_query,
@@ -16,10 +25,6 @@ from as_you.lib.context_detector import (
     extract_keywords_from_files,
 )
 from as_you.lib.habit_searcher import search_habits
-
-# Plugin root path (for subprocess calls)
-HOOK_DIR = Path(__file__).parent.resolve()
-PLUGIN_ROOT = HOOK_DIR.parent
 
 # Constants for promotion summary parsing
 EXPECTED_SUMMARY_FIELDS = 5  # total, skills, agents, top_pattern, top_type
@@ -80,11 +85,11 @@ def fetch_promotion_summary_from_analyzer(repo_root: Path, error_log: Path) -> d
         Dict with keys: total, skills, agents, top_pattern, top_type
         None if analysis fails
     """
-    # Use -m to run as module, with PYTHONPATH set to repo_root
-    env = os.environ.copy()
-    env['PYTHONPATH'] = str(repo_root)
-
     try:
+        # Set PYTHONPATH for subprocess (CLAUDE_PLUGIN_ROOT not available)
+        env = os.environ.copy()
+        env['PYTHONPATH'] = str(repo_root)
+
         result = subprocess.run(
             [sys.executable, '-m', 'as_you.commands.promotion_analyzer', 'summary-line'],
             check=False, capture_output=True,

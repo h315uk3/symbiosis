@@ -8,11 +8,16 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from as_you.lib.common import AsYouConfig
-
 # Plugin root path (for subprocess calls)
 HOOK_DIR = Path(__file__).parent.resolve()
 PLUGIN_ROOT = HOOK_DIR.parent
+
+# WORKAROUND: Claude Code does not set CLAUDE_PLUGIN_ROOT environment variable
+# See: https://github.com/anthropics/claude-code/issues (upstream bug)
+# This sys.path manipulation is required until the upstream issue is resolved.
+sys.path.insert(0, str(PLUGIN_ROOT))  # noqa: E402
+
+from as_you.lib.common import AsYouConfig
 
 
 def run_python_script(
