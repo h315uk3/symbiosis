@@ -11,21 +11,28 @@ Pattern learning plugin. Captures observations, detects patterns, applies learne
 
 ### /as-you:learn [note]
 
+Record patterns through notes.
+
 With argument: Add note (auto-translated to English).
 Without argument: Interactive dashboard (add/view/analyze notes).
 
-### /as-you:memory
+### /as-you:patterns
 
-Pattern analysis and SM-2 review dashboard.
+Manage learned patterns: save as skills/agents, analyze, review quality, view statistics.
 
-### /as-you:apply [workflow]
+Options: Save as skill/agent, Analyze patterns, Review quality (SM-2), View statistics.
 
-With argument: Save workflow.
-Without argument: Browse and execute workflows.
+### /as-you:workflows [workflow-name]
+
+Manage workflows: save procedures, view/execute, optimize quality.
+
+With argument: Save new workflow.
+Without argument: Dashboard (save/view/execute/optimize workflows).
 
 ### /as-you:active [on|off|status]
 
 Toggle automatic capture of prompts and edits.
+
 Without argument: Show status.
 Default: OFF.
 

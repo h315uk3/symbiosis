@@ -20,15 +20,14 @@ Hook input (stdin JSON):
 import json
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TypedDict
 
+from as_you.lib.common import AsYouConfig
+
 HOOK_DIR = Path(__file__).parent.resolve()
 PLUGIN_ROOT = HOOK_DIR.parent
-sys.path.insert(0, str(PLUGIN_ROOT))
-
-from as_you.lib.common import AsYouConfig
 
 
 class EditEntry(TypedDict):
@@ -133,11 +132,7 @@ def detect_patterns(content: str, language: str) -> list[str]:
     content_lower = content.lower()
 
     # Error handling
-    if language == "python" and ("try:" in content or "except" in content):
-        patterns.append("error_handling")
-    elif language in ("javascript", "typescript") and ("try {" in content or "catch" in content):
-        patterns.append("error_handling")
-    elif language == "go" and "if err != nil" in content:
+    if (language == "python" and ("try:" in content or "except" in content)) or (language in ("javascript", "typescript") and ("try {" in content or "catch" in content)) or (language == "go" and "if err != nil" in content):
         patterns.append("error_handling")
 
     # Testing
@@ -145,17 +140,11 @@ def detect_patterns(content: str, language: str) -> list[str]:
         patterns.append("testing")
 
     # Class definition
-    if language == "python" and re.search(r"class\s+\w+", content):
-        patterns.append("class_definition")
-    elif language in ("javascript", "typescript") and re.search(r"class\s+\w+", content):
+    if (language == "python" and re.search(r"class\s+\w+", content)) or (language in ("javascript", "typescript") and re.search(r"class\s+\w+", content)):
         patterns.append("class_definition")
 
     # Function definition
-    if language == "python" and re.search(r"def\s+\w+\s*\(", content):
-        patterns.append("function_definition")
-    elif language in ("javascript", "typescript") and re.search(r"(function\s+\w+|=>\s*\{)", content):
-        patterns.append("function_definition")
-    elif language == "go" and re.search(r"func\s+\w+", content):
+    if (language == "python" and re.search(r"def\s+\w+\s*\(", content)) or (language in ("javascript", "typescript") and re.search(r"(function\s+\w+|=>\s*\{)", content)) or (language == "go" and re.search(r"func\s+\w+", content)):
         patterns.append("function_definition")
 
     # Import/dependency
@@ -163,9 +152,7 @@ def detect_patterns(content: str, language: str) -> list[str]:
         patterns.append("import")
 
     # Type annotations
-    if language == "python" and re.search(r":\s*(str|int|float|bool|list|dict|Any)", content):
-        patterns.append("type_annotation")
-    elif language == "typescript" and re.search(r":\s*(string|number|boolean|any)", content):
+    if (language == "python" and re.search(r":\s*(str|int|float|bool|list|dict|Any)", content)) or (language == "typescript" and re.search(r":\s*(string|number|boolean|any)", content)):
         patterns.append("type_annotation")
 
     # Async patterns
@@ -227,7 +214,7 @@ def capture_edit(tool_name: str, tool_input: dict) -> EditEntry | None:
     change_type = detect_change_type(tool_name, content)
     patterns = detect_patterns(content, language) if content else []
 
-    timestamp = datetime.now(timezone.utc).isoformat()
+    timestamp = datetime.now(UTC).isoformat()
 
     return EditEntry(
         id=f"e_{hash(timestamp) % 0xFFFFFF:06x}",

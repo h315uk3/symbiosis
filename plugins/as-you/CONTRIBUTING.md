@@ -14,7 +14,7 @@ as-you is a pattern learning plugin that:
 
 **Key Components:**
 - **Hooks**: SessionStart/SessionEnd lifecycle, UserPromptSubmit, PostToolUse
-- **Commands**: User-facing slash commands (`/as-you:learn`, `/as-you:apply`, etc.)
+- **Commands**: User-facing slash commands (`/as-you:learn`, `/as-you:patterns`, `/as-you:workflows`, etc.)
 - **Agents**: Autonomous task handlers (code-pattern-analyzer, memory-analyzer, component-generator, promotion-reviewer, workflow-optimizer)
 - **Library**: Shared Python modules for scoring, pattern detection, and data management
 
@@ -22,7 +22,8 @@ as-you is a pattern learning plugin that:
 1. User adds notes via `/as-you:learn`
 2. SessionEnd hook processes and scores patterns
 3. Patterns accumulate across sessions
-4. `/as-you:apply` retrieves relevant patterns for context
+4. `/as-you:patterns` manages pattern promotion and quality
+5. `/as-you:workflows` saves and manages reusable procedures
 
 ## Testing Commands and Agents
 
@@ -53,13 +54,16 @@ Prompt files (`commands/*.md`, `agents/*.md`) cannot be automatically tested. Ma
 - Test: Add a note with various inputs
 - Verify: Note is translated to English if non-English, confirmation appears
 
-**`/as-you:memory` - Memory Dashboard**
+**`/as-you:patterns` - Pattern Management**
 - Test: Run without prerequisites
-- Verify: Statistics display, options appear (View candidates, Analyze, Detect similar)
+- Verify: Statistics display, options appear (Save skill/agent, Analyze, Review quality, View statistics)
+- Test promotion flow: Select "Save as skill/agent", verify skill/agent creation
 
-**`/as-you:apply` - Apply Context**
-- Test: Run with task description
-- Verify: Relevant patterns retrieved, context provided
+**`/as-you:workflows` - Workflow Management**
+- Test with argument: `/as-you:workflows "test-workflow"`
+- Verify: Pattern context displayed, workflow saved with u- prefix
+- Test without argument: Dashboard with options (Save/View/Optimize)
+- Verify: Workflow execution and optimization work correctly
 
 **`/as-you:active` - Toggle Active Learning**
 - Test: `/as-you:active on`, then `/as-you:active status`, then `/as-you:active off`
@@ -73,7 +77,9 @@ Prompt files (`commands/*.md`, `agents/*.md`) cannot be automatically tested. Ma
 
 Agents are invoked automatically. Test by triggering their conditions:
 
-**`memory-analyzer`**: Triggered from `/as-you:memory` → "Analyze patterns"
+**`memory-analyzer`**: Triggered from `/as-you:patterns` → "Analyze patterns"
+
+**`workflow-optimizer`**: Triggered from `/as-you:workflows` → "Optimize quality"
 
 **`component-generator`**: Triggered from promotion flow
 

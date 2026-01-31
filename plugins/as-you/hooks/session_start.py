@@ -2,19 +2,26 @@
 """SessionStart lifecycle hook for As You plugin."""
 
 import json
-import os
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
-import time
-
-# Add plugin root to Python path
-HOOK_DIR = Path(__file__).parent.resolve()
-PLUGIN_ROOT = HOOK_DIR.parent
-sys.path.insert(0, str(PLUGIN_ROOT))
 
 from as_you.lib.common import AsYouConfig
+from as_you.lib.context_detector import (
+    build_context_query,
+    detect_project_type,
+    extract_keywords_from_files,
+)
+from as_you.lib.habit_searcher import search_habits
+
+# Plugin root path (for subprocess calls)
+HOOK_DIR = Path(__file__).parent.resolve()
+PLUGIN_ROOT = HOOK_DIR.parent
+
+# Constants for promotion summary parsing
+EXPECTED_SUMMARY_FIELDS = 5  # total, skills, agents, top_pattern, top_type
 
 
 def cleanup_old_archives(archive_dir: Path, days: int = 7) -> int:
@@ -77,7 +84,7 @@ def fetch_promotion_summary_from_analyzer(repo_root: Path, error_log: Path) -> d
     try:
         result = subprocess.run(
             [sys.executable, str(script), "summary-line"],
-            capture_output=True,
+            check=False, capture_output=True,
             text=True,
             timeout=10,
             cwd=repo_root
@@ -95,7 +102,7 @@ def fetch_promotion_summary_from_analyzer(repo_root: Path, error_log: Path) -> d
 
         # Parse space-separated output
         parts = result.stdout.strip().split()
-        if len(parts) < 5:
+        if len(parts) < EXPECTED_SUMMARY_FIELDS:
             return None
 
         return {
@@ -151,7 +158,7 @@ def main() -> dict:
     """
     try:
         config = AsYouConfig.from_environment()
-    except RuntimeError as e:
+    except RuntimeError:
         # .claude/ directory not found - not an error, just not in workspace
         return {
             "continue": True,
@@ -197,13 +204,6 @@ def main() -> dict:
 
     # 3.5. Inject relevant habits (Phase 3 of Issue #83)
     try:
-        from as_you.lib.context_detector import (
-            detect_project_type,
-            extract_keywords_from_files,
-            build_context_query
-        )
-        from as_you.lib.habit_searcher import search_habits
-
         # Detect context
         tags = detect_project_type(config.workspace_root)
         keywords = extract_keywords_from_files(config.workspace_root)

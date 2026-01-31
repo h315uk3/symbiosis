@@ -15,15 +15,18 @@ Hook input (stdin JSON):
 import json
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TypedDict
 
+from as_you.lib.common import AsYouConfig
+
 HOOK_DIR = Path(__file__).parent.resolve()
 PLUGIN_ROOT = HOOK_DIR.parent
-sys.path.insert(0, str(PLUGIN_ROOT))
 
-from as_you.lib.common import AsYouConfig
+# Constants for prompt capture
+MIN_PROMPT_LENGTH = 10  # Minimum prompt length to capture
+MIN_KEYWORD_LENGTH = 2  # Minimum keyword length after stop word filtering
 
 
 class PromptEntry(TypedDict):
@@ -82,22 +85,25 @@ def classify_intent(text: str) -> str:
     """
     t = text.lower()
 
+    # Check for question patterns first
     if "?" in text or any(t.startswith(q) for q in ["what", "how", "why", "where", "can"]):
         return "question"
-    if any(w in t for w in ["add", "create", "implement", "new", "build"]):
-        return "feature"
-    if any(w in t for w in ["fix", "bug", "issue", "error", "broken"]):
-        return "fix"
-    if any(w in t for w in ["refactor", "restructure", "reorganize", "clean"]):
-        return "refactor"
-    if any(w in t for w in ["update", "improve", "enhance", "optimize"]):
-        return "enhancement"
-    if any(w in t for w in ["remove", "delete"]):
-        return "removal"
-    if any(w in t for w in ["test", "verify", "check"]):
-        return "testing"
-    if any(w in t for w in ["document", "docs", "readme"]):
-        return "documentation"
+
+    # Define intent keywords in order of precedence
+    intent_keywords = {
+        "feature": ["add", "create", "implement", "new", "build"],
+        "fix": ["fix", "bug", "issue", "error", "broken"],
+        "refactor": ["refactor", "restructure", "reorganize", "clean"],
+        "enhancement": ["update", "improve", "enhance", "optimize"],
+        "removal": ["remove", "delete"],
+        "testing": ["test", "verify", "check"],
+        "documentation": ["document", "docs", "readme"],
+    }
+
+    # Check each intent category
+    for intent, keywords in intent_keywords.items():
+        if any(w in t for w in keywords):
+            return intent
 
     return "general"
 
@@ -142,14 +148,14 @@ def capture_prompt(prompt: str) -> PromptEntry | None:
         >>> capture_prompt("hi") is None  # Too short
         True
     """
-    if len(prompt.strip()) < 10:
+    if len(prompt.strip()) < MIN_PROMPT_LENGTH:
         return None
 
-    timestamp = datetime.now(timezone.utc).isoformat()
+    timestamp = datetime.now(UTC).isoformat()
     keywords = tokenize(prompt)
 
     stop_words = {"the", "a", "an", "is", "are", "to", "for", "of", "in", "on", "it", "this", "that"}
-    keywords = [k for k in keywords if k not in stop_words and len(k) > 2]
+    keywords = [k for k in keywords if k not in stop_words and len(k) > MIN_KEYWORD_LENGTH]
 
     return PromptEntry(
         id=f"p_{hash(timestamp) % 0xFFFFFF:06x}",

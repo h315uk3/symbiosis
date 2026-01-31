@@ -127,7 +127,7 @@ View notes, patterns, and learning opportunities.
      python3 -m as_you.commands.promotion_analyzer
      ```
    - Display promotion candidates with scores
-   - Show message: "Use /as-you:memory to explore patterns in detail"
+   - Show message: "Use /as-you:patterns to explore and promote patterns"
    - Return to step 3
 
    **If "Clear current notes":**
@@ -164,6 +164,6 @@ View notes, patterns, and learning opportunities.
 
 ## Related Commands
 
-- `/as-you:memory` - Analyze patterns and memory
-- `/as-you:apply` - Use learned patterns
+- `/as-you:patterns` - Manage and promote patterns
+- `/as-you:workflows` - Save and manage workflows
 - `/as-you:help` - Full documentation
