@@ -2,6 +2,7 @@
 """SessionStart lifecycle hook for As You plugin."""
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -79,15 +80,18 @@ def fetch_promotion_summary_from_analyzer(repo_root: Path, error_log: Path) -> d
         Dict with keys: total, skills, agents, top_pattern, top_type
         None if analysis fails
     """
-    script = repo_root / "as_you/commands/promotion_analyzer.py"
+    # Use -m to run as module, with PYTHONPATH set to repo_root
+    env = os.environ.copy()
+    env['PYTHONPATH'] = str(repo_root)
 
     try:
         result = subprocess.run(
-            [sys.executable, str(script), "summary-line"],
+            [sys.executable, '-m', 'as_you.commands.promotion_analyzer', 'summary-line'],
             check=False, capture_output=True,
             text=True,
             timeout=10,
-            cwd=repo_root
+            cwd=repo_root,
+            env=env
         )
 
         # Log stderr
