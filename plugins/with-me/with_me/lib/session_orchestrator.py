@@ -45,7 +45,10 @@ class SessionOrchestrator:
 
     Examples:
         >>> # Initialize orchestrator
-        >>> orch = SessionOrchestrator()
+        >>> from pathlib import Path
+        >>> orch = SessionOrchestrator(
+        ...     feedback_file_path=Path("/tmp/test_feedback.json")
+        ... )
         >>> session_id = orch.initialize_session()
 
         >>> # Main loop (simplified) - use demo mode for actual testing
@@ -60,13 +63,17 @@ class SessionOrchestrator:
         True
     """
 
-    def __init__(self, config_path: str | None = None):
+    def __init__(
+        self, config_path: str | None = None, feedback_file_path: Path | None = None
+    ):
         """
         Initialize orchestrator with configuration.
 
         Args:
             config_path: Path to dimensions.json config file
                         If None, uses default location
+            feedback_file_path: Path to feedback JSON file for testing
+                               If None, uses default location from environment
         """
         # Load configuration
         if config_path is None:
@@ -78,7 +85,7 @@ class SessionOrchestrator:
             self.config = json.load(f)
 
         # Initialize components
-        self.manager = QuestionFeedbackManager()
+        self.manager = QuestionFeedbackManager(feedback_file_path)
 
         # Session state (initialized in initialize_session)
         self.session_id: str | None = None
@@ -99,7 +106,10 @@ class SessionOrchestrator:
             Session ID for tracking
 
         Examples:
-            >>> orch = SessionOrchestrator()
+            >>> from pathlib import Path
+        >>> orch = SessionOrchestrator(
+        ...     feedback_file_path=Path("/tmp/test_feedback.json")
+        ... )
             >>> session_id = orch.initialize_session()
             >>> len(session_id) > 0
             True
@@ -130,7 +140,10 @@ class SessionOrchestrator:
             True if converged, False otherwise
 
         Examples:
-            >>> orch = SessionOrchestrator()
+            >>> from pathlib import Path
+        >>> orch = SessionOrchestrator(
+        ...     feedback_file_path=Path("/tmp/test_feedback.json")
+        ... )
             >>> _ = orch.initialize_session()
             >>> # Initially not converged (uniform priors)
             >>> orch.check_convergence()
@@ -165,7 +178,10 @@ class SessionOrchestrator:
             Dimension ID to query, or None if no accessible dimensions
 
         Examples:
-            >>> orch = SessionOrchestrator()
+            >>> from pathlib import Path
+        >>> orch = SessionOrchestrator(
+        ...     feedback_file_path=Path("/tmp/test_feedback.json")
+        ... )
             >>> _ = orch.initialize_session()
             >>> dim = orch.select_next_dimension()
             >>> dim == "purpose"  # Purpose has no prerequisites
@@ -218,7 +234,10 @@ class SessionOrchestrator:
             Placeholder question text
 
         Examples:
-            >>> orch = SessionOrchestrator()
+            >>> from pathlib import Path
+        >>> orch = SessionOrchestrator(
+        ...     feedback_file_path=Path("/tmp/test_feedback.json")
+        ... )
             >>> _ = orch.initialize_session()
             >>> question = orch.generate_question("purpose")
             >>> "placeholder" in question.lower()
@@ -246,7 +265,10 @@ class SessionOrchestrator:
             Tuple of (dimension, question) or (None, None) if converged
 
         Examples:
-            >>> orch = SessionOrchestrator()
+            >>> from pathlib import Path
+        >>> orch = SessionOrchestrator(
+        ...     feedback_file_path=Path("/tmp/test_feedback.json")
+        ... )
             >>> _ = orch.initialize_session()
             >>> dim, question = orch.select_next_question()
             >>> dim == "purpose"  # Purpose has no prerequisites
@@ -289,7 +311,10 @@ class SessionOrchestrator:
             Dictionary with update results (stub values for demo)
 
         Examples:
-            >>> orch = SessionOrchestrator()
+            >>> from pathlib import Path
+        >>> orch = SessionOrchestrator(
+        ...     feedback_file_path=Path("/tmp/test_feedback.json")
+        ... )
             >>> _ = orch.initialize_session()
             >>> result = orch.update_beliefs("purpose", "What?", "Web app")
             >>> "information_gain" in result
@@ -310,7 +335,10 @@ class SessionOrchestrator:
             Dictionary with entropy, confidence, convergence status per dimension
 
         Examples:
-            >>> orch = SessionOrchestrator()
+            >>> from pathlib import Path
+        >>> orch = SessionOrchestrator(
+        ...     feedback_file_path=Path("/tmp/test_feedback.json")
+        ... )
             >>> _ = orch.initialize_session()
             >>> state = orch.get_current_state()
             >>> "dimensions" in state
@@ -371,7 +399,10 @@ class SessionOrchestrator:
             Dictionary with session summary
 
         Examples:
-            >>> orch = SessionOrchestrator()
+            >>> from pathlib import Path
+        >>> orch = SessionOrchestrator(
+        ...     feedback_file_path=Path("/tmp/test_feedback.json")
+        ... )
             >>> _ = orch.initialize_session()
             >>> summary = orch.complete_session()
             >>> summary["total_questions"] == 0

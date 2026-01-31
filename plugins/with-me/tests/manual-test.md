@@ -19,6 +19,21 @@ Copy and paste commands into Claude Code session to verify functionality.
 1. Copying and asking Claude Code to run them
 2. Typing `!` prefix directly in prompt (e.g., `!cat .claude/as_you/session_notes.local.md`)
 
+---
+
+## Test Types
+
+**Manual Tests (this document)**:
+- Use actual `.claude/` directory and real plugin data
+- Verify end-to-end functionality with user interaction
+- Persist settings and feedback between sessions
+
+**Automated Tests (doctests)**:
+- Use isolated temporary paths to avoid contaminating workspace
+- Test individual functions without file system side effects
+- Run via `mise run test` without affecting your `.claude/` directory
+
+---
 
 ## /with-me:good-question
 

@@ -98,13 +98,34 @@ class AsYouConfig:
             RuntimeError: If .claude/ directory not found
 
         Examples:
-            >>> config = AsYouConfig.from_environment()
+            >>> import tempfile
+            >>> from pathlib import Path
+            >>> import json
+            >>> # Create isolated test directory
+            >>> temp_root = Path(tempfile.mkdtemp())
+            >>> claude_dir = temp_root / ".claude"
+            >>> as_you_dir = claude_dir / "as_you"
+            >>> as_you_dir.mkdir(parents=True)
+            >>> # Create minimal config file
+            >>> config_file = as_you_dir / "as-you.json"
+            >>> _ = config_file.write_text(json.dumps({"scoring": {}}))
+            >>> # Test direct instantiation (demonstrates structure)
+            >>> config = AsYouConfig(
+            ...     workspace_root=temp_root,
+            ...     claude_dir=claude_dir,
+            ...     tracker_file=as_you_dir / "pattern_tracker.json",
+            ...     archive_dir=as_you_dir / "session_archive",
+            ...     memo_file=as_you_dir / "memo.md",
+            ...     settings={"scoring": {}},
+            ... )
             >>> config.tracker_file.name
             'pattern_tracker.json'
             >>> config.archive_dir.name
             'session_archive'
             >>> "scoring" in config.settings
             True
+            >>> import shutil
+            >>> shutil.rmtree(temp_root)
         """
         # Search upward for .claude/ directory
         workspace_root = find_workspace_root()

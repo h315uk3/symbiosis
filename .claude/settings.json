@@ -1,1 +1,25 @@
-{}
+{
+  "permissions": {
+    "allow": [
+      "Bash(mise run test:*)",
+      "Bash(mise run lint:*)",
+      "Bash(mise run typecheck:*)",
+      "Bash(mise run format:*)",
+      "Bash(mise run validate:*)",
+      "Bash(mise run coverage:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(python3 -m doctest:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue list:*)"
+    ]
+  },
+  "modelPreferences": {
+    "quickTasks": "haiku",
+    "complexTasks": "sonnet"
+  }
+}
