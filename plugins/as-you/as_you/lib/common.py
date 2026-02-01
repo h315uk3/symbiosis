@@ -18,6 +18,7 @@ def find_workspace_root(start_path: Path | None = None) -> Path | None:
 
     Implements Claude Code's standard workspace detection by recursively
     searching parent directories from start_path until .claude/ is found.
+    Excludes home directory's ~/.claude/ (personal config, not workspace).
 
     Args:
         start_path: Starting directory (None = use PWD or cwd)
@@ -60,14 +61,16 @@ def find_workspace_root(start_path: Path | None = None) -> Path | None:
         start_path = Path(start_path_str)
 
     current = start_path.resolve()
+    home = Path.home()
 
-    # Search upward until root directory
-    while current != current.parent:
+    # Search upward until root or home directory
+    # Don't use ~/.claude/ (personal config, not workspace)
+    while current not in (current.parent, home):
         if (current / ".claude").exists() and (current / ".claude").is_dir():
             return current
         current = current.parent
 
-    # Not found
+    # Not found or reached home directory
     return None
 
 
