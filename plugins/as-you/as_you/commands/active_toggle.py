@@ -115,7 +115,24 @@ def get_status(config: AsYouConfig) -> str:
 
 def main() -> None:
     """CLI entry point."""
-    config = AsYouConfig.from_environment()
+    try:
+        config = AsYouConfig.from_environment()
+    except RuntimeError:
+        # .claude/ directory not found
+        # Check if we're in home directory (should not create .claude/ there)
+        cwd = Path.cwd()
+
+        if cwd == Path.home():
+            print("Error: Cannot run in home directory", file=sys.stderr)
+            print("Please run this command from within a project directory", file=sys.stderr)
+            sys.exit(1)
+
+        # Safe to create .claude/ in current directory
+        claude_dir = cwd / ".claude"
+        claude_dir.mkdir(parents=True, exist_ok=True)
+
+        # Retry loading config
+        config = AsYouConfig.from_environment()
 
     if len(sys.argv) < _MIN_ARGS:
         print(get_status(config))
