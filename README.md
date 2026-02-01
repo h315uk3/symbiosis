@@ -8,7 +8,7 @@
 
 **A minimalist engine for Human-AI collaboration.**
 
-**See it in action:** [as-you demos](./plugins/as-you/README.md#demos) • [with-me demo](./plugins/with-me/README.md#demo)
+**See it in action:** [as-you demos](./plugins/as-you/README.md#demos) | [with-me demo](./plugins/with-me/README.md#demo)
 
 > Install and use immediately. No setup. No configuration. No external services.
 
