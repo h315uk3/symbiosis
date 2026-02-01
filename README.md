@@ -18,8 +18,8 @@ It's still in its early stages, but it has already become indispensable for my o
 
 Two plugins that extend Claude Code:
 
-- **as-you** — Your extended memory. Learns patterns, makes them accessible via commands.
-- **with-me** — Your thinking partner. Asks the right questions to clarify requirements.
+- **[as-you](./plugins/as-you/README.md)** — Your extended memory. Learns patterns, makes them accessible via commands.
+- **[with-me](./plugins/with-me/README.md)** — Your thinking partner. Asks the right questions to clarify requirements.
 
 ## Architecture
 
