@@ -42,6 +42,12 @@ fast checkout. Ready to start implementation?
 
 ---
 
+## Demo
+
+![Adaptive Questioning Demo](https://h315uk3.github.io/symbiosis/assets/video/demo-with-me-questions.gif)
+
+---
+
 ## Key Features
 
 - **Adaptive Questioning** - Each question builds on previous answers

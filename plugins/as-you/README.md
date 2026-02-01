@@ -29,6 +29,26 @@ for the API key, following your established pattern.
 
 ---
 
+## Demos
+
+### Learning Patterns
+
+![Learning Demo](https://h315uk3.github.io/symbiosis/assets/video/demo-as-you-learning.gif)
+
+### Managing Patterns
+
+![Patterns Demo](https://h315uk3.github.io/symbiosis/assets/video/demo-as-you-patterns.gif)
+
+### Active Learning Mode
+
+![Active Mode Demo](https://h315uk3.github.io/symbiosis/assets/video/demo-as-you-active.gif)
+
+### Managing Workflows
+
+![Workflows Demo](https://h315uk3.github.io/symbiosis/assets/video/demo-as-you-workflows.gif)
+
+---
+
 ## Key Features
 
 - **Automatic Pattern Learning** - Patterns emerge from your notes over time
