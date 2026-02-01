@@ -107,18 +107,28 @@ def validate_and_normalize_likelihoods(
 
 
 def get_session_dir() -> Path:
-    """Get session persistence directory."""
+    """Get session persistence directory.
+
+    Searches upward from current directory for .claude/ directory.
+    Excludes home directory's ~/.claude/ (personal config, not workspace).
+    Falls back to project-local storage if no workspace found.
+    """
     # Look for .claude directory in current or parent directories
     current = Path.cwd()
-    while current != current.parent:
+    home = Path.home()
+
+    # Search upward, but stop at home directory
+    # Don't use ~/.claude/ (personal config, not workspace)
+    while current not in (current.parent, home):
         claude_dir = current / ".claude" / "with_me" / "sessions"
         if claude_dir.parent.parent.exists():
             claude_dir.mkdir(parents=True, exist_ok=True)
             return claude_dir
         current = current.parent
 
-    # Fallback to home directory
-    fallback = Path.home() / ".claude" / "with_me" / "sessions"
+    # Fallback: Use .with_me in current directory (no workspace found)
+    # This avoids polluting ~/.claude/ when run outside a workspace
+    fallback = Path.cwd() / ".with_me" / "sessions"
     fallback.mkdir(parents=True, exist_ok=True)
     return fallback
 
