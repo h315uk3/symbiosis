@@ -124,7 +124,10 @@ def main() -> None:
 
         if cwd == Path.home():
             print("Error: Cannot run in home directory", file=sys.stderr)
-            print("Please run this command from within a project directory", file=sys.stderr)
+            print(
+                "Please run this command from within a project directory",
+                file=sys.stderr,
+            )
             sys.exit(1)
 
         # Safe to create .claude/ in current directory
