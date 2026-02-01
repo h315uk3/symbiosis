@@ -60,6 +60,10 @@ Cargo.lock
 *.rs.bk
 *.pdb
 
+# Recording files (asciinema)
+*.cast
+*.cast.bak
+
 # OS-specific files
 .DS_Store
 Thumbs.db
