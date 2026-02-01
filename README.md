@@ -8,6 +8,8 @@
 
 **A minimalist engine for Human-AI collaboration.**
 
+**See it in action:** [as-you demos](./plugins/as-you/README.md#demos) • [with-me demo](./plugins/with-me/README.md#demo)
+
 > Install and use immediately. No setup. No configuration. No external services.
 
 I built this because I wanted to see how far we can extend human cognition using only Python's standard library and fundamental algorithms. No heavy dependencies, no black boxes—just information theory, cognitive science, and a desire for a more "natural" partnership with AI.
