@@ -44,7 +44,7 @@ fast checkout. Ready to start implementation?
 
 ## Demo
 
-[▶ View Adaptive Questioning Demo](https://h315uk3.github.io/symbiosis/assets/video/demo-with-me-questions.gif)
+![Adaptive Questioning Demo](https://h315uk3.github.io/symbiosis/assets/video/demo-with-me-questions.gif)
 
 ---
 
