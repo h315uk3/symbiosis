@@ -12,10 +12,12 @@ Claude guesses instead of asking. Claude forgets everything between sessions. **
 
 ### Problem 1: Claude Guesses Instead of Asking
 
+```
 You: "Add authentication"
 Claude: *implements JWT*
 You: "I meant OAuth"
 Claude: *rebuilds everything*
+```
 
 **Time lost to miscommunication.**
 
@@ -23,10 +25,12 @@ Claude: *rebuilds everything*
 
 ### Problem 2: Claude Forgets Everything Next Session
 
+```
 Today: "Remember, User.findById() can return null - null checks are critical"
 Tomorrow: *Claude writes code without null checks*
 You: "I told you yesterday about null checks..."
 Claude: "Sorry, I don't remember previous sessions"
+```
 
 **You repeat the same lessons in every session.**
 
