@@ -345,17 +345,21 @@ This command internally:
 
 Output (internal use only): `status`, `entropy_before`, `entropy_after`, `information_gain`, `question_count`
 
-**Record feedback** (after each update, using values from the output above):
+**Record feedback** (after each update, using values from the output above and evaluation from Step 2.2b):
 
 ```bash
 export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
 python3 -m with_me.cli.feedback record <FEEDBACK_SESSION_ID> \
   <QUESTION> \
-  '{"dimension": "<DIMENSION>", "information_gain": <INFORMATION_GAIN>}' \
+  '{"dimension": "<DIMENSION>", "information_gain": <INFORMATION_GAIN>, "reward_scores": {"total_reward": <REWARD>, "components": {"info_gain": <EIG>, "clarity": <CLARITY>, "importance": <IMPORTANCE>}, "confidence": 1.0}}' \
   '{"text": "<ANSWER>"}'
 ```
 
-This records the question-answer pair with actual information gain for cross-session analytics. Do NOT show output to the user.
+- `<INFORMATION_GAIN>`: Actual info gain from `update-with-computation` output
+- `<REWARD>`, `<EIG>`, `<CLARITY>`, `<IMPORTANCE>`: Values computed in Step 2.2b evaluation
+- For the first 2 questions (where evaluation was skipped), omit `reward_scores` from the context JSON
+
+Do NOT show output to the user.
 
 **ANOMALY DETECTION: Negative Information Gain**
 
