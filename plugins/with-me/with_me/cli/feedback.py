@@ -31,15 +31,23 @@ def cmd_record(
     dimension = context.get("dimension", "unknown")
     information_gain = context.get("information_gain")
 
-    reward_scores = context.get("reward_scores", {
-        "total_reward": 0.0,
-        "components": {"info_gain": 0.0, "clarity": 0.0, "importance": 0.0},
-        "confidence": 0.0,
-    })
+    reward_scores = context.get(
+        "reward_scores",
+        {
+            "total_reward": 0.0,
+            "components": {"info_gain": 0.0, "clarity": 0.0, "importance": 0.0},
+            "confidence": 0.0,
+        },
+    )
 
     manager = QuestionFeedbackManager()
     manager.record_question(
-        session_id, question, dimension, context, answer_data, reward_scores,
+        session_id,
+        question,
+        dimension,
+        context,
+        answer_data,
+        reward_scores,
         information_gain=information_gain,
     )
 
@@ -60,14 +68,22 @@ def cmd_record_batch(session_id: str, questions_json: str) -> None:
         answer_data = q_data["answer"]
         information_gain = q_data.get("information_gain")
 
-        reward_scores = q_data.get("reward_scores", {
-            "total_reward": 0.0,
-            "components": {"info_gain": 0.0, "clarity": 0.0, "importance": 0.0},
-            "confidence": 0.0,
-        })
+        reward_scores = q_data.get(
+            "reward_scores",
+            {
+                "total_reward": 0.0,
+                "components": {"info_gain": 0.0, "clarity": 0.0, "importance": 0.0},
+                "confidence": 0.0,
+            },
+        )
 
         manager.record_question(
-            session_id, question, dimension, context, answer_data, reward_scores,
+            session_id,
+            question,
+            dimension,
+            context,
+            answer_data,
+            reward_scores,
             information_gain=information_gain,
         )
         recorded += 1
