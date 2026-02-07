@@ -82,6 +82,7 @@ class QuestionData(TypedDict):
     context: NotRequired[dict[str, Any]]
     answer: NotRequired[dict[str, Any]]
     reward_scores: dict[str, Any]  # Can contain nested dicts like {"components": {...}}
+    information_gain: NotRequired[float]  # Actual computed info gain in bits
     # Bayesian belief tracking
     dimension_beliefs_before: NotRequired[dict[str, dict] | None]
     dimension_beliefs_after: NotRequired[dict[str, dict] | None]
@@ -279,8 +280,7 @@ class QuestionFeedbackManager:
         context: dict[str, Any],
         answer: dict[str, Any],
         reward_scores: dict[str, float],
-        dimension_beliefs_before: dict[str, dict] | None = None,
-        dimension_beliefs_after: dict[str, dict] | None = None,
+        information_gain: float | None = None,
     ) -> None:
         """
         Record a question-answer pair in a session
@@ -292,8 +292,7 @@ class QuestionFeedbackManager:
             context: Context with uncertainties before/after
             answer: Answer data (word_count, has_examples)
             reward_scores: Reward components and total
-            dimension_beliefs_before: Optional Bayesian beliefs before question
-            dimension_beliefs_after: Optional Bayesian beliefs after answer
+            information_gain: Actual computed information gain in bits
         """
         session = self._find_session(session_id)
         if session is None:
@@ -307,9 +306,9 @@ class QuestionFeedbackManager:
             "context": context,
             "answer": answer,
             "reward_scores": reward_scores,
-            "dimension_beliefs_before": dimension_beliefs_before,
-            "dimension_beliefs_after": dimension_beliefs_after,
         }
+        if information_gain is not None:
+            question_data["information_gain"] = information_gain
 
         session["questions"].append(question_data)
         save_feedback(self.feedback_file, self.data)
@@ -343,11 +342,14 @@ class QuestionFeedbackManager:
             ...         "uncertainties_after": {"purpose": 0.3},
             ...     },
             ...     {"word_count": 50, "has_examples": True},
-            ...     {"info_gain": 0.7, "total_reward": 0.85},
+            ...     {"total_reward": 0.85},
+            ...     information_gain=0.7,
             ... )
             >>> summary = manager.complete_session(session_id, {"purpose": 0.3})
             >>> summary["total_questions"]
             1
+            >>> summary["total_info_gain"]
+            0.7
         """
         session = self._find_session(session_id)
         if session is None:
@@ -359,7 +361,9 @@ class QuestionFeedbackManager:
         total_questions = len(questions)
         total_reward = sum(q["reward_scores"].get("total_reward", 0) for q in questions)
         total_info_gain = sum(
-            q["reward_scores"].get("components", {}).get("info_gain", 0)
+            q["information_gain"]
+            if "information_gain" in q
+            else q["reward_scores"].get("components", {}).get("info_gain", 0)
             for q in questions
         )
         final_clarity = 1.0 - (
@@ -486,7 +490,9 @@ class QuestionFeedbackManager:
 
             if dim_questions:
                 avg_info_gain = sum(
-                    q["reward_scores"].get("components", {}).get("info_gain", 0)
+                    q["information_gain"]
+                    if "information_gain" in q
+                    else q["reward_scores"].get("components", {}).get("info_gain", 0)
                     for q in dim_questions
                 ) / len(dim_questions)
 
