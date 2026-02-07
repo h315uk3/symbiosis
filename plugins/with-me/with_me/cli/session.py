@@ -476,36 +476,48 @@ def cmd_update_with_computation(args: argparse.Namespace) -> None:
     hs._cached_entropy = h_after
     hs._cached_confidence = 1.0 - (h_after / h_max) if h_max > 0 else 1.0
 
-    # Phase C: Persist to session history
-    orch.question_history.append(
-        {
-            "dimension": args.dimension,
-            "question": args.question,
-            "answer": args.answer,
-            "entropy_before": h_before,
-            "entropy_after": h_after,
-            "information_gain": info_gain,
+    # Build evaluation scores if provided
+    evaluation_scores: dict[str, Any] | None = None
+    if args.reward is not None:
+        evaluation_scores = {
+            "total_reward": args.reward,
+            "components": {
+                "info_gain": args.eig if args.eig is not None else 0.0,
+                "clarity": args.clarity if args.clarity is not None else 0.0,
+                "importance": args.importance if args.importance is not None else 0.0,
+            },
+            "confidence": 1.0,
         }
-    )
+
+    # Phase C: Persist to session history
+    history_entry: dict[str, Any] = {
+        "dimension": args.dimension,
+        "question": args.question,
+        "answer": args.answer,
+        "entropy_before": h_before,
+        "entropy_after": h_after,
+        "information_gain": info_gain,
+    }
+    if evaluation_scores is not None:
+        history_entry["evaluation_scores"] = evaluation_scores
+    orch.question_history.append(history_entry)
     orch.question_count += 1
 
     # Save updated state
     save_session_state(args.session_id, orch)
 
     # Output results
-    print(
-        json.dumps(
-            {
-                "status": "updated",
-                "dimension": args.dimension,
-                "entropy_before": round(h_before, 4),
-                "entropy_after": round(h_after, 4),
-                "information_gain": round(info_gain, 4),
-                "question_count": orch.question_count,
-            },
-            ensure_ascii=False,
-        )
-    )
+    output: dict[str, Any] = {
+        "status": "updated",
+        "dimension": args.dimension,
+        "entropy_before": round(h_before, 4),
+        "entropy_after": round(h_after, 4),
+        "information_gain": round(info_gain, 4),
+        "question_count": orch.question_count,
+    }
+    if evaluation_scores is not None:
+        output["evaluation_scores"] = evaluation_scores
+    print(json.dumps(output, ensure_ascii=False))
 
 
 def main() -> None:
@@ -551,6 +563,30 @@ def main() -> None:
         type=str,
         required=True,
         help="Likelihoods as JSON: '{\"hyp1\": 0.5, ...}'",
+    )
+    update_comp_parser.add_argument(
+        "--reward",
+        type=float,
+        default=None,
+        help="Total reward score from evaluation (optional)",
+    )
+    update_comp_parser.add_argument(
+        "--eig",
+        type=float,
+        default=None,
+        help="Expected information gain from evaluation (optional)",
+    )
+    update_comp_parser.add_argument(
+        "--clarity",
+        type=float,
+        default=None,
+        help="Clarity score from evaluation (optional)",
+    )
+    update_comp_parser.add_argument(
+        "--importance",
+        type=float,
+        default=None,
+        help="Importance score from evaluation (optional)",
     )
 
     args = parser.parse_args()

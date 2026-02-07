@@ -334,30 +334,36 @@ python3 -m with_me.cli.session update-with-computation \
   --dimension <DIMENSION> \
   --question <QUESTION> \
   --answer <ANSWER> \
-  --likelihoods "$LIKELIHOODS"
+  --likelihoods "$LIKELIHOODS" \
+  --reward <REWARD> \
+  --eig <EIG> \
+  --clarity <CLARITY> \
+  --importance <IMPORTANCE>
 ```
+
+- `--reward`, `--eig`, `--clarity`, `--importance`: Evaluation scores from Step 2.2b. These are persisted to the session file for structural reliability.
+- For the first 2 questions (where evaluation was skipped), omit these optional flags.
 
 This command internally:
 - Calculates entropy before/after using Shannon formula
 - Performs Bayesian update (prior × likelihood, normalized)
 - Calculates information gain (H_before - H_after)
-- Persists results to session file
+- Persists results and evaluation scores to session file
 
-Output (internal use only): `status`, `entropy_before`, `entropy_after`, `information_gain`, `question_count`
+Output (internal use only): `status`, `entropy_before`, `entropy_after`, `information_gain`, `question_count`, `evaluation_scores` (if provided)
 
-**Record feedback** (after each update, using values from the output above and evaluation from Step 2.2b):
+**Record feedback** (after each update, using values from the output above):
 
 ```bash
 export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
 python3 -m with_me.cli.feedback record <FEEDBACK_SESSION_ID> \
   <QUESTION> \
-  '{"dimension": "<DIMENSION>", "information_gain": <INFORMATION_GAIN>, "reward_scores": {"total_reward": <REWARD>, "components": {"info_gain": <EIG>, "clarity": <CLARITY>, "importance": <IMPORTANCE>}, "confidence": 1.0}}' \
+  '{"dimension": "<DIMENSION>", "information_gain": <INFORMATION_GAIN>, "reward_scores": <EVALUATION_SCORES>}' \
   '{"text": "<ANSWER>"}'
 ```
 
-- `<INFORMATION_GAIN>`: Actual info gain from `update-with-computation` output
-- `<REWARD>`, `<EIG>`, `<CLARITY>`, `<IMPORTANCE>`: Values computed in Step 2.2b evaluation
-- For the first 2 questions (where evaluation was skipped), omit `reward_scores` from the context JSON
+- `<INFORMATION_GAIN>`: From `information_gain` in `update-with-computation` output
+- `<EVALUATION_SCORES>`: From `evaluation_scores` in `update-with-computation` output (the full JSON object). If `evaluation_scores` is absent (first 2 questions), omit `reward_scores` from the context JSON.
 
 Do NOT show output to the user.
 
