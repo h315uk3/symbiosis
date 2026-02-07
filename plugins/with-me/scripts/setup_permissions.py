@@ -2,9 +2,10 @@
 """
 Setup permissions for with-me plugin.
 
-Adds 9 required permissions to .claude/settings.local.json:
+Adds 12 required permissions to .claude/settings.local.json:
 - 1 PYTHONPATH environment variable
-- 6 CLI commands (init, next-question, evaluate-question, update-with-computation, status, complete)
+- 6 session CLI commands (init, next-question, evaluate-question, update-with-computation, status, complete)
+- 3 feedback CLI commands (start, record, complete)
 - 1 Skill (requirement-analysis for post-session analysis)
 - 1 Read permission (session data)
 """
@@ -24,6 +25,10 @@ REQUIRED_PERMISSIONS = [
     "Bash(python3 -m with_me.cli.session update-with-computation*)",
     "Bash(python3 -m with_me.cli.session status*)",
     "Bash(python3 -m with_me.cli.session complete*)",
+    # Feedback CLI commands
+    "Bash(python3 -m with_me.cli.feedback start*)",
+    "Bash(python3 -m with_me.cli.feedback record*)",
+    "Bash(python3 -m with_me.cli.feedback complete*)",
     # Skills (for post-session analysis only)
     "Skill(with-me:requirement-analysis)",
     # Read permissions for session data

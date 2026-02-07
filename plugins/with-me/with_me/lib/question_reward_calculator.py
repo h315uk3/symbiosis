@@ -22,49 +22,6 @@ from dataclasses import dataclass
 from typing import Any, TypedDict
 
 
-class CalculatorUnavailable(Exception):
-    """Raised when reward calculator cannot be initialized or is incompatible."""
-
-    pass
-
-
-class QuestionRewardCalculator:
-    """Stub class for backward compatibility with CLI.
-
-    All computation is now performed by Claude using skills.
-    This class exists only to prevent import errors in legacy CLI code.
-    """
-
-    def calculate_reward(
-        self, question: str, context: dict[str, Any], answer_text: str
-    ) -> dict[str, Any]:
-        """Return placeholder reward for legacy CLI compatibility.
-
-        Args:
-            question: The question text
-            context: Context information
-            answer_text: The answer text
-
-        Returns:
-            Placeholder reward dict
-
-        Examples:
-            >>> calc = QuestionRewardCalculator()
-            >>> result = calc.calculate_reward("test?", {}, "answer")
-            >>> "total_reward" in result
-            True
-        """
-        return {
-            "total_reward": 0.0,
-            "components": {
-                "info_gain": 0.0,
-                "clarity": 0.0,
-                "importance": 0.0,
-            },
-            "confidence": 0.0,
-        }
-
-
 class QuestionContext(TypedDict):
     """
     Context information for reward calculation.

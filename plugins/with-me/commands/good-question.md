@@ -88,7 +88,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/setup_permissions.py"
 
 The script will:
 - Create `.claude/settings.local.json` if it doesn't exist
-- Add 9 required permissions (1 PYTHONPATH + 6 CLI commands + 1 Skill + 1 Read)
+- Add 12 required permissions (1 PYTHONPATH + 6 session CLI + 3 feedback CLI + 1 Skill + 1 Read)
 - Deduplicate existing permissions
 - Output setup status as JSON
 
@@ -122,6 +122,15 @@ Expected output (internal use only, do NOT show to user):
 ```
 
 Store the `session_id` for subsequent commands.
+
+Also initialize feedback tracking for cross-session analytics:
+
+```bash
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m with_me.cli.feedback start --plain-output
+```
+
+Store the returned value as `FEEDBACK_SESSION_ID`. This is separate from `SESSION_ID` and used only for recording question feedback.
 
 **User-facing message:** "Let's clarify your requirements. I'll ask a series of questions to understand what you need."
 
@@ -336,6 +345,22 @@ This command internally:
 
 Output (internal use only): `status`, `entropy_before`, `entropy_after`, `information_gain`, `question_count`
 
+**Record feedback** (after each update, using values from the output above and evaluation from Step 2.2b):
+
+```bash
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m with_me.cli.feedback record <FEEDBACK_SESSION_ID> \
+  <QUESTION> \
+  '{"dimension": "<DIMENSION>", "information_gain": <INFORMATION_GAIN>, "reward_scores": {"total_reward": <REWARD>, "components": {"info_gain": <EIG>, "clarity": <CLARITY>, "importance": <IMPORTANCE>}, "confidence": 1.0}}' \
+  '{"text": "<ANSWER>"}'
+```
+
+- `<INFORMATION_GAIN>`: Actual info gain from `update-with-computation` output
+- `<REWARD>`, `<EIG>`, `<CLARITY>`, `<IMPORTANCE>`: Values computed in Step 2.2b evaluation
+- For the first 2 questions (where evaluation was skipped), omit `reward_scores` from the context JSON
+
+Do NOT show output to the user.
+
 **ANOMALY DETECTION: Negative Information Gain**
 
 If `information_gain` is negative (IG < 0), this means uncertainty *increased* rather than decreased. This is an anomaly with two possible root causes:
@@ -396,6 +421,14 @@ Return to step 2.1-2.2.
 ```bash
 export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
 python3 -m with_me.cli.session complete --session-id <SESSION_ID>
+```
+
+Also complete the feedback session with final entropy values from the session status:
+
+```bash
+export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
+python3 -m with_me.cli.feedback complete <FEEDBACK_SESSION_ID> \
+  '{"purpose": <ENTROPY>, "data": <ENTROPY>, "behavior": <ENTROPY>, "constraints": <ENTROPY>, "quality": <ENTROPY>}'
 ```
 
 **IMPORTANT:** Do NOT show the raw JSON output to the user. Instead, provide a simple completion message.

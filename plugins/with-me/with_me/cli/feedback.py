@@ -10,7 +10,6 @@ import json
 import sys
 
 from with_me.lib.question_feedback_manager import QuestionFeedbackManager
-from with_me.lib.question_reward_calculator import QuestionRewardCalculator
 
 
 def cmd_start(plain_output: bool = False) -> None:
@@ -30,17 +29,29 @@ def cmd_record(
     context = json.loads(context_json)
     answer_data = json.loads(answer_json)
     dimension = context.get("dimension", "unknown")
+    information_gain = context.get("information_gain")
 
-    calculator = QuestionRewardCalculator()
-    answer_text = answer_data.get("text", "")
-    reward_result = calculator.calculate_reward(question, context, answer_text)
+    reward_scores = context.get(
+        "reward_scores",
+        {
+            "total_reward": 0.0,
+            "components": {"info_gain": 0.0, "clarity": 0.0, "importance": 0.0},
+            "confidence": 0.0,
+        },
+    )
 
     manager = QuestionFeedbackManager()
     manager.record_question(
-        session_id, question, dimension, context, answer_data, reward_result
+        session_id,
+        question,
+        dimension,
+        context,
+        answer_data,
+        reward_scores,
+        information_gain=information_gain,
     )
 
-    print(json.dumps({"reward_scores": reward_result}))
+    print(json.dumps({"recorded": True, "information_gain": information_gain}))
 
 
 def cmd_record_batch(session_id: str, questions_json: str) -> None:
@@ -48,7 +59,6 @@ def cmd_record_batch(session_id: str, questions_json: str) -> None:
     questions = json.loads(questions_json)
 
     manager = QuestionFeedbackManager()
-    calculator = QuestionRewardCalculator()
 
     recorded = 0
     for q_data in questions:
@@ -56,12 +66,25 @@ def cmd_record_batch(session_id: str, questions_json: str) -> None:
         dimension = q_data["dimension"]
         context = q_data["context"]
         answer_data = q_data["answer"]
+        information_gain = q_data.get("information_gain")
 
-        answer_text = answer_data.get("text", "")
-        reward_result = calculator.calculate_reward(question, context, answer_text)
+        reward_scores = q_data.get(
+            "reward_scores",
+            {
+                "total_reward": 0.0,
+                "components": {"info_gain": 0.0, "clarity": 0.0, "importance": 0.0},
+                "confidence": 0.0,
+            },
+        )
 
         manager.record_question(
-            session_id, question, dimension, context, answer_data, reward_result
+            session_id,
+            question,
+            dimension,
+            context,
+            answer_data,
+            reward_scores,
+            information_gain=information_gain,
         )
         recorded += 1
 
