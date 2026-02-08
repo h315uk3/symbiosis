@@ -633,7 +633,7 @@ def main() -> None:
         help=(
             "Likelihoods as JSON object or array. "
             "Single: '{\"h1\": 0.5, ...}'. "
-            "Multi-select: '[{\"h1\": 0.8, ...}, {\"h1\": 0.3, ...}]'"
+            'Multi-select: \'[{"h1": 0.8, ...}, {"h1": 0.3, ...}]\''
         ),
     )
     update_comp_parser.add_argument(
