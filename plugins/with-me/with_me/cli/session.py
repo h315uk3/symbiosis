@@ -407,14 +407,14 @@ def cmd_evaluate_question(args: argparse.Namespace) -> None:
                 },
                 "formulas": {
                     "clarity": {
-                        "description": "Evaluate question clarity based on linguistic features",
+                        "description": "Evaluate question clarity on discriminative power and precision",
                         "criteria": [
-                            "Question mark present: +0.3",
-                            "Appropriate length (10-30 words): +0.2",
-                            "No ambiguous terms (maybe, perhaps, might): +0.2",
-                            "Single focused question (no compound or/and): +0.3",
+                            "Hypothesis targeting: Does the question distinguish between the current top 2-3 hypotheses? (0.0 generic, 0.5 partially targeting, 1.0 directly discriminating)",
+                            "Answer actionability: Would each possible answer shift beliefs meaningfully toward different hypotheses? (0.0 all answers equivalent, 0.5 some differentiation, 1.0 each answer clearly maps to different hypotheses)",
+                            "Specificity: Is the question about concrete details rather than abstract concepts? (0.0 very abstract, 0.5 moderate, 1.0 concrete and specific)",
                         ],
-                        "scale": "0.0 (unclear) to 1.0 (perfectly clear)",
+                        "formula": "CLARITY = mean of the three criteria scores",
+                        "scale": "0.0 (non-discriminative) to 1.0 (maximally discriminative)",
                     },
                     "importance": {
                         "description": "Calculate importance based on dimension weight and uncertainty",
@@ -488,14 +488,15 @@ def cmd_update_with_computation(args: argparse.Namespace) -> None:
     # Build evaluation scores if provided
     evaluation_scores: dict[str, Any] | None = None
     if args.reward is not None:
+        eig = max(0.0, args.eig) if args.eig is not None else 0.0
         evaluation_scores = {
             "total_reward": args.reward,
             "components": {
-                "info_gain": args.eig if args.eig is not None else 0.0,
+                "info_gain": eig,
                 "clarity": args.clarity if args.clarity is not None else 0.0,
                 "importance": args.importance if args.importance is not None else 0.0,
             },
-            "confidence": 1.0,
+            "confidence": hs._cached_confidence,
         }
 
     # Phase C: Persist to session history
