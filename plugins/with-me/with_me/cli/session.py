@@ -106,6 +106,62 @@ def validate_and_normalize_likelihoods(
     return {h: v / s for h, v in vals.items()}
 
 
+def compute_joint_likelihoods(
+    hs: HypothesisSet, likelihoods_list: list[dict[str, Any]]
+) -> dict[str, float]:
+    """Compute joint likelihood from multiple answer likelihoods.
+
+    For multi-select answers, computes the pointwise product of
+    individually validated likelihoods, then normalizes. This produces
+    a single combined observation for a single Bayesian update, avoiding
+    the negative information gain that occurs with sequential updates.
+
+    Args:
+        hs: HypothesisSet containing the hypotheses
+        likelihoods_list: List of likelihood dicts, one per selected answer
+
+    Returns:
+        Normalized joint likelihood dict (sum=1.0)
+
+    Examples:
+        >>> hs = HypothesisSet("test", ["a", "b", "c"])
+        >>> # Two answers: first favors a, second favors b
+        >>> L1 = {"a": 0.7, "b": 0.2, "c": 0.1}
+        >>> L2 = {"a": 0.2, "b": 0.6, "c": 0.2}
+        >>> result = compute_joint_likelihoods(hs, [L1, L2])
+        >>> # Joint: a=0.14, b=0.12, c=0.02 → normalized
+        >>> round(result["a"], 2)
+        0.5
+        >>> round(result["b"], 2)
+        0.43
+        >>> round(result["c"], 2)
+        0.07
+
+        >>> # Single answer → same as validate_and_normalize
+        >>> result = compute_joint_likelihoods(hs, [{"a": 0.5, "b": 0.3, "c": 0.2}])
+        >>> result
+        {'a': 0.5, 'b': 0.3, 'c': 0.2}
+
+        >>> # Empty list → uniform fallback
+        >>> result = compute_joint_likelihoods(hs, [])
+        >>> round(result["a"], 2)
+        0.33
+    """
+    if not likelihoods_list:
+        u = 1.0 / len(hs.hypotheses) if hs.hypotheses else 1.0
+        return {h: u for h in hs.hypotheses}
+
+    # Compute pointwise product of validated likelihoods
+    joint = {h: 1.0 for h in hs.hypotheses}
+    for likelihoods in likelihoods_list:
+        validated = validate_and_normalize_likelihoods(hs, likelihoods)
+        for h in hs.hypotheses:
+            joint[h] *= validated[h]
+
+    # Normalize the product
+    return validate_and_normalize_likelihoods(hs, joint)
+
+
 def get_session_dir() -> Path:
     """Get session persistence directory.
 
@@ -438,12 +494,21 @@ def cmd_evaluate_question(args: argparse.Namespace) -> None:
 
 
 def cmd_update_with_computation(args: argparse.Namespace) -> None:
-    """Update beliefs with complete computation chain (Phase B + C)."""
+    """Update beliefs with complete computation chain (Phase B + C).
+
+    Supports both single-select and multi-select answers:
+    - Single: --likelihoods '{"h1": 0.5, "h2": 0.3}'
+    - Multi:  --likelihoods '[{"h1": 0.8, ...}, {"h1": 0.3, ...}]'
+
+    For multi-select, computes the joint likelihood (pointwise product)
+    and performs a single Bayesian update, avoiding the negative
+    information gain that sequential independent updates can produce.
+    """
     orch = load_session_state(args.session_id)
 
     # Parse likelihoods from LLM
     try:
-        likelihoods = json.loads(args.likelihoods)
+        likelihoods_raw = json.loads(args.likelihoods)
     except json.JSONDecodeError as e:
         print(
             json.dumps(
@@ -456,8 +521,11 @@ def cmd_update_with_computation(args: argparse.Namespace) -> None:
     # Phase B: Computation chain (Python)
     hs = orch.beliefs[args.dimension]
 
-    # Validate and normalize likelihoods to handle malformed LLM output
-    validated_likelihoods = validate_and_normalize_likelihoods(hs, likelihoods)
+    # Detect multi-select batch (JSON array) vs single-select (JSON object)
+    if isinstance(likelihoods_raw, list):
+        validated_likelihoods = compute_joint_likelihoods(hs, likelihoods_raw)
+    else:
+        validated_likelihoods = validate_and_normalize_likelihoods(hs, likelihoods_raw)
 
     # B1: Entropy before
     h_before = hs.entropy()
@@ -562,7 +630,11 @@ def main() -> None:
         "--likelihoods",
         type=str,
         required=True,
-        help="Likelihoods as JSON: '{\"hyp1\": 0.5, ...}'",
+        help=(
+            "Likelihoods as JSON object or array. "
+            "Single: '{\"h1\": 0.5, ...}'. "
+            "Multi-select: '[{\"h1\": 0.8, ...}, {\"h1\": 0.3, ...}]'"
+        ),
     )
     update_comp_parser.add_argument(
         "--reward",
