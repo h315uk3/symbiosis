@@ -310,12 +310,7 @@ User provides reference → Retrieve content → Analyze information → Estimat
 
 Based on the user's answer (or analyzed content from references), the dimension description, and hypothesis information from Step 2.1, estimate the likelihood P(answer | hypothesis) for each hypothesis.
 
-**Multi-select handling:** If the user selected multiple answers, you need to process them sequentially:
-1. First, estimate likelihoods based on the first selected item
-2. After updating (Phase B+C), estimate likelihoods for the next item
-3. Repeat until all selected items are processed
-
-This sequential approach allows each observation to properly update the posterior distribution using existing Bayesian update logic.
+**Multi-select handling:** If the user selected multiple answers, estimate likelihoods for **each selected item independently**, then pass them all at once as a JSON array to `update-with-computation`. The CLI computes the joint likelihood (pointwise product) and performs a **single** Bayesian update. This avoids negative information gain from contradictory sequential updates.
 
 Consider:
 - How well does the answer align with each hypothesis description?
@@ -323,7 +318,9 @@ Consider:
 - Semantic meaning and context, not just keyword matching
 - **Consistency with previous answers** (avoid contradicting established facts)
 
-Store as: `LIKELIHOODS='{"hyp1": 0.x, "hyp2": 0.y, ...}'` (must sum to ~1.0)
+Store as:
+- Single-select: `LIKELIHOODS='{"hyp1": 0.x, "hyp2": 0.y, ...}'` (must sum to ~1.0)
+- Multi-select: `LIKELIHOODS='[{"hyp1": 0.x, ...}, {"hyp1": 0.y, ...}]'` (one dict per selected answer, each summing to ~1.0)
 
 **Phase B+C: Update and Persist** (single CLI command)
 
@@ -341,12 +338,15 @@ python3 -m with_me.cli.session update-with-computation \
   --importance <IMPORTANCE>
 ```
 
+- `--answer`: For multi-select, combine all selected answers into a single string (e.g., "Answer1; Answer2; Answer3")
+- `--likelihoods`: For multi-select, pass a JSON array of likelihood dicts (one per selected answer). The CLI computes the joint likelihood internally.
 - `--reward`, `--eig`, `--clarity`, `--importance`: Evaluation scores from Step 2.2b. These are persisted to the session file for structural reliability.
 - For the first 2 questions (where evaluation was skipped), omit these optional flags.
 
 This command internally:
+- For multi-select: computes joint likelihood (pointwise product of individual likelihoods, normalized)
 - Calculates entropy before/after using Shannon formula
-- Performs Bayesian update (prior × likelihood, normalized)
+- Performs Bayesian update (prior × joint likelihood, normalized)
 - Calculates information gain (H_before - H_after)
 - Persists results and evaluation scores to session file
 
@@ -388,13 +388,6 @@ If `information_gain` is negative (IG < 0), this means uncertainty *increased* r
 4. **Future questions**: Pay extra attention to consistency with ALL previous answers, not just the most recent one
 
 The system will continue execution - this warning helps you maintain quality in future likelihood estimates.
-
-**Multi-select continuation:** If the user selected multiple items and you haven't processed all of them yet:
-- Return to Phase A with the next unprocessed item
-- Estimate likelihoods for that item (it will update the posterior from the previous item)
-- Execute Phase B+C again
-- Repeat until all selected items are processed
-- Then proceed to Step 2.4
 
 #### 2.4. Display Progress (Optional)
 
