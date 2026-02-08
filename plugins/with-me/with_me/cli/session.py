@@ -16,6 +16,7 @@ import argparse
 import json
 import math
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -310,6 +311,14 @@ def cmd_complete(args: argparse.Namespace) -> None:
     total_questions = len(question_history)
     total_info_gain = sum(q.get("information_gain", 0) for q in question_history)
 
+    # Calculate avg_reward from evaluation_scores in question_history
+    rewards = [
+        q["evaluation_scores"]["total_reward"]
+        for q in question_history
+        if "evaluation_scores" in q
+    ]
+    avg_reward = sum(rewards) / len(rewards) if rewards else 0.0
+
     # Calculate final clarity score (1 - normalized average entropy)
     final_entropies = {
         dim: belief.get("_cached_entropy", 0) for dim, belief in beliefs.items()
@@ -327,7 +336,7 @@ def cmd_complete(args: argparse.Namespace) -> None:
 
     summary = {
         "total_questions": total_questions,
-        "avg_reward_per_question": 0,  # Not tracked in CLI workflow
+        "avg_reward_per_question": avg_reward,
         "total_info_gain": total_info_gain,
         "final_clarity_score": final_clarity,
         "dimensions_resolved": dimensions_resolved,
@@ -338,7 +347,7 @@ def cmd_complete(args: argparse.Namespace) -> None:
 
     # Add completion metadata
     session_data["completed"] = True
-    session_data["completed_at"] = args.session_id  # ISO timestamp
+    session_data["completed_at"] = datetime.now(tz=UTC).isoformat()
     session_data["summary"] = summary
 
     # Save updated session with completion status
