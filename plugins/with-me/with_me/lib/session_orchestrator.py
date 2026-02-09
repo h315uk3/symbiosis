@@ -177,7 +177,7 @@ class SessionOrchestrator:
 
         Normalization maps all dimensions to [0, 1] scale where 1.0 = maximum
         uncertainty regardless of hypothesis count, eliminating systematic bias
-        toward dimensions with more hypotheses (see #168).
+        toward dimensions with more hypotheses.
 
         Returns:
             Dimension ID to query, or None if no accessible dimensions
@@ -192,7 +192,7 @@ class SessionOrchestrator:
             >>> dim == "purpose"  # Purpose has no prerequisites
             True
 
-            >>> # Normalized entropy removes hypothesis-count bias (#168)
+            >>> # Normalized entropy removes hypothesis-count bias
             >>> # Set purpose as converged so data and behavior are accessible
             >>> orch.beliefs["purpose"]._cached_entropy = 0.5
             >>> # behavior (4 hyps): raw=1.8, normalized=1.8/2.0=0.90
@@ -226,7 +226,7 @@ class SessionOrchestrator:
                     else math.log2(len(hs.hypotheses))
                 )
                 # Normalize by H_max = log₂(N) so dimensions with different
-                # hypothesis counts are compared on a [0, 1] scale (#168)
+                # hypothesis counts are compared on a [0, 1] scale
                 h_max = math.log2(len(hs.hypotheses))
                 normalized_entropy = raw_entropy / h_max
                 accessible.append(
