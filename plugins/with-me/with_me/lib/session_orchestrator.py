@@ -156,8 +156,8 @@ class SessionOrchestrator:
 
         Convergence criteria (any triggers stop):
         1. Max question limit reached (safety fallback)
-        2. Diminishing returns: max IG of last N questions < epsilon (#169)
-        3. Normalized confidence: all dimensions above target_confidence (#169)
+        2. Diminishing returns: max IG of last N questions < epsilon
+        3. Normalized confidence: all dimensions above target_confidence
 
         Normalized confidence uses 1 - H/H_max instead of a fixed entropy
         threshold, ensuring consistent convergence across dimensions with
