@@ -268,7 +268,7 @@ If REWARD >= 0.5:
 
 **QUESTIONING PHASE:** Now you ask the actual question. This is NOT evaluation - wait for the user's actual response.
 
-**Cognitive load constraints (#170):** Check the `max_options` field from the dimension config (Step 2.1 CLI output). Generate answer options respecting this limit (default: 5, never exceed 7 per Miller's 7±2 rule). Also check `disclosure_layer`:
+**Cognitive load constraints:** Check the `max_options` field from the dimension config (Step 2.1 CLI output). Generate answer options respecting this limit (default: 5, never exceed 7 per Miller's 7±2 rule). Also check `disclosure_layer`:
 - `"overview"` dimensions: Use broad, simple options (2-3 choices)
 - `"detail"` dimensions: Use moderately specific options (3-4 choices)
 - `"edge_case"` dimensions: Use targeted, specific options (up to `max_options`)
