@@ -208,9 +208,7 @@ class SessionOrchestrator:
 
         # 2. Diminishing returns: recent IG all below epsilon
         window = self.config["session_config"].get("diminishing_returns_window", 3)
-        epsilon = self.config["session_config"].get(
-            "diminishing_returns_epsilon", 0.05
-        )
+        epsilon = self.config["session_config"].get("diminishing_returns_epsilon", 0.05)
         min_questions = self.config["session_config"].get("min_questions", 5)
         if (
             self.question_count >= min_questions
@@ -221,9 +219,7 @@ class SessionOrchestrator:
                 return True
 
         # 3. Normalized convergence: all dimensions above target_confidence
-        target_confidence = self.config["session_config"].get(
-            "target_confidence", 0.85
-        )
+        target_confidence = self.config["session_config"].get("target_confidence", 0.85)
         for hs in self.beliefs.values():
             if hs._cached_entropy is None:
                 # No cached entropy - session just started, not converged
