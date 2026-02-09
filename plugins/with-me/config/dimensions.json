@@ -417,6 +417,9 @@
   "session_config": {
     "initial_entropy": 2.0,
     "convergence_threshold": 0.3,
+    "target_confidence": 0.85,
+    "diminishing_returns_epsilon": 0.05,
+    "diminishing_returns_window": 3,
     "max_questions": 50,
     "min_questions": 5,
     "priority_order": [
