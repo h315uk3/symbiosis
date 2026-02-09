@@ -92,6 +92,7 @@ class SessionOrchestrator:
         self.beliefs: dict[str, HypothesisSet] = {}
         self.question_history: list[dict[str, Any]] = []
         self.question_count = 0
+        self.recent_information_gains: list[float] = []
 
     def initialize_session(self) -> str:
         """
@@ -125,67 +126,147 @@ class SessionOrchestrator:
         # Initialize tracking
         self.question_history = []
         self.question_count = 0
+        self.recent_information_gains = []
 
         return self.session_id
 
+    def record_information_gain(self, ig: float) -> None:
+        """
+        Record information gain from a question for diminishing returns tracking.
+
+        Args:
+            ig: Information gain in bits from the last question
+
+        Examples:
+            >>> from pathlib import Path
+            >>> orch = SessionOrchestrator(
+            ...     feedback_file_path=Path("/tmp/test_feedback.json")
+            ... )
+            >>> _ = orch.initialize_session()
+            >>> orch.record_information_gain(0.5)
+            >>> orch.record_information_gain(0.3)
+            >>> len(orch.recent_information_gains)
+            2
+        """
+        self.recent_information_gains.append(ig)
+
     def check_convergence(self) -> bool:
         """
-        Check if session has converged (all dimensions clear).
+        Check if session has converged using multiple criteria.
 
-        Convergence criteria:
-        1. All dimensions have H(h) < convergence_threshold
-        2. Max question limit not exceeded
+        Convergence criteria (any triggers stop):
+        1. Max question limit reached (safety fallback)
+        2. Diminishing returns: max IG of last N questions < epsilon
+        3. Normalized confidence: all dimensions above target_confidence
+
+        Normalized confidence uses 1 - H/H_max instead of a fixed entropy
+        threshold, ensuring consistent convergence across dimensions with
+        different hypothesis counts.
 
         Returns:
             True if converged, False otherwise
 
         Examples:
             >>> from pathlib import Path
-        >>> orch = SessionOrchestrator(
-        ...     feedback_file_path=Path("/tmp/test_feedback.json")
-        ... )
+            >>> orch = SessionOrchestrator(
+            ...     feedback_file_path=Path("/tmp/test_feedback.json")
+            ... )
             >>> _ = orch.initialize_session()
-            >>> # Initially not converged (uniform priors)
+            >>> # Initially not converged (uniform priors → confidence = 0)
             >>> orch.check_convergence()
             False
+
+            >>> # Diminishing returns: all recent IG below epsilon
+            >>> orch.question_count = 6  # past min_questions
+            >>> orch.recent_information_gains = [0.8, 0.5, 0.3, 0.02, 0.01, 0.03]
+            >>> orch.check_convergence()
+            True
+
+            >>> # Normalized convergence: all dimensions above target_confidence
+            >>> orch2 = SessionOrchestrator(
+            ...     feedback_file_path=Path("/tmp/test_feedback2.json")
+            ... )
+            >>> _ = orch2.initialize_session()
+            >>> # Set high confidence on all dimensions
+            >>> # purpose (4 hyps): H_max=2.0, H=0.2 → confidence=0.9
+            >>> orch2.beliefs["purpose"]._cached_entropy = 0.2
+            >>> # data (3 hyps): H_max≈1.585, H=0.15 → confidence≈0.905
+            >>> orch2.beliefs["data"]._cached_entropy = 0.15
+            >>> # behavior (4 hyps): H=0.1 → confidence=0.95
+            >>> orch2.beliefs["behavior"]._cached_entropy = 0.1
+            >>> # constraints (4 hyps): H=0.25 → confidence=0.875
+            >>> orch2.beliefs["constraints"]._cached_entropy = 0.25
+            >>> # quality (3 hyps): H=0.1 → confidence≈0.937
+            >>> orch2.beliefs["quality"]._cached_entropy = 0.1
+            >>> orch2.check_convergence()
+            True
         """
-        # Check max question limit
+        # 1. Max question limit (safety fallback)
         max_questions = self.config["session_config"]["max_questions"]
         if self.question_count >= max_questions:
             return True
 
-        # Check entropy thresholds (use cached values from persist-computation)
-        conv_threshold = self.config["session_config"]["convergence_threshold"]
+        # 2. Diminishing returns: recent IG all below epsilon
+        window = self.config["session_config"].get("diminishing_returns_window", 3)
+        epsilon = self.config["session_config"].get("diminishing_returns_epsilon", 0.05)
+        min_questions = self.config["session_config"].get("min_questions", 5)
+        if (
+            self.question_count >= min_questions
+            and len(self.recent_information_gains) >= window
+        ):
+            recent = self.recent_information_gains[-window:]
+            if max(recent) < epsilon:
+                return True
+
+        # 3. Normalized convergence: all dimensions above target_confidence
+        target_confidence = self.config["session_config"].get("target_confidence", 0.85)
         for hs in self.beliefs.values():
             if hs._cached_entropy is None:
                 # No cached entropy - session just started, not converged
                 return False
-            if hs._cached_entropy >= conv_threshold:
+            h_max = math.log2(len(hs.hypotheses))
+            confidence = 1.0 - (hs._cached_entropy / h_max)
+            if confidence < target_confidence:
                 return False
 
         return True
 
     def select_next_dimension(self) -> str | None:
         """
-        Select next dimension to query based on entropy and prerequisites.
+        Select next dimension to query based on normalized entropy and prerequisites.
 
         Algorithm:
         1. Filter dimensions by prerequisite satisfaction
-        2. Sort by entropy (descending) then importance
-        3. Return highest-entropy accessible dimension
+        2. Normalize entropy by H_max = log₂(N) per dimension for fair comparison
+        3. Sort by normalized entropy (descending) then importance
+        4. Return highest normalized-entropy accessible dimension
+
+        Normalization maps all dimensions to [0, 1] scale where 1.0 = maximum
+        uncertainty regardless of hypothesis count, eliminating systematic bias
+        toward dimensions with more hypotheses.
 
         Returns:
             Dimension ID to query, or None if no accessible dimensions
 
         Examples:
             >>> from pathlib import Path
-        >>> orch = SessionOrchestrator(
-        ...     feedback_file_path=Path("/tmp/test_feedback.json")
-        ... )
+            >>> orch = SessionOrchestrator(
+            ...     feedback_file_path=Path("/tmp/test_feedback.json")
+            ... )
             >>> _ = orch.initialize_session()
             >>> dim = orch.select_next_dimension()
             >>> dim == "purpose"  # Purpose has no prerequisites
             True
+
+            >>> # Normalized entropy removes hypothesis-count bias
+            >>> # Set purpose as converged so data and behavior are accessible
+            >>> orch.beliefs["purpose"]._cached_entropy = 0.5
+            >>> # behavior (4 hyps): raw=1.8, normalized=1.8/2.0=0.90
+            >>> orch.beliefs["behavior"]._cached_entropy = 1.8
+            >>> # data (3 hyps): raw=1.5, normalized=1.5/log₂(3)≈0.946
+            >>> orch.beliefs["data"]._cached_entropy = 1.5
+            >>> orch.select_next_dimension()
+            'data'
         """
         accessible = []
 
@@ -195,7 +276,7 @@ class SessionOrchestrator:
             prereqs = dim_config["prerequisites"]
             prereq_threshold = dim_config.get("prerequisite_threshold", 1.5)
 
-            # Get cached entropy (use large value if not cached)
+            # Check prerequisite satisfaction (using raw cached entropy)
             prereq_satisfied = True
             for prereq in prereqs:
                 prereq_entropy = self.beliefs[prereq]._cached_entropy
@@ -204,18 +285,24 @@ class SessionOrchestrator:
                     break
 
             if prereq_satisfied:
-                # Use cached entropy or default to high value (max entropy for N hypotheses)
-                entropy = (
+                # Use cached entropy or default to H_max (maximum uncertainty)
+                raw_entropy = (
                     hs._cached_entropy
                     if hs._cached_entropy is not None
                     else math.log2(len(hs.hypotheses))
                 )
-                accessible.append((dim_id, entropy, dim_config["importance"]))
+                # Normalize by H_max = log₂(N) so dimensions with different
+                # hypothesis counts are compared on a [0, 1] scale
+                h_max = math.log2(len(hs.hypotheses))
+                normalized_entropy = raw_entropy / h_max
+                accessible.append(
+                    (dim_id, normalized_entropy, dim_config["importance"])
+                )
 
         if not accessible:
             return None  # No accessible dimensions
 
-        # Sort by entropy (descending), then by importance (descending)
+        # Sort by normalized entropy (descending), then by importance (descending)
         accessible.sort(key=lambda x: (x[1], x[2]), reverse=True)
 
         return accessible[0][0]  # Return dimension ID

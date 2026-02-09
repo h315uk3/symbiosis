@@ -6,6 +6,8 @@
       "short_name": "Why",
       "description": "Core problem, target users, and value proposition",
       "importance": 1.0,
+      "max_options": 4,
+      "disclosure_layer": "overview",
       "prerequisites": [],
       "convergence_threshold": 0.3,
       "focus_areas": [
@@ -86,6 +88,8 @@
       "short_name": "What",
       "description": "Information inputs, outputs, and transformations",
       "importance": 0.7,
+      "max_options": 4,
+      "disclosure_layer": "detail",
       "prerequisites": [
         "purpose"
       ],
@@ -157,6 +161,8 @@
       "short_name": "How",
       "description": "Operational flow, actions, and interactions",
       "importance": 0.8,
+      "max_options": 5,
+      "disclosure_layer": "detail",
       "prerequisites": [
         "purpose"
       ],
@@ -240,6 +246,8 @@
       "short_name": "Limits",
       "description": "Technical limitations, performance, and compatibility",
       "importance": 0.6,
+      "max_options": 5,
+      "disclosure_layer": "edge_case",
       "supports_multi_select": true,
       "prerequisites": [
         "behavior",
@@ -326,6 +334,8 @@
       "short_name": "Success",
       "description": "Success criteria, edge cases, and testing",
       "importance": 0.5,
+      "max_options": 4,
+      "disclosure_layer": "edge_case",
       "supports_multi_select": true,
       "prerequisites": [
         "behavior"
@@ -427,6 +437,9 @@
   "session_config": {
     "initial_entropy": 2.0,
     "convergence_threshold": 0.3,
+    "target_confidence": 0.85,
+    "diminishing_returns_epsilon": 0.05,
+    "diminishing_returns_window": 3,
     "max_questions": 50,
     "min_questions": 5,
     "max_consecutive_same_dimension": 3,
