@@ -15,6 +15,10 @@
         "use cases and scenarios",
         "motivation and context"
       ],
+      "transition_templates": {
+        "entry": "Let's start by understanding the core problem you're trying to solve.",
+        "from_other": "Now that I have a clearer picture, let me revisit what you're trying to achieve."
+      },
       "question_guidelines": {
         "when_high_entropy": "Ask broad, exploratory questions about the core problem or goal. Help identify what they're trying to achieve.",
         "when_converging": "Ask specific validation questions to confirm understanding of the problem scope and target users.",
@@ -94,6 +98,10 @@
         "data outputs and destinations",
         "data volume and characteristics"
       ],
+      "transition_templates": {
+        "entry": "Now that we understand what you're building, let's explore the data and information your system works with.",
+        "from_other": "Let me circle back to the data aspects of your project."
+      },
       "question_guidelines": {
         "when_high_entropy": "Ask about what information the system works with. Explore inputs, outputs, and data flow at a high level.",
         "when_converging": "Ask specific questions about data formats, structures, validation, or transformation details.",
@@ -161,6 +169,10 @@
         "component interactions",
         "timing and concurrency"
       ],
+      "transition_templates": {
+        "entry": "Let's talk about how your system should work — the operational flow and interactions.",
+        "from_other": "Let me explore a bit more about the operational behavior."
+      },
       "question_guidelines": {
         "when_high_entropy": "Ask about the overall operational flow. Explore what triggers functionality and what happens step by step.",
         "when_converging": "Ask specific questions about edge cases, error handling, timing, or interaction details between components.",
@@ -243,6 +255,10 @@
         "compatibility and dependencies",
         "resource constraints"
       ],
+      "transition_templates": {
+        "entry": "Now let's consider any technical constraints or limitations that might shape the solution.",
+        "from_other": "Let me revisit the constraints and technical boundaries."
+      },
       "question_guidelines": {
         "when_high_entropy": "Ask about any technical limitations, performance needs, or compatibility requirements. Explore what constraints exist.",
         "when_converging": "Ask specific questions about performance metrics, security requirements, or compatibility with specific systems.",
@@ -323,6 +339,10 @@
         "validation and verification",
         "error handling and recovery"
       ],
+      "transition_templates": {
+        "entry": "Finally, let's define what success looks like and how we'll ensure quality.",
+        "from_other": "Let me dig deeper into the quality and success criteria."
+      },
       "question_guidelines": {
         "when_high_entropy": "Ask about how success will be measured and what could go wrong. Explore testing and validation approaches.",
         "when_converging": "Ask specific questions about edge cases, error scenarios, acceptance criteria, or testing details.",
@@ -409,6 +429,7 @@
     "convergence_threshold": 0.3,
     "max_questions": 50,
     "min_questions": 5,
+    "max_consecutive_same_dimension": 3,
     "priority_order": [
       "purpose",
       "behavior",
