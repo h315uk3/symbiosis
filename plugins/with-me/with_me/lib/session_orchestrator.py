@@ -92,6 +92,7 @@ class SessionOrchestrator:
         self.beliefs: dict[str, HypothesisSet] = {}
         self.question_history: list[dict[str, Any]] = []
         self.question_count = 0
+        self.recent_information_gains: list[float] = []
 
     def initialize_session(self) -> str:
         """
@@ -125,42 +126,111 @@ class SessionOrchestrator:
         # Initialize tracking
         self.question_history = []
         self.question_count = 0
+        self.recent_information_gains = []
 
         return self.session_id
 
+    def record_information_gain(self, ig: float) -> None:
+        """
+        Record information gain from a question for diminishing returns tracking.
+
+        Args:
+            ig: Information gain in bits from the last question
+
+        Examples:
+            >>> from pathlib import Path
+            >>> orch = SessionOrchestrator(
+            ...     feedback_file_path=Path("/tmp/test_feedback.json")
+            ... )
+            >>> _ = orch.initialize_session()
+            >>> orch.record_information_gain(0.5)
+            >>> orch.record_information_gain(0.3)
+            >>> len(orch.recent_information_gains)
+            2
+        """
+        self.recent_information_gains.append(ig)
+
     def check_convergence(self) -> bool:
         """
-        Check if session has converged (all dimensions clear).
+        Check if session has converged using multiple criteria.
 
-        Convergence criteria:
-        1. All dimensions have H(h) < convergence_threshold
-        2. Max question limit not exceeded
+        Convergence criteria (any triggers stop):
+        1. Max question limit reached (safety fallback)
+        2. Diminishing returns: max IG of last N questions < epsilon (#169)
+        3. Normalized confidence: all dimensions above target_confidence (#169)
+
+        Normalized confidence uses 1 - H/H_max instead of a fixed entropy
+        threshold, ensuring consistent convergence across dimensions with
+        different hypothesis counts.
 
         Returns:
             True if converged, False otherwise
 
         Examples:
             >>> from pathlib import Path
-        >>> orch = SessionOrchestrator(
-        ...     feedback_file_path=Path("/tmp/test_feedback.json")
-        ... )
+            >>> orch = SessionOrchestrator(
+            ...     feedback_file_path=Path("/tmp/test_feedback.json")
+            ... )
             >>> _ = orch.initialize_session()
-            >>> # Initially not converged (uniform priors)
+            >>> # Initially not converged (uniform priors → confidence = 0)
             >>> orch.check_convergence()
             False
+
+            >>> # Diminishing returns: all recent IG below epsilon
+            >>> orch.question_count = 6  # past min_questions
+            >>> orch.recent_information_gains = [0.8, 0.5, 0.3, 0.02, 0.01, 0.03]
+            >>> orch.check_convergence()
+            True
+
+            >>> # Normalized convergence: all dimensions above target_confidence
+            >>> orch2 = SessionOrchestrator(
+            ...     feedback_file_path=Path("/tmp/test_feedback2.json")
+            ... )
+            >>> _ = orch2.initialize_session()
+            >>> # Set high confidence on all dimensions
+            >>> # purpose (4 hyps): H_max=2.0, H=0.2 → confidence=0.9
+            >>> orch2.beliefs["purpose"]._cached_entropy = 0.2
+            >>> # data (3 hyps): H_max≈1.585, H=0.15 → confidence≈0.905
+            >>> orch2.beliefs["data"]._cached_entropy = 0.15
+            >>> # behavior (4 hyps): H=0.1 → confidence=0.95
+            >>> orch2.beliefs["behavior"]._cached_entropy = 0.1
+            >>> # constraints (4 hyps): H=0.25 → confidence=0.875
+            >>> orch2.beliefs["constraints"]._cached_entropy = 0.25
+            >>> # quality (3 hyps): H=0.1 → confidence≈0.937
+            >>> orch2.beliefs["quality"]._cached_entropy = 0.1
+            >>> orch2.check_convergence()
+            True
         """
-        # Check max question limit
+        # 1. Max question limit (safety fallback)
         max_questions = self.config["session_config"]["max_questions"]
         if self.question_count >= max_questions:
             return True
 
-        # Check entropy thresholds (use cached values from persist-computation)
-        conv_threshold = self.config["session_config"]["convergence_threshold"]
+        # 2. Diminishing returns: recent IG all below epsilon
+        window = self.config["session_config"].get("diminishing_returns_window", 3)
+        epsilon = self.config["session_config"].get(
+            "diminishing_returns_epsilon", 0.05
+        )
+        min_questions = self.config["session_config"].get("min_questions", 5)
+        if (
+            self.question_count >= min_questions
+            and len(self.recent_information_gains) >= window
+        ):
+            recent = self.recent_information_gains[-window:]
+            if max(recent) < epsilon:
+                return True
+
+        # 3. Normalized convergence: all dimensions above target_confidence
+        target_confidence = self.config["session_config"].get(
+            "target_confidence", 0.85
+        )
         for hs in self.beliefs.values():
             if hs._cached_entropy is None:
                 # No cached entropy - session just started, not converged
                 return False
-            if hs._cached_entropy >= conv_threshold:
+            h_max = math.log2(len(hs.hypotheses))
+            confidence = 1.0 - (hs._cached_entropy / h_max)
+            if confidence < target_confidence:
                 return False
 
         return True
