@@ -167,25 +167,40 @@ class SessionOrchestrator:
 
     def select_next_dimension(self) -> str | None:
         """
-        Select next dimension to query based on entropy and prerequisites.
+        Select next dimension to query based on normalized entropy and prerequisites.
 
         Algorithm:
         1. Filter dimensions by prerequisite satisfaction
-        2. Sort by entropy (descending) then importance
-        3. Return highest-entropy accessible dimension
+        2. Normalize entropy by H_max = log₂(N) per dimension for fair comparison
+        3. Sort by normalized entropy (descending) then importance
+        4. Return highest normalized-entropy accessible dimension
+
+        Normalization maps all dimensions to [0, 1] scale where 1.0 = maximum
+        uncertainty regardless of hypothesis count, eliminating systematic bias
+        toward dimensions with more hypotheses.
 
         Returns:
             Dimension ID to query, or None if no accessible dimensions
 
         Examples:
             >>> from pathlib import Path
-        >>> orch = SessionOrchestrator(
-        ...     feedback_file_path=Path("/tmp/test_feedback.json")
-        ... )
+            >>> orch = SessionOrchestrator(
+            ...     feedback_file_path=Path("/tmp/test_feedback.json")
+            ... )
             >>> _ = orch.initialize_session()
             >>> dim = orch.select_next_dimension()
             >>> dim == "purpose"  # Purpose has no prerequisites
             True
+
+            >>> # Normalized entropy removes hypothesis-count bias
+            >>> # Set purpose as converged so data and behavior are accessible
+            >>> orch.beliefs["purpose"]._cached_entropy = 0.5
+            >>> # behavior (4 hyps): raw=1.8, normalized=1.8/2.0=0.90
+            >>> orch.beliefs["behavior"]._cached_entropy = 1.8
+            >>> # data (3 hyps): raw=1.5, normalized=1.5/log₂(3)≈0.946
+            >>> orch.beliefs["data"]._cached_entropy = 1.5
+            >>> orch.select_next_dimension()
+            'data'
         """
         accessible = []
 
@@ -195,7 +210,7 @@ class SessionOrchestrator:
             prereqs = dim_config["prerequisites"]
             prereq_threshold = dim_config.get("prerequisite_threshold", 1.5)
 
-            # Get cached entropy (use large value if not cached)
+            # Check prerequisite satisfaction (using raw cached entropy)
             prereq_satisfied = True
             for prereq in prereqs:
                 prereq_entropy = self.beliefs[prereq]._cached_entropy
@@ -204,18 +219,24 @@ class SessionOrchestrator:
                     break
 
             if prereq_satisfied:
-                # Use cached entropy or default to high value (max entropy for N hypotheses)
-                entropy = (
+                # Use cached entropy or default to H_max (maximum uncertainty)
+                raw_entropy = (
                     hs._cached_entropy
                     if hs._cached_entropy is not None
                     else math.log2(len(hs.hypotheses))
                 )
-                accessible.append((dim_id, entropy, dim_config["importance"]))
+                # Normalize by H_max = log₂(N) so dimensions with different
+                # hypothesis counts are compared on a [0, 1] scale
+                h_max = math.log2(len(hs.hypotheses))
+                normalized_entropy = raw_entropy / h_max
+                accessible.append(
+                    (dim_id, normalized_entropy, dim_config["importance"])
+                )
 
         if not accessible:
             return None  # No accessible dimensions
 
-        # Sort by entropy (descending), then by importance (descending)
+        # Sort by normalized entropy (descending), then by importance (descending)
         accessible.sort(key=lambda x: (x[1], x[2]), reverse=True)
 
         return accessible[0][0]  # Return dimension ID
