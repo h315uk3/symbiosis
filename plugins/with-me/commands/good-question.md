@@ -168,7 +168,7 @@ The status output contains:
 
 **IMPORTANT:** Do NOT mention dimension names or technical terms to the user.
 
-**Conversational flow transitions (#171):** Before generating the question, check if the dimension has changed from the previous question. If so:
+**Conversational flow transitions:** Before generating the question, check if the dimension has changed from the previous question. If so:
 1. **Acknowledge the previous answer**: Briefly summarize what you learned (e.g., "Thanks, that clarifies the data format.")
 2. **Use transition template**: Read the `transition_templates` from the dimension config. Use `"entry"` when entering a dimension for the first time, or `"from_other"` when returning to a previously visited dimension. Adapt the template naturally — do not use it verbatim.
 3. **Pacing rule**: Track consecutive questions on the same dimension. If you have asked `max_consecutive_same_dimension` (default: 3) questions on the same dimension without switching, force a switch to another accessible dimension even if the current one has higher entropy.
