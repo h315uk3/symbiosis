@@ -166,7 +166,14 @@ The status output contains:
 - `question_count`: Number of questions asked so far (used in Step 2.2b for performance optimization)
 - `dimensions`: Current entropy, confidence, and most likely hypothesis for each dimension
 
-**IMPORTANT:** Do NOT mention dimension names or technical terms to the user. Proceed directly to generating the question in step 2.2.
+**IMPORTANT:** Do NOT mention dimension names or technical terms to the user.
+
+**Conversational flow transitions:** Before generating the question, check if the dimension has changed from the previous question. If so:
+1. **Acknowledge the previous answer**: Briefly summarize what you learned (e.g., "Thanks, that clarifies the data format.")
+2. **Use transition template**: Read the `transition_templates` from the dimension config. Use `"entry"` when entering a dimension for the first time, or `"from_other"` when returning to a previously visited dimension. Adapt the template naturally — do not use it verbatim.
+3. **Pacing rule**: Track consecutive questions on the same dimension. If you have asked `max_consecutive_same_dimension` (default: 3) questions on the same dimension without switching, force a switch to another accessible dimension even if the current one has higher entropy.
+
+If the dimension has NOT changed, still acknowledge the previous answer briefly before asking the next question.
 
 #### 2.2. Generate and Evaluate Question
 
