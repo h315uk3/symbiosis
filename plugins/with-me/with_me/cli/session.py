@@ -199,6 +199,7 @@ def save_session_state(session_id: str, orchestrator: SessionOrchestrator) -> No
         "beliefs": {k: v.to_dict() for k, v in orchestrator.beliefs.items()},
         "question_history": orchestrator.question_history,
         "question_count": orchestrator.question_count,
+        "recent_information_gains": orchestrator.recent_information_gains,
     }
 
     with open(session_file, "w", encoding="utf-8") as f:
@@ -227,6 +228,7 @@ def load_session_state(session_id: str) -> SessionOrchestrator:
     orch.beliefs = {k: HypothesisSet.from_dict(v) for k, v in state["beliefs"].items()}
     orch.question_history = state["question_history"]
     orch.question_count = state["question_count"]
+    orch.recent_information_gains = state.get("recent_information_gains", [])
 
     return orch
 
