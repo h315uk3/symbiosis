@@ -381,6 +381,56 @@ class HypothesisSet:
         return hs
 
 
+def compute_jsd(p: dict[str, float], q: dict[str, float]) -> float:
+    """
+    Compute Jensen-Shannon Divergence between two distributions.
+
+    JSD(P||Q) = H(M) - 0.5*H(P) - 0.5*H(Q), where M = 0.5*(P+Q).
+    Uses log base 2, so result is in [0, 1].
+
+    Args:
+        p: First probability distribution {key: probability}
+        q: Second probability distribution {key: probability}
+
+    Returns:
+        JSD value in [0, 1]
+
+    Examples:
+        >>> # Identical distributions -> JSD = 0
+        >>> p = {"a": 0.5, "b": 0.3, "c": 0.2}
+        >>> round(compute_jsd(p, p), 4)
+        0.0
+
+        >>> # Very different distributions -> high JSD
+        >>> p = {"a": 1.0, "b": 0.0}
+        >>> q = {"a": 0.0, "b": 1.0}
+        >>> round(compute_jsd(p, q), 4)
+        1.0
+
+        >>> # Partially different distributions
+        >>> p = {"a": 0.7, "b": 0.2, "c": 0.1}
+        >>> q = {"a": 0.3, "b": 0.4, "c": 0.3}
+        >>> 0.05 < compute_jsd(p, q) < 0.15
+        True
+    """
+    epsilon = 1e-10
+    keys = set(p.keys()) | set(q.keys())
+
+    def _entropy(dist: dict[str, float]) -> float:
+        h = 0.0
+        for k in keys:
+            v = dist.get(k, 0.0)
+            if v > epsilon:
+                h -= v * math.log2(v)
+        return h
+
+    # M = 0.5 * (P + Q)
+    m = {k: 0.5 * (p.get(k, 0.0) + q.get(k, 0.0)) for k in keys}
+
+    jsd = _entropy(m) - 0.5 * _entropy(p) - 0.5 * _entropy(q)
+    return max(0.0, jsd)  # Clamp floating-point negatives
+
+
 def create_default_dimension_beliefs() -> dict[str, HypothesisSet]:
     """
     Create default hypothesis sets for standard requirement dimensions.

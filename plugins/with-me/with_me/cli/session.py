@@ -20,7 +20,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from with_me.lib.dimension_belief import HypothesisSet
+from with_me.lib.dimension_belief import HypothesisSet, compute_jsd
 from with_me.lib.session_orchestrator import SessionOrchestrator
 
 # Convergence thresholds
@@ -538,14 +538,16 @@ def cmd_update_with_computation(args: argparse.Namespace) -> None:
     else:
         validated_likelihoods = validate_and_normalize_likelihoods(hs, likelihoods_raw)
 
-    # B1: Entropy before
+    # B1: Entropy before + capture pre-update posterior for JSD
     h_before = hs.entropy()
+    posterior_before = dict(hs.posterior)
 
-    # B2: Bayesian update with validated likelihoods
+    # B2: Dirichlet update with validated likelihoods
     hs.update(validated_likelihoods)
 
-    # B3: Entropy after
+    # B3: Entropy after + JSD between pre/post distributions
     h_after = hs.entropy()
+    jsd = compute_jsd(posterior_before, hs.posterior)
 
     # B4: Information gain
     info_gain = h_before - h_after
@@ -577,6 +579,7 @@ def cmd_update_with_computation(args: argparse.Namespace) -> None:
         "entropy_before": h_before,
         "entropy_after": h_after,
         "information_gain": info_gain,
+        "jsd": jsd,
     }
     if evaluation_scores is not None:
         history_entry["evaluation_scores"] = evaluation_scores
@@ -593,6 +596,7 @@ def cmd_update_with_computation(args: argparse.Namespace) -> None:
         "entropy_before": round(h_before, 4),
         "entropy_after": round(h_after, 4),
         "information_gain": round(info_gain, 4),
+        "jsd": round(jsd, 4),
         "question_count": orch.question_count,
     }
     if evaluation_scores is not None:
