@@ -401,13 +401,182 @@
           ]
         }
       }
+    },
+    "stakeholders": {
+      "id": "stakeholders",
+      "name": "Stakeholders",
+      "short_name": "Who",
+      "description": "Target audience, user roles, and organizational context",
+      "importance": 0.6,
+      "max_options": 4,
+      "disclosure_layer": "detail",
+      "prerequisites": [
+        "purpose"
+      ],
+      "prerequisite_threshold": 1.5,
+      "convergence_threshold": 0.3,
+      "focus_areas": [
+        "primary user roles and personas",
+        "organizational structure and hierarchy",
+        "decision makers and influencers",
+        "end-user vs admin perspectives",
+        "external stakeholder needs"
+      ],
+      "transition_templates": {
+        "entry": "Let's identify who will be using and affected by this system.",
+        "from_other": "Let me understand more about the people involved with this project."
+      },
+      "question_guidelines": {
+        "when_high_entropy": "Ask about who the primary users are and what roles they play. Explore the organizational context.",
+        "when_converging": "Ask specific questions about user workflows, permission levels, or stakeholder priorities.",
+        "follow_up_triggers": [
+          "mentioned user",
+          "mentioned team",
+          "mentioned role",
+          "mentioned customer"
+        ]
+      },
+      "hypotheses": {
+        "individual_user": {
+          "id": "individual_user",
+          "name": "Individual User",
+          "description": "Single-user tools, personal productivity, individual developer workflows",
+          "focus_areas": [
+            "personal productivity and workflow",
+            "individual preferences and customization",
+            "single-user data isolation",
+            "local-first operation",
+            "minimal setup and configuration"
+          ]
+        },
+        "team": {
+          "id": "team",
+          "name": "Team",
+          "description": "Small team collaboration, shared workflows, team-level coordination",
+          "focus_areas": [
+            "team collaboration and communication",
+            "shared resources and permissions",
+            "workflow coordination",
+            "team-level reporting and visibility",
+            "onboarding and team growth"
+          ]
+        },
+        "organization": {
+          "id": "organization",
+          "name": "Organization",
+          "description": "Enterprise-scale deployment, multi-team coordination, organizational policies",
+          "focus_areas": [
+            "multi-team coordination",
+            "organizational policies and compliance",
+            "role-based access control",
+            "audit trails and governance",
+            "enterprise integration patterns"
+          ]
+        },
+        "external_customers": {
+          "id": "external_customers",
+          "name": "External Customers",
+          "description": "End-user facing products, customer-facing services, public APIs",
+          "focus_areas": [
+            "customer experience and satisfaction",
+            "public-facing reliability",
+            "customer support workflows",
+            "SLA and service guarantees",
+            "customer onboarding and retention"
+          ]
+        }
+      }
+    },
+    "context": {
+      "id": "context",
+      "name": "Context",
+      "short_name": "Where",
+      "description": "Development context, existing systems, and project maturity",
+      "importance": 0.5,
+      "max_options": 4,
+      "disclosure_layer": "overview",
+      "prerequisites": [],
+      "convergence_threshold": 0.3,
+      "focus_areas": [
+        "existing codebase and technical debt",
+        "integration with existing systems",
+        "development environment and tools",
+        "project timeline and maturity",
+        "team expertise and constraints"
+      ],
+      "transition_templates": {
+        "entry": "Let's understand the development context — what exists already and where this fits in.",
+        "from_other": "Let me revisit the broader context of your project."
+      },
+      "question_guidelines": {
+        "when_high_entropy": "Ask about whether this is a new project or integrating with existing systems. Explore the development context.",
+        "when_converging": "Ask specific questions about existing codebases, migration plans, or technical constraints from the environment.",
+        "follow_up_triggers": [
+          "mentioned existing",
+          "mentioned legacy",
+          "mentioned migration",
+          "mentioned prototype"
+        ]
+      },
+      "hypotheses": {
+        "greenfield": {
+          "id": "greenfield",
+          "name": "Greenfield",
+          "description": "New project from scratch with no existing codebase or constraints",
+          "focus_areas": [
+            "technology selection freedom",
+            "architecture design from scratch",
+            "no legacy constraints",
+            "fresh team onboarding",
+            "best practices adoption"
+          ]
+        },
+        "brownfield_integration": {
+          "id": "brownfield_integration",
+          "name": "Brownfield Integration",
+          "description": "Adding features to or integrating with an existing system",
+          "focus_areas": [
+            "existing code understanding",
+            "backward compatibility",
+            "incremental improvement",
+            "technical debt navigation",
+            "integration point identification"
+          ]
+        },
+        "migration": {
+          "id": "migration",
+          "name": "Migration",
+          "description": "Moving from one system, technology, or architecture to another",
+          "focus_areas": [
+            "data migration strategy",
+            "parallel running and cutover",
+            "rollback planning",
+            "feature parity verification",
+            "downtime minimization"
+          ]
+        },
+        "prototype": {
+          "id": "prototype",
+          "name": "Prototype/POC",
+          "description": "Proof of concept, prototype, or experimental project to validate ideas",
+          "focus_areas": [
+            "rapid iteration and feedback",
+            "minimal viable scope",
+            "disposable code expectations",
+            "hypothesis validation",
+            "stakeholder demonstration"
+          ]
+        }
+      }
     }
   },
   "dag": {
     "nodes": [
       "purpose",
+      "context",
       "data",
       "behavior",
+      "stakeholders",
       "constraints",
       "quality"
     ],
@@ -421,12 +590,24 @@
         "to": "behavior"
       },
       {
+        "from": "purpose",
+        "to": "stakeholders"
+      },
+      {
         "from": "behavior",
         "to": "constraints"
       },
       {
         "from": "data",
         "to": "constraints"
+      },
+      {
+        "from": "context",
+        "to": "constraints"
+      },
+      {
+        "from": "stakeholders",
+        "to": "quality"
       },
       {
         "from": "behavior",
@@ -445,8 +626,10 @@
     "max_consecutive_same_dimension": 3,
     "priority_order": [
       "purpose",
+      "context",
       "behavior",
       "data",
+      "stakeholders",
       "constraints",
       "quality"
     ]

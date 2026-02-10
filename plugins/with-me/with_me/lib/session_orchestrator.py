@@ -187,13 +187,17 @@ class SessionOrchestrator:
             ...     feedback_file_path=Path("/tmp/test_feedback2.json")
             ... )
             >>> _ = orch2.initialize_session()
-            >>> # Set high confidence on all dimensions
+            >>> # Set high confidence on all 7 dimensions
             >>> # purpose (4 hyps): H_max=2.0, H=0.2 → confidence=0.9
             >>> orch2.beliefs["purpose"]._cached_entropy = 0.2
+            >>> # context (4 hyps): H=0.2 → confidence=0.9
+            >>> orch2.beliefs["context"]._cached_entropy = 0.2
             >>> # data (3 hyps): H_max≈1.585, H=0.15 → confidence≈0.905
             >>> orch2.beliefs["data"]._cached_entropy = 0.15
             >>> # behavior (4 hyps): H=0.1 → confidence=0.95
             >>> orch2.beliefs["behavior"]._cached_entropy = 0.1
+            >>> # stakeholders (4 hyps): H=0.2 → confidence=0.9
+            >>> orch2.beliefs["stakeholders"]._cached_entropy = 0.2
             >>> # constraints (4 hyps): H=0.25 → confidence=0.875
             >>> orch2.beliefs["constraints"]._cached_entropy = 0.25
             >>> # quality (3 hyps): H=0.1 → confidence≈0.937
@@ -259,8 +263,11 @@ class SessionOrchestrator:
             True
 
             >>> # Normalized entropy removes hypothesis-count bias
-            >>> # Set purpose as converged so data and behavior are accessible
+            >>> # Set purpose as converged so data, behavior, stakeholders accessible
             >>> orch.beliefs["purpose"]._cached_entropy = 0.5
+            >>> # Converge context and stakeholders so they don't dominate
+            >>> orch.beliefs["context"]._cached_entropy = 0.2
+            >>> orch.beliefs["stakeholders"]._cached_entropy = 0.2
             >>> # behavior (4 hyps): raw=1.8, normalized=1.8/2.0=0.90
             >>> orch.beliefs["behavior"]._cached_entropy = 1.8
             >>> # data (3 hyps): raw=1.5, normalized=1.5/log₂(3)≈0.946

@@ -444,11 +444,19 @@ def create_default_dimension_beliefs() -> dict[str, HypothesisSet]:
         True
         >>> len(beliefs["purpose"].hypotheses)
         4
+        >>> "stakeholders" in beliefs and "context" in beliefs
+        True
+        >>> len(beliefs)
+        7
     """
     return {
         "purpose": HypothesisSet(
             dimension="purpose",
             hypotheses=["web_app", "cli_tool", "library", "service"],
+        ),
+        "context": HypothesisSet(
+            dimension="context",
+            hypotheses=["greenfield", "brownfield_integration", "migration", "prototype"],
         ),
         "data": HypothesisSet(
             dimension="data",
@@ -457,6 +465,12 @@ def create_default_dimension_beliefs() -> dict[str, HypothesisSet]:
         "behavior": HypothesisSet(
             dimension="behavior",
             hypotheses=["synchronous", "asynchronous", "interactive", "batch"],
+        ),
+        "stakeholders": HypothesisSet(
+            dimension="stakeholders",
+            hypotheses=[
+                "individual_user", "team", "organization", "external_customers",
+            ],
         ),
         "constraints": HypothesisSet(
             dimension="constraints",
