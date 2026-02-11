@@ -39,8 +39,10 @@ This plugin uses **persistent session state** rather than stateless API calls. T
 5. **Convergence Detection**: Tracks entropy trends over time to detect when sufficient clarity is achieved
 
 **Session state includes:**
-- **Beliefs**: Posterior probability distributions over all hypotheses (Bayesian-updated after each answer)
-- **Question History**: All questions, answers, and information gain metrics
+- **Beliefs**: Dirichlet concentration parameters (alpha) per dimension, from which posterior probabilities are derived as $p(h) = \alpha_h / \sum \alpha$
+- **Thompson States**: Beta distribution parameters (alpha, beta) per dimension for exploration-exploitation
+- **Question History**: All questions, answers, information gain, and JSD (belief shift) metrics
+- **Recent Information Gains**: Sliding window for diminishing returns detection
 - **Metadata**: Session ID, question count, convergence status
 
 This stateful design is optimized for Claude Code's use case (interactive requirement elicitation) rather than ephemeral API calls or microservices.
@@ -53,53 +55,57 @@ This stateful design is optimized for Claude Code's use case (interactive requir
 
 ```mermaid
 graph TD
-    subgraph "5 Dimensions"
+    subgraph "7 Dimensions (DAG)"
         Purpose[Purpose]
+        Context[Context]
         Data[Data]
         Behavior[Behavior]
+        Stakeholders[Stakeholders]
         Constraints[Constraints]
         Quality[Quality]
     end
 
-    subgraph "Entropy Calculation"
-        H1[H₁ entropy]
-        H2[H₂ entropy]
-        H3[H₃ entropy]
-        H4[H₄ entropy]
-        H5[H₅ entropy]
-    end
+    Purpose --> Data
+    Purpose --> Behavior
+    Purpose --> Stakeholders
+    Context --> Constraints
+    Behavior --> Constraints
+    Data --> Constraints
+    Stakeholders --> Quality
+    Behavior --> Quality
 
-    subgraph "Question Selection"
-        MaxH[Select Max Entropy]
-        EIG[Expected Information Gain]
-        Question[Best Question]
+    subgraph "Dimension Selection"
+        Thompson[Thompson Sampling]
+        Entropy[Normalized Entropy]
+        Prereqs[Prerequisite Check]
     end
 
     subgraph "Belief Update"
         Answer[User Answer]
         Likelihood[Likelihood Estimation]
-        Bayes[Bayesian Update]
+        Dirichlet[Dirichlet Update]
+        Secondary[Cross-Dim Update]
+        JSD[JSD Measurement]
+        Presheaf[Consistency Check]
     end
 
-    Purpose --> H1
-    Data --> H2
-    Behavior --> H3
-    Constraints --> H4
-    Quality --> H5
-
-    H1 & H2 & H3 & H4 & H5 --> MaxH
-    MaxH --> EIG
-    EIG --> Question
-    Question --> Answer
+    Purpose & Context & Data & Behavior & Stakeholders & Constraints & Quality --> Prereqs
+    Prereqs --> Entropy
+    Entropy --> Thompson
+    Thompson --> Answer
     Answer --> Likelihood
-    Likelihood --> Bayes
-    Bayes -->|entropy > 0.3| H1
-    Bayes -->|all entropy ≤ 0.3| Converged[Requirement Specification]
+    Likelihood --> Dirichlet
+    Likelihood --> Secondary
+    Dirichlet --> JSD
+    JSD --> Presheaf
+    Presheaf -->|inconsistency detected| Thompson
+    Dirichlet -->|not converged| Thompson
+    Dirichlet -->|all converged| Converged[Requirement Specification]
 ```
 
 This is not a chatbot—it's a convergence engine based on information theory.
 
-The system uses Bayesian belief updating and information theory for adaptive questioning:
+The system uses Dirichlet belief tracking and information theory for adaptive questioning:
 
 ### Reward Function
 
@@ -116,13 +122,31 @@ $$H(X) = -\sum_{i} p(x_i) \log_2 p(x_i)$$
 - $H = 0$: complete certainty (one hypothesis has probability 1)
 - $H = \log_2 N$: maximum uncertainty (uniform distribution over N hypotheses)
 
-#### Bayesian Update
+Entropy is **normalized** by $H_{\max} = \log_2 N$ per dimension so that dimensions with different hypothesis counts are compared on a $[0, 1]$ scale.
 
-Updates beliefs based on new evidence:
+#### Dirichlet Belief Tracking
 
-$$p(h | e) = \frac{p(e | h) \cdot p(h)}{\sum_{h'} p(e | h') \cdot p(h')}$$
+Beliefs are represented as Dirichlet concentration parameters $\boldsymbol{\alpha}$, not point-estimate posteriors. The posterior is derived as:
 
-where $p(e | h)$ is the likelihood of observing answer $e$ given hypothesis $h$.
+$$p(h_i) = \frac{\alpha_i}{\sum_j \alpha_j}$$
+
+Updates use an **additive rule** instead of multiplicative Bayes:
+
+$$\alpha_i^{\text{new}} = \alpha_i^{\text{old}} + w \cdot L(h_i)$$
+
+where $L(h_i)$ is the normalized likelihood and $w$ is a weight factor (1.0 for primary, 0.3 for secondary cross-dimension updates).
+
+**Why Dirichlet instead of multiplicative Bayes?** A single observation cannot dramatically shift beliefs. Convergence is gradual and stable, which better models the incremental nature of requirement elicitation.
+
+#### Jensen-Shannon Divergence (JSD)
+
+Measures the shift in beliefs after each answer:
+
+$$\text{JSD}(P \| Q) = H(M) - \frac{1}{2} H(P) - \frac{1}{2} H(Q)$$
+
+where $M = \frac{1}{2}(P + Q)$. Uses $\log_2$, so $\text{JSD} \in [0, 1]$.
+
+JSD is tracked per question to quantify **belief impact** independently of entropy change (information gain).
 
 #### Expected Information Gain (EIG)
 
@@ -133,6 +157,29 @@ $$\text{EIG}(Q) = H(X) - \mathbb{E}_{a \sim p(a|Q)}[H(X | a)]$$
 The question $Q^*$ that maximizes EIG is selected:
 
 $$Q^* = \arg\max_Q \text{EIG}(Q)$$
+
+#### Thompson Sampling
+
+Dimension selection uses Thompson Sampling for exploration-exploitation balance. Each dimension maintains a Beta distribution $\text{Beta}(\alpha, \beta)$:
+
+- **Informative question** (IG > $\epsilon$): $\alpha \mathrel{+}= 1$ (reward)
+- **Uninformative question** (IG $\leq \epsilon$): $\beta \mathrel{+}= 1$ (penalty)
+
+At each step, a sample is drawn from each accessible dimension's Beta distribution, and the dimension with the highest sample is selected. This naturally balances exploiting high-yield dimensions with exploring uncertain ones.
+
+A `deterministic=True` mode preserves the greedy entropy-based selection for testing and backward compatibility.
+
+#### Presheaf Consistency
+
+The dimension DAG is equipped with **restriction maps** — conditional distributions $P(\text{target}_h \mid \text{source}_h)$ for each edge. Given the source dimension's posterior, the expected target posterior is:
+
+$$E[\text{target}_h] = \sum_s p(s) \cdot P(\text{target}_h \mid s)$$
+
+JSD between actual and expected target posteriors measures **belief consistency**. High JSD (above `consistency_threshold`) indicates contradictory answers across dimensions.
+
+#### Cross-Dimension Information Flow
+
+When an answer to one dimension also provides information about other dimensions, **secondary updates** apply a weighted Dirichlet update ($w = 0.3$ by default) to the secondary dimensions. This propagates information across the DAG without requiring separate questions.
 
 #### Information Gain
 
@@ -172,10 +219,36 @@ The system uses several configurable thresholds in `config/dimensions.json`:
 - **Lower (e.g., 1.0)**: Require stronger clarity in prerequisites
 - **Higher (e.g., 2.0)**: Allow parallel exploration of dimensions with less strict ordering
 
+### Consistency Threshold (default: 0.3)
+
+**What it means**: Maximum JSD between actual and expected target posteriors (from presheaf restriction maps) before flagging an inconsistency.
+
+- **Low JSD**: Answers across dimensions are mutually consistent
+- **High JSD**: Answers contradict expectations from the DAG structure
+
+**When to adjust**:
+- **Lower (e.g., 0.15)**: Flag subtle inconsistencies earlier
+- **Higher (e.g., 0.5)**: Only flag strong contradictions
+
+### Secondary Update Weight (default: 0.3)
+
+**What it means**: Weight factor applied to cross-dimension Dirichlet updates when an answer provides secondary information about other dimensions.
+
+**When to adjust**:
+- **Lower (e.g., 0.1)**: Secondary information has minimal influence
+- **Higher (e.g., 0.5)**: Secondary information carries more weight (risk of over-propagation)
+
 ### Question Limits
 
 - `max_questions` (default: 50): Safety limit to prevent infinite loops
 - `min_questions` (default: 5): Minimum questions before allowing early termination
+
+### Diminishing Returns Detection
+
+- `diminishing_returns_window` (default: 3): Number of recent questions to check
+- `diminishing_returns_epsilon` (default: 0.05): Maximum IG threshold below which questions are considered uninformative
+
+If the maximum IG across the last N questions falls below epsilon (after `min_questions`), the session converges.
 
 ### Likelihood Validation
 
@@ -204,14 +277,16 @@ When you can't articulate your requirements, this command uses an information th
 
 **How it works:**
 
-The command tracks uncertainty across five key dimensions:
+The command tracks uncertainty across seven key dimensions organized as a DAG:
 1. **Purpose (Why)**: What problem is being solved and for whom
-2. **Data (What)**: Inputs, outputs, transformations
-3. **Behavior (How)**: Step-by-step flow and interactions
-4. **Constraints (Limits)**: Technical requirements and limitations
-5. **Quality (Success)**: Test scenarios and success criteria
+2. **Context (Where)**: Development context — greenfield, brownfield, migration, or prototype
+3. **Data (What)**: Inputs, outputs, transformations
+4. **Behavior (How)**: Step-by-step flow and interactions
+5. **Stakeholders (Who)**: Target audience — individual, team, organization, or external customers
+6. **Constraints (Limits)**: Technical requirements and limitations
+7. **Quality (Success)**: Test scenarios and success criteria
 
-At each step, Claude identifies the dimension with highest remaining uncertainty and asks questions that maximize information gain. The interview adapts dynamically based on your answers.
+At each step, Thompson Sampling balances exploration and exploitation to select the next dimension, then asks questions that maximize expected information gain. Cross-dimension information flow propagates secondary insights to related dimensions automatically.
 
 **Usage:**
 ```bash
@@ -239,39 +314,60 @@ At each step, Claude identifies the dimension with highest remaining uncertainty
 
 ---
 
-## Five Dimensions Framework
+## Seven Dimensions Framework
 
-The adaptive questioning process systematically explores five key dimensions:
+The adaptive questioning process systematically explores seven dimensions organized as a prerequisite DAG:
 
-### 1. Purpose (Why)
+### 1. Purpose (Why) — importance: 1.0
 - What problem is being solved?
 - Who are the users?
 - What are the business goals?
 - What success looks like?
 
-### 2. Data (What)
+### 2. Context (Where) — importance: 0.5
+- Greenfield, brownfield, migration, or prototype?
+- Existing codebase and technical debt
+- Development environment and tools
+- Team expertise and constraints
+
+### 3. Data (What) — importance: 0.7
 - Input data sources and formats
 - Output requirements
 - Data transformations
 - Data validation rules
 
-### 3. Behavior (How)
+### 4. Behavior (How) — importance: 0.8
 - Step-by-step workflow
 - User interactions
 - System responses
 - Edge cases and error handling
 
-### 4. Constraints (Limits)
+### 5. Stakeholders (Who) — importance: 0.6
+- Individual user, team, organization, or external customers?
+- User roles and personas
+- Decision makers and influencers
+- End-user vs admin perspectives
+
+### 6. Constraints (Limits) — importance: 0.6
 - Performance requirements
 - Technical limitations
 - Resource constraints
 - Compatibility requirements
 
-### 5. Quality (Success)
+### 7. Quality (Success) — importance: 0.5
 - Test scenarios
 - Acceptance criteria
 - Success metrics
 - Failure conditions
+
+### Prerequisite DAG
+
+Dimensions are gated by prerequisites to ensure foundational understanding before exploring advanced topics:
+
+- **No prerequisites**: Purpose, Context
+- **Requires Purpose**: Data, Behavior, Stakeholders
+- **Requires Behavior + Data + Context**: Constraints
+- **Requires Behavior + Stakeholders**: Quality
 
 ---
 
