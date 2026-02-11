@@ -1,5 +1,12 @@
 name: "Copilot Setup Steps"
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/copilot-setup-steps.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/copilot-setup-steps.yml"
 
 jobs:
   copilot-setup-steps:
@@ -8,6 +15,18 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
+
       - uses: jdx/mise-action@v3
         with:
           cache: true
+
+      - name: Verify environment
+        run: |
+          echo "=== Python ==="
+          python --version
+          echo "=== Ruff ==="
+          ruff --version
+          echo "=== Pyright ==="
+          pyright --version
+          echo "=== mise tasks ==="
+          mise tasks
