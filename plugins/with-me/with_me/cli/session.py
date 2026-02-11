@@ -312,6 +312,8 @@ def cmd_next_question(args: argparse.Namespace) -> None:
                 "hypotheses": hypotheses_info,
                 "question": question,
                 "supports_multi_select": dim_config.get("supports_multi_select", False),
+                "importance": dim_config.get("importance", 0.5),
+                "posterior": orch.beliefs[dimension].posterior,
             },
             ensure_ascii=False,
         )
