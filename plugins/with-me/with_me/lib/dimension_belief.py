@@ -92,9 +92,7 @@ class HypothesisSet:
             0.7
 
             >>> # Direct alpha initialization
-            >>> hs = HypothesisSet(
-            ...     "test", ["a", "b"], alpha={"a": 5.0, "b": 3.0}
-            ... )
+            >>> hs = HypothesisSet("test", ["a", "b"], alpha={"a": 5.0, "b": 3.0})
             >>> round(hs.posterior["a"], 3)
             0.625
         """
@@ -285,9 +283,7 @@ class HypothesisSet:
             >>> hs.posterior["web_app"]
             0.7
         """
-        hs_copy = HypothesisSet(
-            self.dimension, self.hypotheses, alpha=dict(self.alpha)
-        )
+        hs_copy = HypothesisSet(self.dimension, self.hypotheses, alpha=dict(self.alpha))
         hs_copy.observation_history = [dict(obs) for obs in self.observation_history]
         hs_copy._cached_entropy = self._cached_entropy
         hs_copy._cached_confidence = self._cached_confidence
@@ -456,7 +452,12 @@ def create_default_dimension_beliefs() -> dict[str, HypothesisSet]:
         ),
         "context": HypothesisSet(
             dimension="context",
-            hypotheses=["greenfield", "brownfield_integration", "migration", "prototype"],
+            hypotheses=[
+                "greenfield",
+                "brownfield_integration",
+                "migration",
+                "prototype",
+            ],
         ),
         "data": HypothesisSet(
             dimension="data",
@@ -469,7 +470,10 @@ def create_default_dimension_beliefs() -> dict[str, HypothesisSet]:
         "stakeholders": HypothesisSet(
             dimension="stakeholders",
             hypotheses=[
-                "individual_user", "team", "organization", "external_customers",
+                "individual_user",
+                "team",
+                "organization",
+                "external_customers",
             ],
         ),
         "constraints": HypothesisSet(

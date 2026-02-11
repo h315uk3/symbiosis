@@ -39,8 +39,16 @@ class RestrictionMap:
         ...     source_dim="purpose",
         ...     target_dim="data",
         ...     conditional={
-        ...         "web_app": {"structured": 0.5, "unstructured": 0.2, "streaming": 0.3},
-        ...         "cli_tool": {"structured": 0.6, "unstructured": 0.3, "streaming": 0.1},
+        ...         "web_app": {
+        ...             "structured": 0.5,
+        ...             "unstructured": 0.2,
+        ...             "streaming": 0.3,
+        ...         },
+        ...         "cli_tool": {
+        ...             "structured": 0.6,
+        ...             "unstructured": 0.3,
+        ...             "streaming": 0.1,
+        ...         },
         ...     },
         ... )
         >>> rm.source_dim
@@ -67,8 +75,16 @@ class RestrictionMap:
             ...     source_dim="purpose",
             ...     target_dim="data",
             ...     conditional={
-            ...         "web_app": {"structured": 0.5, "unstructured": 0.2, "streaming": 0.3},
-            ...         "cli_tool": {"structured": 0.6, "unstructured": 0.3, "streaming": 0.1},
+            ...         "web_app": {
+            ...             "structured": 0.5,
+            ...             "unstructured": 0.2,
+            ...             "streaming": 0.3,
+            ...         },
+            ...         "cli_tool": {
+            ...             "structured": 0.6,
+            ...             "unstructured": 0.3,
+            ...             "streaming": 0.1,
+            ...         },
             ...     },
             ... )
             >>> # Uniform source → weighted average of conditionals
@@ -138,21 +154,44 @@ class PresheafChecker:
         ...         source_dim="purpose",
         ...         target_dim="data",
         ...         conditional={
-        ...             "web_app": {"structured": 0.5, "unstructured": 0.2, "streaming": 0.3},
-        ...             "cli_tool": {"structured": 0.6, "unstructured": 0.3, "streaming": 0.1},
-        ...             "library": {"structured": 0.5, "unstructured": 0.3, "streaming": 0.2},
-        ...             "service": {"structured": 0.3, "unstructured": 0.1, "streaming": 0.6},
+        ...             "web_app": {
+        ...                 "structured": 0.5,
+        ...                 "unstructured": 0.2,
+        ...                 "streaming": 0.3,
+        ...             },
+        ...             "cli_tool": {
+        ...                 "structured": 0.6,
+        ...                 "unstructured": 0.3,
+        ...                 "streaming": 0.1,
+        ...             },
+        ...             "library": {
+        ...                 "structured": 0.5,
+        ...                 "unstructured": 0.3,
+        ...                 "streaming": 0.2,
+        ...             },
+        ...             "service": {
+        ...                 "structured": 0.3,
+        ...                 "unstructured": 0.1,
+        ...                 "streaming": 0.6,
+        ...             },
         ...         },
         ...     ),
         ... ]
         >>> checker = PresheafChecker(maps, consistency_threshold=0.3)
         >>> beliefs = {
         ...     "purpose": HypothesisSet(
-        ...         "purpose", ["web_app", "cli_tool", "library", "service"],
-        ...         alpha={"web_app": 5.0, "cli_tool": 1.0, "library": 1.0, "service": 1.0},
+        ...         "purpose",
+        ...         ["web_app", "cli_tool", "library", "service"],
+        ...         alpha={
+        ...             "web_app": 5.0,
+        ...             "cli_tool": 1.0,
+        ...             "library": 1.0,
+        ...             "service": 1.0,
+        ...         },
         ...     ),
         ...     "data": HypothesisSet(
-        ...         "data", ["structured", "unstructured", "streaming"],
+        ...         "data",
+        ...         ["structured", "unstructured", "streaming"],
         ...         alpha={"structured": 4.0, "unstructured": 2.0, "streaming": 1.0},
         ...     ),
         ... }
@@ -188,10 +227,26 @@ class PresheafChecker:
             ...         source_dim="purpose",
             ...         target_dim="data",
             ...         conditional={
-            ...             "web_app": {"structured": 0.5, "unstructured": 0.2, "streaming": 0.3},
-            ...             "cli_tool": {"structured": 0.6, "unstructured": 0.3, "streaming": 0.1},
-            ...             "library": {"structured": 0.5, "unstructured": 0.3, "streaming": 0.2},
-            ...             "service": {"structured": 0.3, "unstructured": 0.1, "streaming": 0.6},
+            ...             "web_app": {
+            ...                 "structured": 0.5,
+            ...                 "unstructured": 0.2,
+            ...                 "streaming": 0.3,
+            ...             },
+            ...             "cli_tool": {
+            ...                 "structured": 0.6,
+            ...                 "unstructured": 0.3,
+            ...                 "streaming": 0.1,
+            ...             },
+            ...             "library": {
+            ...                 "structured": 0.5,
+            ...                 "unstructured": 0.3,
+            ...                 "streaming": 0.2,
+            ...             },
+            ...             "service": {
+            ...                 "structured": 0.3,
+            ...                 "unstructured": 0.1,
+            ...                 "streaming": 0.6,
+            ...             },
             ...         },
             ...     ),
             ... ]
@@ -200,12 +255,23 @@ class PresheafChecker:
             >>> # Consistent: web_app → mostly structured (matches expectation)
             >>> beliefs = {
             ...     "purpose": HypothesisSet(
-            ...         "purpose", ["web_app", "cli_tool", "library", "service"],
-            ...         alpha={"web_app": 5.0, "cli_tool": 1.0, "library": 1.0, "service": 1.0},
+            ...         "purpose",
+            ...         ["web_app", "cli_tool", "library", "service"],
+            ...         alpha={
+            ...             "web_app": 5.0,
+            ...             "cli_tool": 1.0,
+            ...             "library": 1.0,
+            ...             "service": 1.0,
+            ...         },
             ...     ),
             ...     "data": HypothesisSet(
-            ...         "data", ["structured", "unstructured", "streaming"],
-            ...         alpha={"structured": 4.0, "unstructured": 2.0, "streaming": 1.0},
+            ...         "data",
+            ...         ["structured", "unstructured", "streaming"],
+            ...         alpha={
+            ...             "structured": 4.0,
+            ...             "unstructured": 2.0,
+            ...             "streaming": 1.0,
+            ...         },
             ...     ),
             ... }
             >>> results = checker.check_consistency(beliefs)
@@ -214,7 +280,8 @@ class PresheafChecker:
 
             >>> # Inconsistent: web_app dominant but streaming data near-certain
             >>> beliefs["data"] = HypothesisSet(
-            ...     "data", ["structured", "unstructured", "streaming"],
+            ...     "data",
+            ...     ["structured", "unstructured", "streaming"],
             ...     alpha={"structured": 0.1, "unstructured": 0.1, "streaming": 10.0},
             ... )
             >>> results = checker.check_consistency(beliefs)
@@ -260,22 +327,49 @@ class PresheafChecker:
             ...         source_dim="purpose",
             ...         target_dim="data",
             ...         conditional={
-            ...             "web_app": {"structured": 0.5, "unstructured": 0.2, "streaming": 0.3},
-            ...             "cli_tool": {"structured": 0.6, "unstructured": 0.3, "streaming": 0.1},
-            ...             "library": {"structured": 0.5, "unstructured": 0.3, "streaming": 0.2},
-            ...             "service": {"structured": 0.3, "unstructured": 0.1, "streaming": 0.6},
+            ...             "web_app": {
+            ...                 "structured": 0.5,
+            ...                 "unstructured": 0.2,
+            ...                 "streaming": 0.3,
+            ...             },
+            ...             "cli_tool": {
+            ...                 "structured": 0.6,
+            ...                 "unstructured": 0.3,
+            ...                 "streaming": 0.1,
+            ...             },
+            ...             "library": {
+            ...                 "structured": 0.5,
+            ...                 "unstructured": 0.3,
+            ...                 "streaming": 0.2,
+            ...             },
+            ...             "service": {
+            ...                 "structured": 0.3,
+            ...                 "unstructured": 0.1,
+            ...                 "streaming": 0.6,
+            ...             },
             ...         },
             ...     ),
             ... ]
             >>> checker = PresheafChecker(maps, consistency_threshold=0.3)
             >>> beliefs = {
             ...     "purpose": HypothesisSet(
-            ...         "purpose", ["web_app", "cli_tool", "library", "service"],
-            ...         alpha={"web_app": 5.0, "cli_tool": 1.0, "library": 1.0, "service": 1.0},
+            ...         "purpose",
+            ...         ["web_app", "cli_tool", "library", "service"],
+            ...         alpha={
+            ...             "web_app": 5.0,
+            ...             "cli_tool": 1.0,
+            ...             "library": 1.0,
+            ...             "service": 1.0,
+            ...         },
             ...     ),
             ...     "data": HypothesisSet(
-            ...         "data", ["structured", "unstructured", "streaming"],
-            ...         alpha={"structured": 4.0, "unstructured": 2.0, "streaming": 1.0},
+            ...         "data",
+            ...         ["structured", "unstructured", "streaming"],
+            ...         alpha={
+            ...             "structured": 4.0,
+            ...             "unstructured": 2.0,
+            ...             "streaming": 1.0,
+            ...         },
             ...     ),
             ... }
             >>> len(checker.get_inconsistencies(beliefs))
@@ -305,22 +399,49 @@ class PresheafChecker:
             ...         source_dim="purpose",
             ...         target_dim="data",
             ...         conditional={
-            ...             "web_app": {"structured": 0.5, "unstructured": 0.2, "streaming": 0.3},
-            ...             "cli_tool": {"structured": 0.6, "unstructured": 0.3, "streaming": 0.1},
-            ...             "library": {"structured": 0.5, "unstructured": 0.3, "streaming": 0.2},
-            ...             "service": {"structured": 0.3, "unstructured": 0.1, "streaming": 0.6},
+            ...             "web_app": {
+            ...                 "structured": 0.5,
+            ...                 "unstructured": 0.2,
+            ...                 "streaming": 0.3,
+            ...             },
+            ...             "cli_tool": {
+            ...                 "structured": 0.6,
+            ...                 "unstructured": 0.3,
+            ...                 "streaming": 0.1,
+            ...             },
+            ...             "library": {
+            ...                 "structured": 0.5,
+            ...                 "unstructured": 0.3,
+            ...                 "streaming": 0.2,
+            ...             },
+            ...             "service": {
+            ...                 "structured": 0.3,
+            ...                 "unstructured": 0.1,
+            ...                 "streaming": 0.6,
+            ...             },
             ...         },
             ...     ),
             ... ]
             >>> checker = PresheafChecker(maps, consistency_threshold=0.3)
             >>> beliefs = {
             ...     "purpose": HypothesisSet(
-            ...         "purpose", ["web_app", "cli_tool", "library", "service"],
-            ...         alpha={"web_app": 5.0, "cli_tool": 1.0, "library": 1.0, "service": 1.0},
+            ...         "purpose",
+            ...         ["web_app", "cli_tool", "library", "service"],
+            ...         alpha={
+            ...             "web_app": 5.0,
+            ...             "cli_tool": 1.0,
+            ...             "library": 1.0,
+            ...             "service": 1.0,
+            ...         },
             ...     ),
             ...     "data": HypothesisSet(
-            ...         "data", ["structured", "unstructured", "streaming"],
-            ...         alpha={"structured": 4.0, "unstructured": 2.0, "streaming": 1.0},
+            ...         "data",
+            ...         ["structured", "unstructured", "streaming"],
+            ...         alpha={
+            ...             "structured": 4.0,
+            ...             "unstructured": 2.0,
+            ...             "streaming": 1.0,
+            ...         },
             ...     ),
             ... }
             >>> jsd = checker.get_coupling_strength(beliefs, "purpose", "data")
@@ -350,8 +471,16 @@ def load_restriction_maps(config: dict[str, Any]) -> list[RestrictionMap]:
         >>> config = {
         ...     "restriction_maps": {
         ...         "purpose->data": {
-        ...             "web_app": {"structured": 0.5, "unstructured": 0.2, "streaming": 0.3},
-        ...             "cli_tool": {"structured": 0.6, "unstructured": 0.3, "streaming": 0.1},
+        ...             "web_app": {
+        ...                 "structured": 0.5,
+        ...                 "unstructured": 0.2,
+        ...                 "streaming": 0.3,
+        ...             },
+        ...             "cli_tool": {
+        ...                 "structured": 0.6,
+        ...                 "unstructured": 0.3,
+        ...                 "streaming": 0.1,
+        ...             },
         ...         }
         ...     }
         ... }

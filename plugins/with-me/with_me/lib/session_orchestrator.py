@@ -344,8 +344,15 @@ class SessionOrchestrator:
             >>> # Thompson Sampling with fixed seed for reproducibility
             >>> random.seed(42)
             >>> dim_ts = orch.select_next_dimension(deterministic=False)
-            >>> dim_ts in ["purpose", "context", "data", "behavior",
-            ...            "stakeholders", "constraints", "quality"]
+            >>> dim_ts in [
+            ...     "purpose",
+            ...     "context",
+            ...     "data",
+            ...     "behavior",
+            ...     "stakeholders",
+            ...     "constraints",
+            ...     "quality",
+            ... ]
             True
         """
         accessible = self._get_accessible_dimensions()
