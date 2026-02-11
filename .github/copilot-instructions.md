@@ -41,26 +41,34 @@
 - ❌ Over-engineering, premature optimization
 - ❌ Privacy-compromising features
 
-## Workflow
+## Build & Test
+
+**Prerequisite**: [mise](https://mise.jdx.dev/) must be installed. It manages Python and all tool versions.
 
 ```bash
-mise install        # Setup
-mise run test       # Doctests
-mise run lint       # Lint (ruff check)
-mise run typecheck  # Type check (pyright)
-mise run format:check  # Format check
-mise run validate   # Plugin config validation
+mise install             # Install all tools (Python, ruff, pyright)
+mise run test            # Run all doctests
+mise run lint            # Lint check (ruff check)
+mise run typecheck       # Type check (pyright)
+mise run format:check    # Format check (ruff format --check)
+mise run validate        # Plugin config validation
 ```
 
-**Before committing**: Run `mise run test && mise run lint && mise run typecheck`
+**CI requires all four checks to pass**: `lint`, `test`, `typecheck`, `validate`
+
+**Before committing**: `mise run test && mise run lint && mise run typecheck`
 
 **Git**: `feature/`, `fix/`, `docs/` branches. Descriptive commits, reference issues.
 
 ## Architecture
 
 **as-you**: Pattern learning (Detection → Scoring → Merging → SM-2)
+- Core logic: `plugins/as-you/as_you/lib/`
 
 **with-me**: Bayesian requirement elicitation (Belief tracking → Thompson sampling)
+- Core logic: `plugins/with-me/with_me/lib/`
+
+**Plugin code layout**: `plugins/{name}/{name}/lib/` contains core algorithms. Commands, agents, hooks are entry points that delegate to lib.
 
 **Claude Plugins**: Commands (`commands/*.md`), Skills (`skills/*/SKILL.md`), Agents (`agents/*.md`), Hooks (`hooks/hooks.json`)
 
