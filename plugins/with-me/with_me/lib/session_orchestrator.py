@@ -24,6 +24,7 @@ from with_me.lib.dimension_belief import (
     HypothesisSet,
     create_default_dimension_beliefs,
 )
+from with_me.lib.presheaf import PresheafChecker, load_restriction_maps
 from with_me.lib.question_feedback_manager import QuestionFeedbackManager
 
 # Thresholds
@@ -86,6 +87,11 @@ class SessionOrchestrator:
 
         # Initialize components
         self.manager = QuestionFeedbackManager(feedback_file_path)
+        restriction_maps = load_restriction_maps(self.config)
+        consistency_threshold = self.config.get("session_config", {}).get(
+            "consistency_threshold", 0.3
+        )
+        self.presheaf_checker = PresheafChecker(restriction_maps, consistency_threshold)
 
         # Session state (initialized in initialize_session)
         self.session_id: str | None = None
@@ -476,10 +482,22 @@ class SessionOrchestrator:
                 else None,
             }
 
+        # Presheaf consistency check
+        consistency_results = self.presheaf_checker.check_consistency(self.beliefs)
+        consistency = [
+            {
+                "edge": f"{r.source_dim}->{r.target_dim}",
+                "jsd": round(r.jsd, 4),
+                "is_consistent": r.is_consistent,
+            }
+            for r in consistency_results
+        ]
+
         return {
             "session_id": self.session_id,
             "question_count": self.question_count,
             "dimensions": dimensions,
+            "consistency": consistency,
             "all_converged": self.check_convergence(),
         }
 

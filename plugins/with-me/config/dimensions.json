@@ -615,9 +615,59 @@
       }
     ]
   },
+  "restriction_maps": {
+    "purpose->data": {
+      "web_app": {"structured": 0.5, "unstructured": 0.2, "streaming": 0.3},
+      "cli_tool": {"structured": 0.6, "unstructured": 0.3, "streaming": 0.1},
+      "library": {"structured": 0.5, "unstructured": 0.3, "streaming": 0.2},
+      "service": {"structured": 0.3, "unstructured": 0.1, "streaming": 0.6}
+    },
+    "purpose->behavior": {
+      "web_app": {"synchronous": 0.2, "asynchronous": 0.3, "interactive": 0.4, "batch": 0.1},
+      "cli_tool": {"synchronous": 0.4, "asynchronous": 0.1, "interactive": 0.3, "batch": 0.2},
+      "library": {"synchronous": 0.4, "asynchronous": 0.3, "interactive": 0.1, "batch": 0.2},
+      "service": {"synchronous": 0.1, "asynchronous": 0.5, "interactive": 0.1, "batch": 0.3}
+    },
+    "purpose->stakeholders": {
+      "web_app": {"individual_user": 0.2, "team": 0.2, "organization": 0.2, "external_customers": 0.4},
+      "cli_tool": {"individual_user": 0.5, "team": 0.3, "organization": 0.1, "external_customers": 0.1},
+      "library": {"individual_user": 0.3, "team": 0.4, "organization": 0.2, "external_customers": 0.1},
+      "service": {"individual_user": 0.1, "team": 0.2, "organization": 0.3, "external_customers": 0.4}
+    },
+    "behavior->constraints": {
+      "synchronous": {"performance": 0.4, "scalability": 0.1, "reliability": 0.3, "security": 0.2},
+      "asynchronous": {"performance": 0.2, "scalability": 0.4, "reliability": 0.3, "security": 0.1},
+      "interactive": {"performance": 0.3, "scalability": 0.1, "reliability": 0.2, "security": 0.4},
+      "batch": {"performance": 0.3, "scalability": 0.4, "reliability": 0.2, "security": 0.1}
+    },
+    "data->constraints": {
+      "structured": {"performance": 0.2, "scalability": 0.3, "reliability": 0.3, "security": 0.2},
+      "unstructured": {"performance": 0.3, "scalability": 0.2, "reliability": 0.2, "security": 0.3},
+      "streaming": {"performance": 0.4, "scalability": 0.3, "reliability": 0.2, "security": 0.1}
+    },
+    "context->constraints": {
+      "greenfield": {"performance": 0.25, "scalability": 0.25, "reliability": 0.25, "security": 0.25},
+      "brownfield_integration": {"performance": 0.2, "scalability": 0.1, "reliability": 0.5, "security": 0.2},
+      "migration": {"performance": 0.1, "scalability": 0.2, "reliability": 0.5, "security": 0.2},
+      "prototype": {"performance": 0.5, "scalability": 0.1, "reliability": 0.1, "security": 0.3}
+    },
+    "stakeholders->quality": {
+      "individual_user": {"functional": 0.3, "usability": 0.5, "maintainability": 0.2},
+      "team": {"functional": 0.3, "usability": 0.3, "maintainability": 0.4},
+      "organization": {"functional": 0.4, "usability": 0.2, "maintainability": 0.4},
+      "external_customers": {"functional": 0.3, "usability": 0.5, "maintainability": 0.2}
+    },
+    "behavior->quality": {
+      "synchronous": {"functional": 0.4, "usability": 0.3, "maintainability": 0.3},
+      "asynchronous": {"functional": 0.3, "usability": 0.2, "maintainability": 0.5},
+      "interactive": {"functional": 0.3, "usability": 0.5, "maintainability": 0.2},
+      "batch": {"functional": 0.5, "usability": 0.1, "maintainability": 0.4}
+    }
+  },
   "session_config": {
     "initial_entropy": 2.0,
     "convergence_threshold": 0.3,
+    "consistency_threshold": 0.3,
     "target_confidence": 0.85,
     "diminishing_returns_epsilon": 0.05,
     "diminishing_returns_window": 3,
