@@ -16,6 +16,7 @@ allowing the command file to focus on user interaction via AskUserQuestion.
 import doctest
 import json
 import math
+import random
 import sys
 from pathlib import Path
 from typing import Any
@@ -99,6 +100,7 @@ class SessionOrchestrator:
         self.question_history: list[dict[str, Any]] = []
         self.question_count = 0
         self.recent_information_gains: list[float] = []
+        self.thompson_states: dict[str, dict[str, float]] = {}
 
     def initialize_session(self) -> str:
         """
@@ -133,6 +135,18 @@ class SessionOrchestrator:
         self.question_history = []
         self.question_count = 0
         self.recent_information_gains = []
+
+        # Initialize Thompson Sampling states per dimension
+        self.thompson_states = {}
+        for dim_id in self.beliefs:
+            dim_config = self.config["dimensions"][dim_id]
+            importance = dim_config["importance"]
+            # Initial entropy is H_max (uniform prior), normalized to [0, 1]
+            normalized_entropy = 1.0  # uniform prior → max entropy
+            self.thompson_states[dim_id] = {
+                "alpha": 1.0 + importance * normalized_entropy,
+                "beta": 1.0,
+            }
 
         return self.session_id
 
@@ -241,19 +255,65 @@ class SessionOrchestrator:
 
         return True
 
-    def select_next_dimension(self) -> str | None:
+    def _get_accessible_dimensions(
+        self,
+    ) -> list[tuple[str, float, float]]:
+        """Get accessible dimensions with normalized entropy and importance.
+
+        Returns:
+            List of (dim_id, normalized_entropy, importance) tuples
+
+        Examples:
+            >>> from pathlib import Path
+            >>> orch = SessionOrchestrator(
+            ...     feedback_file_path=Path("/tmp/test_feedback.json")
+            ... )
+            >>> _ = orch.initialize_session()
+            >>> accessible = orch._get_accessible_dimensions()
+            >>> any(d[0] == "purpose" for d in accessible)
+            True
         """
-        Select next dimension to query based on normalized entropy and prerequisites.
+        accessible = []
 
-        Algorithm:
-        1. Filter dimensions by prerequisite satisfaction
-        2. Normalize entropy by H_max = log₂(N) per dimension for fair comparison
-        3. Sort by normalized entropy (descending) then importance
-        4. Return highest normalized-entropy accessible dimension
+        for dim_id, hs in self.beliefs.items():
+            dim_config = self.config["dimensions"][dim_id]
+            prereqs = dim_config["prerequisites"]
+            prereq_threshold = dim_config.get("prerequisite_threshold", 1.5)
 
-        Normalization maps all dimensions to [0, 1] scale where 1.0 = maximum
-        uncertainty regardless of hypothesis count, eliminating systematic bias
-        toward dimensions with more hypotheses.
+            prereq_satisfied = True
+            for prereq in prereqs:
+                prereq_entropy = self.beliefs[prereq]._cached_entropy
+                if prereq_entropy is None or prereq_entropy >= prereq_threshold:
+                    prereq_satisfied = False
+                    break
+
+            if prereq_satisfied:
+                raw_entropy = (
+                    hs._cached_entropy
+                    if hs._cached_entropy is not None
+                    else math.log2(len(hs.hypotheses))
+                )
+                h_max = math.log2(len(hs.hypotheses))
+                normalized_entropy = raw_entropy / h_max
+                accessible.append(
+                    (dim_id, normalized_entropy, dim_config["importance"])
+                )
+
+        return accessible
+
+    def select_next_dimension(self, deterministic: bool = True) -> str | None:
+        """
+        Select next dimension to query.
+
+        Two modes:
+        - deterministic=True: Greedy selection by normalized entropy (default,
+          backward compatible, used in tests)
+        - deterministic=False: Thompson Sampling with Beta distribution for
+          exploration-exploitation balance
+
+        Args:
+            deterministic: If True, use greedy entropy-based selection.
+                          If False, use Thompson Sampling.
 
         Returns:
             Dimension ID to query, or None if no accessible dimensions
@@ -280,45 +340,77 @@ class SessionOrchestrator:
             >>> orch.beliefs["data"]._cached_entropy = 1.5
             >>> orch.select_next_dimension()
             'data'
+
+            >>> # Thompson Sampling with fixed seed for reproducibility
+            >>> random.seed(42)
+            >>> dim_ts = orch.select_next_dimension(deterministic=False)
+            >>> dim_ts in ["purpose", "context", "data", "behavior",
+            ...            "stakeholders", "constraints", "quality"]
+            True
         """
-        accessible = []
-
-        for dim_id, hs in self.beliefs.items():
-            # Check prerequisites
-            dim_config = self.config["dimensions"][dim_id]
-            prereqs = dim_config["prerequisites"]
-            prereq_threshold = dim_config.get("prerequisite_threshold", 1.5)
-
-            # Check prerequisite satisfaction (using raw cached entropy)
-            prereq_satisfied = True
-            for prereq in prereqs:
-                prereq_entropy = self.beliefs[prereq]._cached_entropy
-                if prereq_entropy is None or prereq_entropy >= prereq_threshold:
-                    prereq_satisfied = False
-                    break
-
-            if prereq_satisfied:
-                # Use cached entropy or default to H_max (maximum uncertainty)
-                raw_entropy = (
-                    hs._cached_entropy
-                    if hs._cached_entropy is not None
-                    else math.log2(len(hs.hypotheses))
-                )
-                # Normalize by H_max = log₂(N) so dimensions with different
-                # hypothesis counts are compared on a [0, 1] scale
-                h_max = math.log2(len(hs.hypotheses))
-                normalized_entropy = raw_entropy / h_max
-                accessible.append(
-                    (dim_id, normalized_entropy, dim_config["importance"])
-                )
+        accessible = self._get_accessible_dimensions()
 
         if not accessible:
-            return None  # No accessible dimensions
+            return None
 
-        # Sort by normalized entropy (descending), then by importance (descending)
-        accessible.sort(key=lambda x: (x[1], x[2]), reverse=True)
+        if deterministic:
+            # Greedy: sort by normalized entropy (desc), then importance (desc)
+            accessible.sort(key=lambda x: (x[1], x[2]), reverse=True)
+            return accessible[0][0]
 
-        return accessible[0][0]  # Return dimension ID
+        # Thompson Sampling: sample Beta(alpha, beta) per accessible dimension
+        best_dim = None
+        best_sample = -1.0
+
+        for dim_id, _norm_ent, _importance in accessible:
+            ts = self.thompson_states.get(dim_id, {"alpha": 1.0, "beta": 1.0})
+            sample = random.betavariate(ts["alpha"], ts["beta"])
+            if sample > best_sample:
+                best_sample = sample
+                best_dim = dim_id
+
+        return best_dim
+
+    def update_thompson_state(self, dimension: str, information_gain: float) -> None:
+        """
+        Update Thompson Sampling state based on information gain.
+
+        If IG > epsilon (informative question), increment alpha (success).
+        Otherwise increment beta (failure/low-information).
+
+        Args:
+            dimension: Dimension ID that was queried
+            information_gain: IG in bits from the question
+
+        Examples:
+            >>> from pathlib import Path
+            >>> orch = SessionOrchestrator(
+            ...     feedback_file_path=Path("/tmp/test_feedback.json")
+            ... )
+            >>> _ = orch.initialize_session()
+            >>> # Successful question (high IG)
+            >>> orch.update_thompson_state("purpose", 0.5)
+            >>> orch.thompson_states["purpose"]["alpha"]
+            3.0
+            >>> orch.thompson_states["purpose"]["beta"]
+            1.0
+
+            >>> # Uninformative question (low IG)
+            >>> orch.update_thompson_state("purpose", 0.01)
+            >>> orch.thompson_states["purpose"]["alpha"]
+            3.0
+            >>> orch.thompson_states["purpose"]["beta"]
+            2.0
+        """
+        epsilon = self.config["session_config"].get("diminishing_returns_epsilon", 0.05)
+
+        if dimension not in self.thompson_states:
+            self.thompson_states[dimension] = {"alpha": 1.0, "beta": 1.0}
+
+        if information_gain > epsilon:
+            self.thompson_states[dimension]["alpha"] += 1.0
+        else:
+            self.thompson_states[dimension]["beta"] += 1.0
 
     def generate_question(self, dimension: str) -> str:
         """

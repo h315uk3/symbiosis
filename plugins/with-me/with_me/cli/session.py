@@ -200,6 +200,7 @@ def save_session_state(session_id: str, orchestrator: SessionOrchestrator) -> No
         "question_history": orchestrator.question_history,
         "question_count": orchestrator.question_count,
         "recent_information_gains": orchestrator.recent_information_gains,
+        "thompson_states": orchestrator.thompson_states,
     }
 
     with open(session_file, "w", encoding="utf-8") as f:
@@ -229,6 +230,7 @@ def load_session_state(session_id: str) -> SessionOrchestrator:
     orch.question_history = state["question_history"]
     orch.question_count = state["question_count"]
     orch.recent_information_gains = state.get("recent_information_gains", [])
+    orch.thompson_states = state.get("thompson_states", {})
 
     return orch
 
@@ -585,6 +587,10 @@ def cmd_update_with_computation(args: argparse.Namespace) -> None:
         history_entry["evaluation_scores"] = evaluation_scores
     orch.question_history.append(history_entry)
     orch.question_count += 1
+
+    # Update Thompson Sampling state and record IG
+    orch.update_thompson_state(args.dimension, info_gain)
+    orch.record_information_gain(info_gain)
 
     # Save updated state
     save_session_state(args.session_id, orch)
