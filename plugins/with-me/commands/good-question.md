@@ -330,6 +330,10 @@ Consider:
 - Semantic meaning and context, not just keyword matching
 - **Consistency with previous answers** (avoid contradicting established facts)
 
+**Secondary dimension identification:** After estimating likelihoods for the primary dimension, check if the answer also provides information about other dimensions. For example, an answer about "purpose" mentioning "real-time collaboration" may also inform "behavior" (asynchronous) and "stakeholders" (team). If secondary dimensions are identified:
+- Estimate likelihoods for each secondary dimension
+- Store as `SECONDARY_DIMS` (comma-separated) and `SECONDARY_LIKELIHOODS` (JSON object mapping dim_id to likelihood dict)
+
 Store as:
 - Single-select: `LIKELIHOODS='{"hyp1": 0.x, "hyp2": 0.y, ...}'` (must sum to ~1.0)
 - Multi-select: `LIKELIHOODS='[{"hyp1": 0.x, ...}, {"hyp1": 0.y, ...}]'` (one dict per selected answer, each summing to ~1.0)
@@ -350,19 +354,28 @@ python3 -m with_me.cli.session update-with-computation \
   --importance <IMPORTANCE>
 ```
 
+If secondary dimensions were identified in Phase A, add:
+```bash
+  --secondary-dimensions "behavior,stakeholders" \
+  --secondary-likelihoods '{"behavior": {"synchronous": 0.1, "asynchronous": 0.6, "interactive": 0.2, "batch": 0.1}, "stakeholders": {"individual_user": 0.1, "team": 0.7, "organization": 0.1, "external_customers": 0.1}}'
+```
+
 - `--answer`: For multi-select, combine all selected answers into a single string (e.g., "Answer1; Answer2; Answer3")
 - `--likelihoods`: For multi-select, pass a JSON array of likelihood dicts (one per selected answer). The CLI computes the joint likelihood internally.
 - `--reward`, `--eig`, `--clarity`, `--importance`: Evaluation scores from Step 2.2b. These are persisted to the session file for structural reliability.
-- For the first 2 questions (where evaluation was skipped), omit these optional flags.
+- `--secondary-dimensions`, `--secondary-likelihoods`: Cross-dimension updates applied with reduced weight (default 0.3). Only include when the answer clearly provides information about other dimensions.
+- For the first 2 questions (where evaluation was skipped), omit the evaluation optional flags.
 
 This command internally:
 - For multi-select: computes joint likelihood (pointwise product of individual likelihoods, normalized)
 - Calculates entropy before/after using Shannon formula
-- Performs Bayesian update (prior × joint likelihood, normalized)
-- Calculates information gain (H_before - H_after)
+- Performs Dirichlet update (alpha += weight * likelihood)
+- Calculates information gain (H_before - H_after) and JSD (belief shift)
+- Applies secondary dimension updates with reduced weight
+- Updates Thompson Sampling state and records IG
 - Persists results and evaluation scores to session file
 
-Output (internal use only): `status`, `entropy_before`, `entropy_after`, `information_gain`, `question_count`, `evaluation_scores` (if provided)
+Output (internal use only): `status`, `entropy_before`, `entropy_after`, `information_gain`, `jsd`, `question_count`, `evaluation_scores` (if provided), `secondary_updates` and `total_cross_dimension_ig` (if secondary dimensions provided)
 
 **Record feedback** (after each update, using values from the output above):
 

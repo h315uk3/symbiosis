@@ -20,7 +20,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from with_me.lib.dimension_belief import HypothesisSet
+from with_me.lib.dimension_belief import HypothesisSet, compute_jsd
 from with_me.lib.session_orchestrator import SessionOrchestrator
 
 # Convergence thresholds
@@ -199,6 +199,8 @@ def save_session_state(session_id: str, orchestrator: SessionOrchestrator) -> No
         "beliefs": {k: v.to_dict() for k, v in orchestrator.beliefs.items()},
         "question_history": orchestrator.question_history,
         "question_count": orchestrator.question_count,
+        "recent_information_gains": orchestrator.recent_information_gains,
+        "thompson_states": orchestrator.thompson_states,
     }
 
     with open(session_file, "w", encoding="utf-8") as f:
@@ -227,6 +229,8 @@ def load_session_state(session_id: str) -> SessionOrchestrator:
     orch.beliefs = {k: HypothesisSet.from_dict(v) for k, v in state["beliefs"].items()}
     orch.question_history = state["question_history"]
     orch.question_count = state["question_count"]
+    orch.recent_information_gains = state.get("recent_information_gains", [])
+    orch.thompson_states = state.get("thompson_states", {})
 
     return orch
 
@@ -502,6 +506,66 @@ def cmd_evaluate_question(args: argparse.Namespace) -> None:
     )
 
 
+def _apply_secondary_updates(
+    args: argparse.Namespace,
+    orch: SessionOrchestrator,
+) -> list[dict[str, Any]]:
+    """Apply cross-dimension secondary updates with reduced weight.
+
+    Returns:
+        List of secondary update result dicts
+    """
+    secondary_updates: list[dict[str, Any]] = []
+    secondary_weight = orch.config["session_config"].get("secondary_update_weight", 0.3)
+
+    if not getattr(args, "secondary_dimensions", None) or not getattr(
+        args, "secondary_likelihoods", None
+    ):
+        return secondary_updates
+
+    try:
+        sec_likelihoods = json.loads(args.secondary_likelihoods)
+    except json.JSONDecodeError:
+        return secondary_updates
+
+    sec_dims = [d.strip() for d in args.secondary_dimensions.split(",")]
+    for sec_dim in sec_dims:
+        if sec_dim not in orch.beliefs or sec_dim not in sec_likelihoods:
+            continue
+
+        sec_hs = orch.beliefs[sec_dim]
+        sec_validated = validate_and_normalize_likelihoods(
+            sec_hs, sec_likelihoods[sec_dim]
+        )
+
+        sec_posterior_before = dict(sec_hs.posterior)
+        sec_h_before = sec_hs.entropy()
+        sec_hs.update(sec_validated, weight=secondary_weight)
+        sec_h_after = sec_hs.entropy()
+        sec_jsd = compute_jsd(sec_posterior_before, sec_hs.posterior)
+        sec_ig = sec_h_before - sec_h_after
+
+        # Update cached values
+        sec_h_max = math.log2(len(sec_hs.hypotheses))
+        sec_hs._cached_entropy = sec_h_after
+        sec_hs._cached_confidence = (
+            1.0 - (sec_h_after / sec_h_max) if sec_h_max > 0 else 1.0
+        )
+
+        secondary_updates.append(
+            {
+                "dimension": sec_dim,
+                "weight": secondary_weight,
+                "entropy_before": round(sec_h_before, 4),
+                "entropy_after": round(sec_h_after, 4),
+                "information_gain": round(sec_ig, 4),
+                "jsd": round(sec_jsd, 4),
+            }
+        )
+
+    return secondary_updates
+
+
 def cmd_update_with_computation(args: argparse.Namespace) -> None:
     """Update beliefs with complete computation chain (Phase B + C).
 
@@ -536,14 +600,16 @@ def cmd_update_with_computation(args: argparse.Namespace) -> None:
     else:
         validated_likelihoods = validate_and_normalize_likelihoods(hs, likelihoods_raw)
 
-    # B1: Entropy before
+    # B1: Entropy before + capture pre-update posterior for JSD
     h_before = hs.entropy()
+    posterior_before = dict(hs.posterior)
 
-    # B2: Bayesian update with validated likelihoods
+    # B2: Dirichlet update with validated likelihoods
     hs.update(validated_likelihoods)
 
-    # B3: Entropy after
+    # B3: Entropy after + JSD between pre/post distributions
     h_after = hs.entropy()
+    jsd = compute_jsd(posterior_before, hs.posterior)
 
     # B4: Information gain
     info_gain = h_before - h_after
@@ -575,11 +641,22 @@ def cmd_update_with_computation(args: argparse.Namespace) -> None:
         "entropy_before": h_before,
         "entropy_after": h_after,
         "information_gain": info_gain,
+        "jsd": jsd,
     }
     if evaluation_scores is not None:
         history_entry["evaluation_scores"] = evaluation_scores
+
+    # Cross-dimension secondary updates (P2.5)
+    secondary_updates = _apply_secondary_updates(args, orch)
+    if secondary_updates:
+        history_entry["secondary_updates"] = secondary_updates
+
     orch.question_history.append(history_entry)
     orch.question_count += 1
+
+    # Update Thompson Sampling state and record IG
+    orch.update_thompson_state(args.dimension, info_gain)
+    orch.record_information_gain(info_gain)
 
     # Save updated state
     save_session_state(args.session_id, orch)
@@ -591,10 +668,15 @@ def cmd_update_with_computation(args: argparse.Namespace) -> None:
         "entropy_before": round(h_before, 4),
         "entropy_after": round(h_after, 4),
         "information_gain": round(info_gain, 4),
+        "jsd": round(jsd, 4),
         "question_count": orch.question_count,
     }
     if evaluation_scores is not None:
         output["evaluation_scores"] = evaluation_scores
+    if secondary_updates:
+        total_cross_dim_ig = sum(u["information_gain"] for u in secondary_updates)
+        output["secondary_updates"] = secondary_updates
+        output["total_cross_dimension_ig"] = round(total_cross_dim_ig, 4)
     print(json.dumps(output, ensure_ascii=False))
 
 
@@ -669,6 +751,18 @@ def main() -> None:
         type=float,
         default=None,
         help="Importance score from evaluation (optional)",
+    )
+    update_comp_parser.add_argument(
+        "--secondary-dimensions",
+        type=str,
+        default=None,
+        help="Comma-separated secondary dimension IDs for cross-dim update",
+    )
+    update_comp_parser.add_argument(
+        "--secondary-likelihoods",
+        type=str,
+        default=None,
+        help='Secondary likelihoods as JSON: {"dim_id": {"hyp": prob}}',
     )
 
     args = parser.parse_args()

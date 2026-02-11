@@ -479,9 +479,14 @@ class QuestionFeedbackManager:
 
         best_questions.sort(key=lambda x: x["avg_reward"], reverse=True)
 
-        # Dimension stats
+        # Dimension stats (dynamically discover dimensions from session data)
+        all_dimensions: set[str] = set()
+        for session in completed_sessions:
+            for q in session["questions"]:
+                all_dimensions.add(q["dimension"])
+
         dimension_stats = {}
-        for dim in ["purpose", "data", "behavior", "constraints", "quality"]:
+        for dim in sorted(all_dimensions):
             dim_questions = []
             for session in completed_sessions:
                 dim_questions.extend(
