@@ -5,6 +5,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# Ensure python3 is available
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "Error: python3 is required but not found in PATH." >&2
+  exit 1
+fi
+
 # Read plugin versions from plugin.json
 AS_YOU_VERSION=$(python3 -c "
 import json, pathlib
@@ -26,8 +32,9 @@ AS_YOU_VERSION=$AS_YOU_VERSION
 WITH_ME_VERSION=$WITH_ME_VERSION
 EOF
 
-# Ensure data directories exist with correct permissions
+# Ensure data directories exist with correct permissions for container users
 mkdir -p "$SCRIPT_DIR/data/prometheus" "$SCRIPT_DIR/data/grafana" "$SCRIPT_DIR/data/loki"
+chmod 777 "$SCRIPT_DIR/data/prometheus" "$SCRIPT_DIR/data/grafana" "$SCRIPT_DIR/data/loki"
 
 # Start containers
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d

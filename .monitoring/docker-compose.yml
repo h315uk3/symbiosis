@@ -11,7 +11,6 @@ services:
       - AS_YOU_VERSION=${AS_YOU_VERSION}
       - WITH_ME_VERSION=${WITH_ME_VERSION}
     depends_on:
-      - prometheus
       - loki
     restart: unless-stopped
 
@@ -51,7 +50,7 @@ services:
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
     volumes:
       - ./configs/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
       - ./configs/grafana/dashboards/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml:ro

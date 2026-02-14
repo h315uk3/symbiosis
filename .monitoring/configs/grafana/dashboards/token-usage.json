@@ -102,7 +102,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (symbiosis_as_you_version, type) (rate(claude_code_token_usage_tokens_total{model=~\"$model\"}[5m]) * 60)",
+          "expr": "sum by (symbiosis_as_you_version, type) (rate(claude_code_token_usage_tokens_total{model=~\"$model\", symbiosis_as_you_version=~\"$as_you_version\"}[5m]) * 60)",
           "legendFormat": "as-you v{{symbiosis_as_you_version}} - {{type}}",
           "refId": "A"
         }
@@ -127,7 +127,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (symbiosis_with_me_version, type) (rate(claude_code_token_usage_tokens_total{model=~\"$model\"}[5m]) * 60)",
+          "expr": "sum by (symbiosis_with_me_version, type) (rate(claude_code_token_usage_tokens_total{model=~\"$model\", symbiosis_with_me_version=~\"$with_me_version\"}[5m]) * 60)",
           "legendFormat": "with-me v{{symbiosis_with_me_version}} - {{type}}",
           "refId": "A"
         }
@@ -276,12 +276,12 @@
       },
       "targets": [
         {
-          "expr": "sum by (symbiosis_as_you_version) (rate(claude_code_cost_usage_USD_total{model=~\"$model\"}[5m]) * 60)",
+          "expr": "sum by (symbiosis_as_you_version) (rate(claude_code_cost_usage_USD_total{model=~\"$model\", symbiosis_as_you_version=~\"$as_you_version\"}[5m]) * 60)",
           "legendFormat": "as-you v{{symbiosis_as_you_version}}",
           "refId": "A"
         },
         {
-          "expr": "sum by (symbiosis_with_me_version) (rate(claude_code_cost_usage_USD_total{model=~\"$model\"}[5m]) * 60)",
+          "expr": "sum by (symbiosis_with_me_version) (rate(claude_code_cost_usage_USD_total{model=~\"$model\", symbiosis_with_me_version=~\"$with_me_version\"}[5m]) * 60)",
           "legendFormat": "with-me v{{symbiosis_with_me_version}}",
           "refId": "B"
         }
