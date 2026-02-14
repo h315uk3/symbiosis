@@ -35,6 +35,12 @@
 - ✅ README links to technical-overview.md for deeper understanding
 - ✅ technical-overview.md links to CONTRIBUTING.md for development
 
+**Local Observability (OTEL)**:
+- Docker-based local monitoring stack for Claude Code token consumption
+- OTEL Collector → Prometheus (metrics) + Loki (logs) → Grafana
+- All telemetry stays local — consistent with Privacy by Design
+- Opt-in via environment variables; managed by scripts in `.monitoring/`
+
 **Anti-Patterns**:
 - ❌ External dependencies (except stdlib)
 - ❌ Volatile information in docs
