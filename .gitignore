@@ -70,3 +70,7 @@ Thumbs.db
 
 # reference
 reference/
+
+# Local monitoring data (OTEL/Prometheus/Grafana)
+.monitoring/data/
+.monitoring/.env
