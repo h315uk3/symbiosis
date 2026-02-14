@@ -12,6 +12,7 @@ services:
       - WITH_ME_VERSION=${WITH_ME_VERSION}
     depends_on:
       - prometheus
+      - loki
     restart: unless-stopped
 
   prometheus:
@@ -27,6 +28,18 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
       - "--storage.tsdb.retention.time=90d"
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:latest
+    container_name: symbiosis-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./configs/loki.yaml:/etc/loki/local-config.yaml:ro
+      - ./data/loki:/loki
+    command:
+      - "-config.file=/etc/loki/local-config.yaml"
     restart: unless-stopped
 
   grafana:
@@ -46,4 +59,5 @@ services:
       - ./data/grafana:/var/lib/grafana
     depends_on:
       - prometheus
+      - loki
     restart: unless-stopped

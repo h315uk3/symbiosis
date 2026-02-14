@@ -27,7 +27,7 @@ WITH_ME_VERSION=$WITH_ME_VERSION
 EOF
 
 # Ensure data directories exist with correct permissions
-mkdir -p "$SCRIPT_DIR/data/prometheus" "$SCRIPT_DIR/data/grafana"
+mkdir -p "$SCRIPT_DIR/data/prometheus" "$SCRIPT_DIR/data/grafana" "$SCRIPT_DIR/data/loki"
 
 # Start containers
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d
@@ -36,6 +36,7 @@ echo ""
 echo "Monitoring stack started:"
 echo "  Grafana:    http://localhost:3000"
 echo "  Prometheus: http://localhost:9090"
+echo "  Loki:       http://localhost:3100"
 echo ""
 echo "Configure Claude Code with:"
 echo "  export CLAUDE_CODE_ENABLE_TELEMETRY=1"
@@ -43,3 +44,6 @@ echo "  export OTEL_METRICS_EXPORTER=otlp"
 echo "  export OTEL_LOGS_EXPORTER=otlp"
 echo "  export OTEL_EXPORTER_OTLP_PROTOCOL=grpc"
 echo "  export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317"
+echo "  export OTEL_METRIC_EXPORT_INTERVAL=10000"
+echo "  export OTEL_LOG_TOOL_DETAILS=1"
+echo "  export OTEL_METRICS_INCLUDE_VERSION=true"

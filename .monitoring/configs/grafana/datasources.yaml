@@ -7,3 +7,13 @@ datasources:
     url: http://prometheus:9090
     isDefault: true
     editable: true
+    uid: PBFA97CFB590B2093
+
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: true
+    uid: loki-datasource
+    jsonData:
+      maxLines: 1000

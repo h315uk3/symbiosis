@@ -20,18 +20,6 @@ processors:
         value: ${env:WITH_ME_VERSION}
         action: upsert
 
-connectors:
-  spanmetrics:
-    histogram:
-      explicit:
-        buckets: [100, 500, 1000, 5000, 10000, 50000, 100000]
-    dimensions:
-      - name: model
-      - name: symbiosis.as_you.version
-      - name: symbiosis.with_me.version
-    dimensions_cache_size: 1000
-    metrics_flush_interval: 15s
-
 exporters:
   prometheus:
     endpoint: 0.0.0.0:8889
@@ -39,22 +27,22 @@ exporters:
       enabled: true
     metric_expiration: 5m
 
+  otlp_http/loki:
+    endpoint: http://loki:3100/otlp
+    tls:
+      insecure: true
+
   debug:
     verbosity: basic
 
 service:
   pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch, resource/plugin_versions]
-      exporters: [spanmetrics, debug]
-
     metrics:
-      receivers: [otlp, spanmetrics]
+      receivers: [otlp]
       processors: [batch, resource/plugin_versions]
       exporters: [prometheus, debug]
 
     logs:
       receivers: [otlp]
       processors: [batch, resource/plugin_versions]
-      exporters: [debug]
+      exporters: [otlp_http/loki, debug]
