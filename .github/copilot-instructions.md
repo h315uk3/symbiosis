@@ -1,91 +1,103 @@
-# Symbiosis - GitHub Copilot Instructions
+# Symbiosis - Copilot Instructions
 
-**For GitHub Copilot**: Project-specific development principles.
+Instructions for GitHub Copilot code completion and code review.
 
-**For Claude Code**: See `CLAUDE.md` and `.claude/rules/` for detailed constraints.
+Path-specific standards are defined in `.github/instructions/*.instructions.md` — this file covers project-wide context and review policy.
 
 ---
 
-## Philosophy
+## Project Context
 
-- **Local-First, Privacy-by-Design**: All processing local, no external services
-- **Hybrid Python-Claude**: Python for I/O, Claude Skills for computation
-- **Zero External Dependencies**: Standard library only
-- **Testability**: Type hints and doctests required
-- **Statistical Intelligence**: Transparent math, no ML black boxes
+Symbiosis is a local-first, privacy-by-design Human-AI development tool suite. Two Claude Code plugins:
 
-## Development Standards
+- **as-you**: Pattern learning via BM25 scoring, Thompson sampling, SM-2 spaced repetition
+- **with-me**: Bayesian requirement elicitation via belief tracking and Thompson sampling
 
-**Python**: 3.11+, type hints, doctests, `ruff` compliance (CI enforced)
+### Hard Constraints
 
-**Shell**: Minimal glue code - business logic in Python
+- Python 3.11+ standard library only — no external packages, no exceptions
+- All processing local — no network calls, no external services, no telemetry
+- File-based persistence — JSON and Markdown, human-readable
+- CI enforces: `ruff` lint, `pyright` type check, doctests, plugin validation
 
-**Documentation Responsibilities**:
-- **README.md**: User-facing marketing (simple, example-driven, < 100 lines)
-- **docs/technical-overview.md**: Theory, algorithms, configuration (for users + technical readers)
-- **CONTRIBUTING.md**: Development setup, testing, PR process (for contributors only)
-- **Code docstrings**: Implementation details, API documentation
+### Infrastructure
 
-**Documentation Rules**:
-- ❌ Never mix marketing and technical content in README
-- ❌ No development setup/testing in technical docs (belongs in CONTRIBUTING.md)
-- ❌ No CHANGELOG files (Issues/PRs are the source of truth)
-- ❌ No GitHub Releases (decided in past Issues)
-- ❌ Forbidden: Directory structures, file paths, version numbers in docs
-- ✅ README links to technical-overview.md for deeper understanding
-- ✅ technical-overview.md links to CONTRIBUTING.md for development
+- `.monitoring/` — Local-only Docker dev tooling (OTEL Collector, Prometheus, Loki, Grafana). Not production infrastructure. Ephemeral, user-controlled, `:latest` tags are intentional.
+- Shell scripts — Minimal glue code under 10 lines delegating to Python. `set -euo pipefail` provides sufficient error handling for local dev scripts.
 
-**Local Observability (OTEL)**:
-- Docker-based local monitoring stack for Claude Code token consumption
-- OTEL Collector → Prometheus (metrics) + Loki (logs) → Grafana
-- All telemetry stays local — consistent with Privacy by Design
-- Opt-in via environment variables; managed by scripts in `.monitoring/`
+---
 
-**Anti-Patterns**:
-- ❌ External dependencies (except stdlib)
-- ❌ Volatile information in docs
-- ❌ Over-engineering, premature optimization
-- ❌ Privacy-compromising features
+## Code Review Policy
+
+### Comment only when the issue is actionable and correct
+
+Before commenting, verify:
+
+1. **Is the claim factually correct?** Check syntax rules, API docs, and language specs before flagging "incorrect" usage. Do not guess.
+2. **Does this require a code change?** If no change is needed, do not comment.
+3. **Is this already handled?** Linters (`ruff`), type checkers (`pyright`), and CI catch style, formatting, and type issues. Do not duplicate their coverage.
+
+### Comment priorities (descending)
+
+1. **Security vulnerabilities** — injection, path traversal, secret exposure
+2. **Logic bugs** — incorrect behavior, wrong algorithm, off-by-one
+3. **Data loss risk** — unhandled errors that silently corrupt or drop data
+4. **API misuse** — calling functions with wrong types or invalid arguments
+
+### Do not comment on
+
+- **Style or formatting** — `ruff` enforces this. No opinions on naming, spacing, quote style.
+- **Type annotations** — `pyright` enforces this. No suggestions about types.
+- **Informational observations** — "This could be X" or "Consider Y" without a concrete problem.
+- **PR description accuracy** — Description text is not code. Do not review it.
+- **Standard configuration patterns** — Loki schema dates, Docker `:latest` tags for dev tooling, `chmod` permissions for local containers. These are intentional choices for a local dev stack.
+- **Over-engineering suggestions** — Do not suggest additional error handling, abstraction layers, configurability, or defensive code beyond what is needed. This project values simplicity.
+- **Alternative syntaxes** — If valid syntax is used (e.g., LogQL backticks, shell parameter expansion), do not suggest alternatives.
+
+### Scope
+
+- Review only the diff. Do not comment on unchanged code.
+- One comment per distinct issue. Do not repeat the same finding across multiple lines.
+- If uncertain whether something is a bug, do not comment.
+
+---
+
+## Code Completion Context
+
+### Python modules (`plugins/**/lib/*.py`)
+
+- Pure functions with type hints and doctests
+- Algorithms: BM25, Thompson sampling, SM-2, Bayesian updating
+- Use `math`, `json`, `pathlib`, `datetime`, `re`, `difflib` from stdlib
+- Doctest isolation: use `tempfile.mkdtemp()` for file operations
+
+### Commands/Agents (`commands/*.md`, `agents/*.md`)
+
+- Markdown with YAML frontmatter (`description`, `allowed-tools`)
+- Thin entry points delegating logic to `lib/` modules
+
+### Monitoring configs (`.monitoring/`)
+
+- Docker Compose, OTEL Collector YAML, Prometheus YAML, Loki YAML, Grafana JSON
+- PromQL for Prometheus queries, LogQL for Loki queries
+- LogQL supports both `"double quotes"` and `` `backticks` `` for string literals
+
+### Shell scripts (`.monitoring/*.sh`)
+
+- Bash with `set -euo pipefail`
+- Under 10 lines of logic, delegates to Python or Docker
+
+---
 
 ## Build & Test
 
-**Prerequisite**: [mise](https://mise.jdx.dev/) must be installed. It manages Python and all tool versions.
+Prerequisite: [mise](https://mise.jdx.dev/) manages Python and all tool versions.
 
 ```bash
-mise install             # Install all tools (Python, ruff, pyright)
-mise run test            # Run all doctests
-mise run lint            # Lint check (ruff check)
-mise run typecheck       # Type check (pyright)
-mise run format:check    # Format check (ruff format --check)
+mise run test            # All doctests
+mise run lint            # ruff check
+mise run typecheck       # pyright
 mise run validate        # Plugin config validation
 ```
 
-**CI requires all four checks to pass**: `lint`, `test`, `typecheck`, `validate`
-
-**Before committing**: `mise run test && mise run lint && mise run typecheck`
-
-**Git**: `feature/`, `fix/`, `docs/` branches. Descriptive commits, reference issues.
-
-## Architecture
-
-**as-you**: Pattern learning (Detection → Scoring → Merging → SM-2)
-- Core logic: `plugins/as-you/as_you/lib/`
-
-**with-me**: Bayesian requirement elicitation (Belief tracking → Thompson sampling)
-- Core logic: `plugins/with-me/with_me/lib/`
-
-**Plugin code layout**: `plugins/{name}/{name}/lib/` contains core algorithms. Commands, agents, hooks are entry points that delegate to lib.
-
-**Claude Plugins**: Commands (`commands/*.md`), Skills (`skills/*/SKILL.md`), Agents (`agents/*.md`), Hooks (`hooks/hooks.json`)
-
-## Reference
-
-- `CLAUDE.md` - Philosophy
-- `CONTRIBUTING.md` - Process
-- `.claude/rules/` - Constraints
-- `gh issue list` - Current issues
-- `gh pr list` - Current PRs
-
----
-
-For current implementation details, examine the codebase directly.
+CI requires all four checks to pass.
