@@ -57,7 +57,7 @@ def _digamma(x: float) -> float:
         4.6
 
         >>> # Recurrence: psi(x+1) = psi(x) + 1/x
-        >>> abs(_digamma(3.0) - (_digamma(2.0) + 1/2)) < 1e-10
+        >>> abs(_digamma(3.0) - (_digamma(2.0) + 1 / 2)) < 1e-10
         True
     """
     # Shift x to >= 6 using recurrence: psi(x) = psi(x+1) - 1/x
@@ -337,16 +337,15 @@ class HypothesisSet:
 
             >>> # High alpha uniform: most uncertainty is aleatoric
             >>> hs_high = HypothesisSet(
-            ...     "test", ["a", "b", "c"],
+            ...     "test",
+            ...     ["a", "b", "c"],
             ...     alpha={"a": 100.0, "b": 100.0, "c": 100.0},
             ... )
             >>> hs_high.epistemic_entropy() < 0.05
             True
 
             >>> # Sum correctness: epistemic + aleatoric ≈ total
-            >>> hs2 = HypothesisSet(
-            ...     "test", ["a", "b"], alpha={"a": 3.0, "b": 1.0}
-            ... )
+            >>> hs2 = HypothesisSet("test", ["a", "b"], alpha={"a": 3.0, "b": 1.0})
             >>> total = hs2.entropy()
             >>> epi = hs2.epistemic_entropy()
             >>> ale = hs2.aleatoric_entropy()
@@ -373,7 +372,8 @@ class HypothesisSet:
 
             >>> # High alpha: low epistemic ratio
             >>> hs_high = HypothesisSet(
-            ...     "test", ["a", "b"],
+            ...     "test",
+            ...     ["a", "b"],
             ...     alpha={"a": 100.0, "b": 100.0},
             ... )
             >>> hs_high.uncertainty_decomposition()["epistemic_ratio"] < 0.1
@@ -381,7 +381,8 @@ class HypothesisSet:
 
             >>> # Zero total entropy: ratio is 0
             >>> hs_zero = HypothesisSet(
-            ...     "test", ["a", "b"],
+            ...     "test",
+            ...     ["a", "b"],
             ...     alpha={"a": 1000.0, "b": 0.001},
             ... )
             >>> decomp_z = hs_zero.uncertainty_decomposition()

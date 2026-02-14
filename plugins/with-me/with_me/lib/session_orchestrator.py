@@ -303,7 +303,12 @@ class SessionOrchestrator:
                 epistemic_score = hs.epistemic_entropy() / h_max if h_max > 0 else 0.0
 
                 accessible.append(
-                    (dim_id, normalized_entropy, dim_config["importance"], epistemic_score)
+                    (
+                        dim_id,
+                        normalized_entropy,
+                        dim_config["importance"],
+                        epistemic_score,
+                    )
                 )
 
         return accessible
