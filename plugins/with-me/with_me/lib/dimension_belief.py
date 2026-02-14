@@ -24,6 +24,61 @@ import sys
 from typing import Any
 
 
+def _digamma(x: float) -> float:
+    """Compute the digamma function psi(x) = d/dx ln(Gamma(x)).
+
+    Uses recurrence relation psi(x) = psi(x+1) - 1/x to shift x >= 6,
+    then applies the asymptotic expansion:
+        psi(x) ~ ln(x) - 1/(2x) - 1/(12x^2) + 1/(120x^4) - 1/(252x^6)
+
+    Pure Python implementation (no external dependencies).
+
+    Args:
+        x: Positive real number
+
+    Returns:
+        Digamma value psi(x)
+
+    Examples:
+        >>> # psi(1) = -gamma (Euler-Mascheroni constant ≈ -0.5772)
+        >>> round(_digamma(1.0), 4)
+        -0.5772
+
+        >>> # psi(2) = 1 - gamma ≈ 0.4228
+        >>> round(_digamma(2.0), 4)
+        0.4228
+
+        >>> # psi(0.5) = -gamma - 2*ln(2) ≈ -1.9635
+        >>> round(_digamma(0.5), 3)
+        -1.964
+
+        >>> # Large x: psi(100) ≈ ln(100) - 1/200 ≈ 4.6001
+        >>> round(_digamma(100.0), 3)
+        4.6
+
+        >>> # Recurrence: psi(x+1) = psi(x) + 1/x
+        >>> abs(_digamma(3.0) - (_digamma(2.0) + 1/2)) < 1e-10
+        True
+    """
+    # Shift x to >= 6 using recurrence: psi(x) = psi(x+1) - 1/x
+    shift_threshold = 6.0
+    result = 0.0
+    while x < shift_threshold:
+        result -= 1.0 / x
+        x += 1.0
+
+    # Asymptotic expansion for large x
+    x2 = x * x
+    result += (
+        math.log(x)
+        - 1.0 / (2.0 * x)
+        - 1.0 / (12.0 * x2)
+        + 1.0 / (120.0 * x2 * x2)
+        - 1.0 / (252.0 * x2 * x2 * x2)
+    )
+    return result
+
+
 class HypothesisSet:
     """
     Manages hypothesis set and Dirichlet distribution for a dimension.
@@ -207,6 +262,143 @@ class HypothesisSet:
             if p > self.EPSILON:  # Avoid log(0)
                 h -= p * math.log2(p)
         return h
+
+    def aleatoric_entropy(self) -> float:
+        """Expected entropy under the Dirichlet posterior (irreducible uncertainty).
+
+        Computed using the digamma function:
+            H_aleatoric = -sum_k (a_k / a_0) * (psi(a_k + 1) - psi(a_0 + 1)) / ln(2)
+
+        where a_k are Dirichlet concentration parameters and a_0 = sum(a_k).
+
+        This measures the uncertainty that remains even with infinite data —
+        inherent noise in the category structure.
+
+        Returns:
+            Aleatoric entropy in bits
+
+        Examples:
+            >>> # Uniform prior (alpha=1 each): low aleatoric entropy
+            >>> hs = HypothesisSet("test", ["a", "b", "c"])
+            >>> ale = hs.aleatoric_entropy()
+            >>> 0.0 <= ale <= math.log2(3)
+            True
+
+            >>> # High alpha uniform: aleatoric approaches maximum entropy
+            >>> hs_high = HypothesisSet(
+            ...     "test", ["a", "b"], alpha={"a": 100.0, "b": 100.0}
+            ... )
+            >>> ale_high = hs_high.aleatoric_entropy()
+            >>> ale_high > 0.95  # Close to log2(2) = 1.0
+            True
+
+            >>> # Concentrated: low aleatoric
+            >>> hs_conc = HypothesisSet(
+            ...     "test", ["a", "b"], alpha={"a": 100.0, "b": 1.0}
+            ... )
+            >>> hs_conc.aleatoric_entropy() < 0.3
+            True
+
+            >>> # Aleatoric <= total entropy (always)
+            >>> hs2 = HypothesisSet("test", ["a", "b", "c", "d"])
+            >>> hs2.aleatoric_entropy() <= hs2.entropy() + 1e-10
+            True
+        """
+        a0 = sum(self.alpha.values())
+        psi_a0_plus1 = _digamma(a0 + 1.0)
+        ln2 = math.log(2.0)
+
+        h = 0.0
+        for a_k in self.alpha.values():
+            p_k = a_k / a0
+            psi_ak_plus1 = _digamma(a_k + 1.0)
+            h -= p_k * (psi_ak_plus1 - psi_a0_plus1) / ln2
+
+        return max(0.0, h)
+
+    def epistemic_entropy(self) -> float:
+        """BALD score: epistemic (reducible) uncertainty.
+
+        Computed as total entropy minus aleatoric entropy:
+            H_epistemic = H_total - H_aleatoric
+
+        This is the uncertainty that CAN be reduced by asking more questions.
+        Dimensions with high epistemic entropy should be prioritized.
+
+        Returns:
+            Epistemic entropy in bits (clamped to >= 0)
+
+        Examples:
+            >>> # Uniform prior (alpha=1): epistemic > 0 (some reducible uncertainty)
+            >>> hs = HypothesisSet("test", ["a", "b", "c"])
+            >>> epi = hs.epistemic_entropy()
+            >>> epi > 0.3
+            True
+
+            >>> # High alpha uniform: most uncertainty is aleatoric
+            >>> hs_high = HypothesisSet(
+            ...     "test", ["a", "b", "c"],
+            ...     alpha={"a": 100.0, "b": 100.0, "c": 100.0},
+            ... )
+            >>> hs_high.epistemic_entropy() < 0.05
+            True
+
+            >>> # Sum correctness: epistemic + aleatoric ≈ total
+            >>> hs2 = HypothesisSet(
+            ...     "test", ["a", "b"], alpha={"a": 3.0, "b": 1.0}
+            ... )
+            >>> total = hs2.entropy()
+            >>> epi = hs2.epistemic_entropy()
+            >>> ale = hs2.aleatoric_entropy()
+            >>> abs(epi + ale - total) < 0.01
+            True
+        """
+        return max(0.0, self.entropy() - self.aleatoric_entropy())
+
+    def uncertainty_decomposition(self) -> dict[str, float]:
+        """Decompose uncertainty into epistemic and aleatoric components.
+
+        Returns:
+            Dictionary with total, epistemic, aleatoric entropy (bits)
+            and epistemic_ratio (fraction of total that is reducible).
+
+        Examples:
+            >>> # Uniform prior (alpha=1): epistemic ratio > 0
+            >>> hs = HypothesisSet("test", ["a", "b", "c"])
+            >>> decomp = hs.uncertainty_decomposition()
+            >>> decomp["epistemic_ratio"] > 0.2
+            True
+            >>> round(decomp["total"], 2) == round(math.log2(3), 2)
+            True
+
+            >>> # High alpha: low epistemic ratio
+            >>> hs_high = HypothesisSet(
+            ...     "test", ["a", "b"],
+            ...     alpha={"a": 100.0, "b": 100.0},
+            ... )
+            >>> hs_high.uncertainty_decomposition()["epistemic_ratio"] < 0.1
+            True
+
+            >>> # Zero total entropy: ratio is 0
+            >>> hs_zero = HypothesisSet(
+            ...     "test", ["a", "b"],
+            ...     alpha={"a": 1000.0, "b": 0.001},
+            ... )
+            >>> decomp_z = hs_zero.uncertainty_decomposition()
+            >>> decomp_z["epistemic_ratio"] >= 0.0
+            True
+        """
+        total = self.entropy()
+        aleatoric = self.aleatoric_entropy()
+        epistemic = max(0.0, total - aleatoric)
+        ratio = epistemic / total if total > 0 else 0.0
+
+        return {
+            "total": total,
+            "epistemic": epistemic,
+            "aleatoric": aleatoric,
+            "epistemic_ratio": ratio,
+        }
 
     def update(self, likelihoods: dict[str, float], weight: float = 1.0) -> None:
         """
