@@ -157,3 +157,28 @@ User: "unstage the files"
 - Any file that wasn't explicitly requested
 
 **Rationale**: Once pushed to GitHub, data cannot be easily removed. Commits remain in object storage even after force-push.
+
+## GitHub CLI (`gh`) Usage
+
+**CRITICAL**: Always use `--json` flag when querying data with `gh` commands.
+
+Without `--json`, `gh` outputs human-readable tables that are unreliable for parsing and frequently cause failures in automated workflows.
+
+**Rules**:
+- Always specify `--json` with the fields you need
+- Use `--jq` for filtering when needed
+- Never rely on default text output format
+
+```bash
+# ❌ BAD - text output, fragile parsing
+gh issue view 194
+gh pr list
+gh pr view 195
+
+# ✅ GOOD - structured JSON output
+gh issue view 194 --json title,body,labels
+gh pr list --json number,title,state
+gh pr view 195 --json number,title,state,url
+```
+
+**GraphQL**: Use `gh api graphql` for operations not covered by CLI flags (e.g., Discussions).
