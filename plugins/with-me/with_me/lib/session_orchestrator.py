@@ -257,11 +257,12 @@ class SessionOrchestrator:
 
     def _get_accessible_dimensions(
         self,
-    ) -> list[tuple[str, float, float]]:
-        """Get accessible dimensions with normalized entropy and importance.
+    ) -> list[tuple[str, float, float, float]]:
+        """Get accessible dimensions with normalized entropy, importance, and epistemic score.
 
         Returns:
-            List of (dim_id, normalized_entropy, importance) tuples
+            List of (dim_id, normalized_entropy, importance, epistemic_score) tuples.
+            epistemic_score = epistemic_entropy / H_max, measuring reducible uncertainty.
 
         Examples:
             >>> from pathlib import Path
@@ -271,6 +272,8 @@ class SessionOrchestrator:
             >>> _ = orch.initialize_session()
             >>> accessible = orch._get_accessible_dimensions()
             >>> any(d[0] == "purpose" for d in accessible)
+            True
+            >>> all(len(d) == 4 for d in accessible)
             True
         """
         accessible = []
@@ -295,8 +298,17 @@ class SessionOrchestrator:
                 )
                 h_max = math.log2(len(hs.hypotheses))
                 normalized_entropy = raw_entropy / h_max
+
+                # Compute epistemic score from Dirichlet alpha
+                epistemic_score = hs.epistemic_entropy() / h_max if h_max > 0 else 0.0
+
                 accessible.append(
-                    (dim_id, normalized_entropy, dim_config["importance"])
+                    (
+                        dim_id,
+                        normalized_entropy,
+                        dim_config["importance"],
+                        epistemic_score,
+                    )
                 )
 
         return accessible
@@ -306,13 +318,13 @@ class SessionOrchestrator:
         Select next dimension to query.
 
         Two modes:
-        - deterministic=True: Greedy selection by normalized entropy (default,
-          backward compatible, used in tests)
+        - deterministic=True: Greedy selection by epistemic entropy score,
+          prioritizing dimensions with the most reducible uncertainty (BALD).
         - deterministic=False: Thompson Sampling with Beta distribution for
           exploration-exploitation balance
 
         Args:
-            deterministic: If True, use greedy entropy-based selection.
+            deterministic: If True, use greedy epistemic-based selection.
                           If False, use Thompson Sampling.
 
         Returns:
@@ -328,7 +340,7 @@ class SessionOrchestrator:
             >>> dim == "purpose"  # Purpose has no prerequisites
             True
 
-            >>> # Normalized entropy removes hypothesis-count bias
+            >>> # Epistemic score prioritizes reducible uncertainty
             >>> # Set purpose as converged so data, behavior, stakeholders accessible
             >>> orch.beliefs["purpose"]._cached_entropy = 0.5
             >>> # Converge context and stakeholders so they don't dominate
@@ -338,6 +350,8 @@ class SessionOrchestrator:
             >>> orch.beliefs["behavior"]._cached_entropy = 1.8
             >>> # data (3 hyps): raw=1.5, normalized=1.5/log₂(3)≈0.946
             >>> orch.beliefs["data"]._cached_entropy = 1.5
+            >>> # With uniform priors (alpha=1), epistemic score ≈ normalized entropy
+            >>> # data still wins because its epistemic/H_max ratio is highest
             >>> orch.select_next_dimension()
             'data'
 
@@ -361,15 +375,16 @@ class SessionOrchestrator:
             return None
 
         if deterministic:
-            # Greedy: sort by normalized entropy (desc), then importance (desc)
-            accessible.sort(key=lambda x: (x[1], x[2]), reverse=True)
+            # Greedy: sort by epistemic score (desc), then importance (desc)
+            # epistemic_score = epistemic_entropy / H_max (4th element)
+            accessible.sort(key=lambda x: (x[3], x[2]), reverse=True)
             return accessible[0][0]
 
         # Thompson Sampling: sample Beta(alpha, beta) per accessible dimension
         best_dim = None
         best_sample = -1.0
 
-        for dim_id, _norm_ent, _importance in accessible:
+        for dim_id, _norm_ent, _importance, _epi_score in accessible:
             ts = self.thompson_states.get(dim_id, {"alpha": 1.0, "beta": 1.0})
             sample = random.betavariate(ts["alpha"], ts["beta"])
             if sample > best_sample:
@@ -569,6 +584,9 @@ class SessionOrchestrator:
                 if prereq_entropy is None or prereq_entropy >= prereq_threshold:
                     blocked_by.append(prereq)
 
+            # BALD decomposition
+            decomp = hs.uncertainty_decomposition()
+
             dimensions[dim_id] = {
                 "name": dim_config["name"],
                 "entropy": entropy,
@@ -579,6 +597,9 @@ class SessionOrchestrator:
                 "most_likely": hs.get_most_likely()
                 if confidence > CONFIDENCE_THRESHOLD_FOR_DISPLAY
                 else None,
+                "epistemic_entropy": decomp["epistemic"],
+                "aleatoric_entropy": decomp["aleatoric"],
+                "epistemic_ratio": decomp["epistemic_ratio"],
             }
 
         # Presheaf consistency check

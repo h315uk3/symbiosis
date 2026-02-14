@@ -301,6 +301,15 @@ def cmd_next_question(args: argparse.Namespace) -> None:
             }
         )
 
+    # BALD decomposition for selected dimension
+    hs = orch.beliefs[dimension]
+    decomp = hs.uncertainty_decomposition()
+
+    # Secondary dimension suggestions via presheaf
+    suggested_secondary = orch.presheaf_checker.suggest_secondary_dimensions(
+        dimension, orch.beliefs
+    )
+
     print(
         json.dumps(
             {
@@ -313,7 +322,11 @@ def cmd_next_question(args: argparse.Namespace) -> None:
                 "question": question,
                 "supports_multi_select": dim_config.get("supports_multi_select", False),
                 "importance": dim_config.get("importance", 0.5),
-                "posterior": orch.beliefs[dimension].posterior,
+                "posterior": hs.posterior,
+                "epistemic_entropy": round(decomp["epistemic"], 4),
+                "aleatoric_entropy": round(decomp["aleatoric"], 4),
+                "epistemic_ratio": round(decomp["epistemic_ratio"], 4),
+                "suggested_secondary_dimensions": suggested_secondary,
             },
             ensure_ascii=False,
         )
@@ -325,6 +338,7 @@ def cmd_status(args: argparse.Namespace) -> None:
     orch = load_session_state(args.session_id)
 
     state = orch.get_current_state()
+    compact = getattr(args, "compact", False)
 
     # Format for display
     output: dict[str, Any] = {
@@ -335,15 +349,25 @@ def cmd_status(args: argparse.Namespace) -> None:
     }
 
     for dim_id, dim_data in state["dimensions"].items():
-        output["dimensions"][dim_id] = {
-            "name": dim_data["name"],
-            "entropy": round(dim_data["entropy"], 2),
-            "confidence": round(dim_data["confidence"], 2),
-            "converged": dim_data["converged"],
-            "blocked": dim_data["blocked"],
-            "blocked_by": dim_data["blocked_by"],
-            "most_likely": dim_data["most_likely"],
-        }
+        if compact:
+            output["dimensions"][dim_id] = {
+                "confidence": round(dim_data["confidence"], 2),
+                "converged": dim_data["converged"],
+                "blocked": dim_data["blocked"],
+            }
+        else:
+            output["dimensions"][dim_id] = {
+                "name": dim_data["name"],
+                "entropy": round(dim_data["entropy"], 2),
+                "confidence": round(dim_data["confidence"], 2),
+                "converged": dim_data["converged"],
+                "blocked": dim_data["blocked"],
+                "blocked_by": dim_data["blocked_by"],
+                "most_likely": dim_data["most_likely"],
+                "epistemic_entropy": round(dim_data["epistemic_entropy"], 4),
+                "aleatoric_entropy": round(dim_data["aleatoric_entropy"], 4),
+                "epistemic_ratio": round(dim_data["epistemic_ratio"], 4),
+            }
 
     print(json.dumps(output, indent=2, ensure_ascii=False))
 
@@ -663,22 +687,37 @@ def cmd_update_with_computation(args: argparse.Namespace) -> None:
     # Save updated state
     save_session_state(args.session_id, orch)
 
+    # BALD decomposition for updated dimension
+    decomp = hs.uncertainty_decomposition()
+
     # Output results
-    output: dict[str, Any] = {
-        "status": "updated",
-        "dimension": args.dimension,
-        "entropy_before": round(h_before, 4),
-        "entropy_after": round(h_after, 4),
-        "information_gain": round(info_gain, 4),
-        "jsd": round(jsd, 4),
-        "question_count": orch.question_count,
-    }
-    if evaluation_scores is not None:
-        output["evaluation_scores"] = evaluation_scores
-    if secondary_updates:
-        total_cross_dim_ig = sum(u["information_gain"] for u in secondary_updates)
-        output["secondary_updates"] = secondary_updates
-        output["total_cross_dimension_ig"] = round(total_cross_dim_ig, 4)
+    compact = getattr(args, "compact", False)
+
+    if compact:
+        output: dict[str, Any] = {
+            "status": "updated",
+            "information_gain": round(info_gain, 4),
+            "question_count": orch.question_count,
+            "converged": orch.check_convergence(),
+        }
+    else:
+        output = {
+            "status": "updated",
+            "dimension": args.dimension,
+            "entropy_before": round(h_before, 4),
+            "entropy_after": round(h_after, 4),
+            "information_gain": round(info_gain, 4),
+            "jsd": round(jsd, 4),
+            "question_count": orch.question_count,
+            "epistemic_entropy": round(decomp["epistemic"], 4),
+            "aleatoric_entropy": round(decomp["aleatoric"], 4),
+        }
+        if evaluation_scores is not None:
+            output["evaluation_scores"] = evaluation_scores
+        if secondary_updates:
+            total_cross_dim_ig = sum(u["information_gain"] for u in secondary_updates)
+            output["secondary_updates"] = secondary_updates
+            output["total_cross_dimension_ig"] = round(total_cross_dim_ig, 4)
     print(json.dumps(output, ensure_ascii=False))
 
 
@@ -697,6 +736,12 @@ def main() -> None:
     # status command
     status_parser = subparsers.add_parser("status", help="Display session state")
     status_parser.add_argument("--session-id", required=True, help="Session ID")
+    status_parser.add_argument(
+        "--compact",
+        action="store_true",
+        default=False,
+        help="Output only confidence, converged, blocked per dimension",
+    )
 
     # complete command
     complete_parser = subparsers.add_parser("complete", help="Complete session")
@@ -765,6 +810,12 @@ def main() -> None:
         type=str,
         default=None,
         help='Secondary likelihoods as JSON: {"dim_id": {"hyp": prob}}',
+    )
+    update_comp_parser.add_argument(
+        "--compact",
+        action="store_true",
+        default=False,
+        help="Output only status, information_gain, question_count, converged",
     )
 
     args = parser.parse_args()
