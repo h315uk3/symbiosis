@@ -23,8 +23,16 @@ Maintain simplicity through deliberate constraints:
 
 User data never leaves the local machine:
 - All processing happens locally
-- No telemetry or analytics
+- No telemetry or analytics to external services
 - User controls all data
+
+### Local Observability
+
+Token consumption and session metrics are observable via a local OTEL stack:
+- All telemetry data stays on the local machine (Privacy by Design)
+- Docker-based: OTEL Collector → Prometheus (metrics) + Loki (logs) → Grafana
+- Opt-in only — requires explicit environment variable configuration
+- Tracks per-API-call, per-session, and per-plugin-version usage
 
 ### Testability as Foundation
 

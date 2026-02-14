@@ -68,6 +68,22 @@ description = "Run coverage and show report"
 run = "mise run coverage:run && mise run coverage:report"
 
 # ==============================================================================
+# Monitoring Tasks (Local OTEL stack)
+# ==============================================================================
+
+[tasks."monitoring:start"]
+description = "Start local monitoring stack (OTEL Collector + Prometheus + Loki + Grafana)"
+run = "bash .monitoring/start.sh"
+
+[tasks."monitoring:stop"]
+description = "Stop local monitoring stack"
+run = "bash .monitoring/stop.sh"
+
+[tasks."monitoring:status"]
+description = "Show monitoring container status"
+run = "docker compose -f .monitoring/docker-compose.yml ps"
+
+# ==============================================================================
 # E2E Test Tasks (Manual testing verification)
 # ==============================================================================
 

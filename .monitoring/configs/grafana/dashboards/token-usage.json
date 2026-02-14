@@ -1,0 +1,488 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "title": "Token Usage by Type (Rate/min)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "spanNulls": true
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (type) (rate(claude_code_token_usage_tokens_total{model=~\"$model\"}[5m]) * 60)",
+          "legendFormat": "{{type}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Cost USD (Cumulative)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (model) (claude_code_cost_usage_USD_total{model=~\"$model\"})",
+          "legendFormat": "{{model}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Token Usage by Model (Rate/min)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "pointSize": 5,
+            "spanNulls": true
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (model, type) (rate(claude_code_token_usage_tokens_total{model=~\"$model\"}[5m]) * 60)",
+          "legendFormat": "{{model}} - {{type}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Token Usage by Plugin Version (as-you)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 50,
+            "stacking": { "mode": "normal" }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (symbiosis_as_you_version, type) (rate(claude_code_token_usage_tokens_total{model=~\"$model\", symbiosis_as_you_version=~\"$as_you_version\"}[5m]) * 60)",
+          "legendFormat": "as-you v{{symbiosis_as_you_version}} - {{type}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Token Usage by Plugin Version (with-me)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 50,
+            "stacking": { "mode": "normal" }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (symbiosis_with_me_version, type) (rate(claude_code_token_usage_tokens_total{model=~\"$model\", symbiosis_with_me_version=~\"$with_me_version\"}[5m]) * 60)",
+          "legendFormat": "with-me v{{symbiosis_with_me_version}} - {{type}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Input vs Output Tokens (Rate/min)",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (type) (rate(claude_code_token_usage_tokens_total{type=~\"input|output\", model=~\"$model\"}[5m]) * 60)",
+          "legendFormat": "{{type}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Cache Efficiency (Read vs Creation)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 20
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (model) (rate(claude_code_token_usage_tokens_total{type=\"cacheRead\", model=~\"$model\"}[5m]) * 60)",
+          "legendFormat": "cache read - {{model}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (model) (rate(claude_code_token_usage_tokens_total{type=\"cacheCreation\", model=~\"$model\"}[5m]) * 60)",
+          "legendFormat": "cache creation - {{model}}",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "title": "Lines of Code Modified (Rate/min)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 40,
+            "stacking": { "mode": "normal" }
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "removed" },
+            "properties": [
+              { "id": "custom.transform", "value": "negative-Y" },
+              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "added" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "sum by (type) (rate(claude_code_lines_of_code_count_total[5m]) * 60)",
+          "legendFormat": "{{type}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Code Edit Tool Decisions",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 40,
+            "stacking": { "mode": "normal" }
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byRegexp", "options": ".*reject.*" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byRegexp", "options": ".*accept.*" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "sum by (tool, decision) (rate(claude_code_code_edit_tool_decision_total[5m]) * 60)",
+          "legendFormat": "{{tool}} - {{decision}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Cost by Plugin Version (Rate/min)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (symbiosis_as_you_version) (rate(claude_code_cost_usage_USD_total{model=~\"$model\", symbiosis_as_you_version=~\"$as_you_version\"}[5m]) * 60)",
+          "legendFormat": "as-you v{{symbiosis_as_you_version}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (symbiosis_with_me_version) (rate(claude_code_cost_usage_USD_total{model=~\"$model\", symbiosis_with_me_version=~\"$with_me_version\"}[5m]) * 60)",
+          "legendFormat": "with-me v{{symbiosis_with_me_version}}",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "title": "Active Time (seconds)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (type) (claude_code_active_time_seconds_total)",
+          "legendFormat": "{{type}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "API Requests (Log Events)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 48 },
+      "datasource": { "type": "loki", "uid": "loki-datasource" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 40
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "count_over_time({service_name=\"claude-code\"} | event_name = `api_request` [5m])",
+          "legendFormat": "api_request",
+          "refId": "A"
+        },
+        {
+          "expr": "count_over_time({service_name=\"claude-code\"} | event_name = `api_error` [5m])",
+          "legendFormat": "api_error",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "title": "Tool Results (Log Events)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 48 },
+      "datasource": { "type": "loki", "uid": "loki-datasource" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 40,
+            "stacking": { "mode": "normal" }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (tool_name) (count_over_time({service_name=\"claude-code\"} | event_name = `tool_result` [5m]))",
+          "legendFormat": "{{tool_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "API Request Cost per Call (Log Events)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 56 },
+      "datasource": { "type": "loki", "uid": "loki-datasource" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "points",
+            "pointSize": 8,
+            "spanNulls": false
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (model) (sum_over_time({service_name=\"claude-code\"} | event_name = `api_request` | unwrap cost_usd [5m]))",
+          "legendFormat": "{{model}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "API Request Duration (Log Events)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 56 },
+      "datasource": { "type": "loki", "uid": "loki-datasource" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "points",
+            "pointSize": 8,
+            "spanNulls": false
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "avg_over_time({service_name=\"claude-code\"} | event_name = `api_request` | unwrap duration_ms [5m])",
+          "legendFormat": "avg duration",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Claude Code Event Log",
+      "type": "logs",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 64 },
+      "datasource": { "type": "loki", "uid": "loki-datasource" },
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      },
+      "targets": [
+        {
+          "expr": "{service_name=\"claude-code\"}",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["symbiosis", "claude-code", "otel"],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "definition": "label_values(claude_code_token_usage_tokens_total, model)",
+        "name": "model",
+        "label": "Model",
+        "type": "query",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "regex": "/(claude-opus-4-6|claude-sonnet-4-5.*|claude-haiku.*)/",
+        "sort": 1
+      },
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "definition": "label_values(claude_code_token_usage_tokens_total, symbiosis_as_you_version)",
+        "name": "as_you_version",
+        "label": "as-you Version",
+        "type": "query",
+        "includeAll": true,
+        "multi": true
+      },
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "definition": "label_values(claude_code_token_usage_tokens_total, symbiosis_with_me_version)",
+        "name": "with_me_version",
+        "label": "with-me Version",
+        "type": "query",
+        "includeAll": true,
+        "multi": true
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "title": "Symbiosis Token Usage",
+  "uid": "symbiosis-token-usage"
+}
