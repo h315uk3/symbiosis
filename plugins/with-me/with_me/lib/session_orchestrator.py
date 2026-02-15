@@ -321,8 +321,23 @@ class SessionOrchestrator:
         current_state = self._get_current_kst_state()
         fringe = self.knowledge_space.outer_fringe(current_state)
 
+        # Include dimensions in current_state that haven't converged yet.
+        # A dimension enters current_state when entropy < prerequisite_threshold (1.5),
+        # but still needs questions until entropy < convergence_threshold (0.3).
+        conv_threshold = self.config["session_config"]["convergence_threshold"]
+        unconverged_in_state = frozenset(
+            d
+            for d in current_state
+            if d in self.beliefs
+            and (
+                self.beliefs[d]._cached_entropy is None
+                or self.beliefs[d]._cached_entropy >= conv_threshold
+            )
+        )
+        queryable = fringe | unconverged_in_state
+
         accessible = []
-        for dim_id in fringe:
+        for dim_id in queryable:
             hs = self.beliefs[dim_id]
             dim_config = self.config["dimensions"][dim_id]
 

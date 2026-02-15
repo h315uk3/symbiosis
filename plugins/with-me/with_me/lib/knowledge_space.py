@@ -232,8 +232,8 @@ class KnowledgeSpace:
         """Derive current knowledge state from belief entropies.
 
         Starts with dimensions whose entropy is below the threshold,
-        then clamps to a feasible state by iteratively removing items
-        whose prerequisites are not satisfied.
+        then computes the maximal feasible subset by iteratively removing
+        items whose prerequisites are not satisfied.
 
         Args:
             beliefs: Mapping from dimension ID to HypothesisSet
