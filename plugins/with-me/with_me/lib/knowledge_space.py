@@ -45,9 +45,7 @@ class KnowledgeSpace:
         False
     """
 
-    def __init__(
-        self, items: list[str], prerequisites: dict[str, list[str]]
-    ) -> None:
+    def __init__(self, items: list[str], prerequisites: dict[str, list[str]]) -> None:
         """Initialize knowledge space from items and prerequisite map.
 
         Args:
@@ -66,9 +64,7 @@ class KnowledgeSpace:
         """
         self.items = items
         self.prerequisites = prerequisites
-        self.feasible_states = self._enumerate_feasible_states(
-            items, prerequisites
-        )
+        self.feasible_states = self._enumerate_feasible_states(items, prerequisites)
 
     @staticmethod
     def _enumerate_feasible_states(
@@ -109,7 +105,8 @@ class KnowledgeSpace:
 
             >>> # No prerequisites: all 2^n states are feasible
             >>> states = KnowledgeSpace._enumerate_feasible_states(
-            ...     ["x", "y"], {"x": [], "y": []},
+            ...     ["x", "y"],
+            ...     {"x": [], "y": []},
             ... )
             >>> len(states)
             4
@@ -354,8 +351,11 @@ class KnowledgeSpace:
             >>> ks = KnowledgeSpace(
             ...     items=["p", "c", "d", "b", "s"],
             ...     prerequisites={
-            ...         "p": [], "c": [], "d": ["p"],
-            ...         "b": ["p"], "s": ["p"],
+            ...         "p": [],
+            ...         "c": [],
+            ...         "d": ["p"],
+            ...         "b": ["p"],
+            ...         "s": ["p"],
             ...     },
             ... )
             >>> edges = [("p", "d"), ("p", "b"), ("p", "s"), ("c", "d")]

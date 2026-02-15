@@ -292,9 +292,7 @@ class SessionOrchestrator:
         threshold = self.config["session_config"].get(
             "prerequisite_threshold_default", 1.5
         )
-        return self.knowledge_space.current_state_from_beliefs(
-            self.beliefs, threshold
-        )
+        return self.knowledge_space.current_state_from_beliefs(self.beliefs, threshold)
 
     def _get_accessible_dimensions(
         self,
