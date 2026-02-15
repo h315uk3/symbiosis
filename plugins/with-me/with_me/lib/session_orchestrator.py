@@ -623,6 +623,7 @@ class SessionOrchestrator:
             True
         """
         conv_threshold = self.config["session_config"]["convergence_threshold"]
+        current_state = self._get_current_kst_state()
 
         dimensions = {}
         for dim_id, hs in self.beliefs.items():
@@ -640,7 +641,6 @@ class SessionOrchestrator:
             # Check if blocked by prerequisites (KST-based)
             dim_config = self.config["dimensions"][dim_id]
             prereqs = dim_config["prerequisites"]
-            current_state = self._get_current_kst_state()
             blocked_by = [p for p in prereqs if p not in current_state]
 
             # BALD decomposition
