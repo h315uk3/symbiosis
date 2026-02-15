@@ -271,7 +271,7 @@ class SessionOrchestrator:
         """Get current feasible knowledge state from beliefs via KST.
 
         Uses entropy threshold to determine which dimensions are "resolved",
-        then clamps to the nearest feasible state in the knowledge space.
+        then computes the maximal feasible subset via prerequisite clamping.
 
         Returns:
             Feasible knowledge state (frozenset of resolved dimension IDs)
