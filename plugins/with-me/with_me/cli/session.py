@@ -407,7 +407,7 @@ def cmd_complete(args: argparse.Namespace) -> None:
 
     # Calculate final clarity score (1 - normalized average entropy)
     final_entropies = {
-        dim: belief.get("_cached_entropy", 0) for dim, belief in beliefs.items()
+        dim: belief.get("_cached_entropy") or 0 for dim, belief in beliefs.items()
     }
     final_clarity = 1.0 - (
         sum(final_entropies.values()) / len(final_entropies) if final_entropies else 0

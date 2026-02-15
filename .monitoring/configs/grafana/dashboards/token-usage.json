@@ -329,12 +329,12 @@
       },
       "targets": [
         {
-          "expr": "count_over_time({service_name=\"claude-code\"} | event_name = `api_request` [5m])",
-          "legendFormat": "api_request",
+          "expr": "sum by (model) (count_over_time({service_name=\"claude-code\"} | event_name = `api_request` [5m]))",
+          "legendFormat": "{{model}}",
           "refId": "A"
         },
         {
-          "expr": "count_over_time({service_name=\"claude-code\"} | event_name = `api_error` [5m])",
+          "expr": "sum (count_over_time({service_name=\"claude-code\"} | event_name = `api_error` [5m]))",
           "legendFormat": "api_error",
           "refId": "B"
         }
@@ -407,8 +407,8 @@
       },
       "targets": [
         {
-          "expr": "avg_over_time({service_name=\"claude-code\"} | event_name = `api_request` | unwrap duration_ms [5m])",
-          "legendFormat": "avg duration",
+          "expr": "avg by (model) (avg_over_time({service_name=\"claude-code\"} | event_name = `api_request` | unwrap duration_ms [5m]))",
+          "legendFormat": "{{model}}",
           "refId": "A"
         }
       ]
@@ -458,24 +458,36 @@
         "sort": 1
       },
       {
-        "current": {},
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
         "definition": "label_values(claude_code_token_usage_tokens_total, symbiosis_as_you_version)",
         "name": "as_you_version",
         "label": "as-you Version",
         "type": "query",
         "includeAll": true,
-        "multi": true
+        "allValue": ".*",
+        "multi": true,
+        "sort": 1
       },
       {
-        "current": {},
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
         "definition": "label_values(claude_code_token_usage_tokens_total, symbiosis_with_me_version)",
         "name": "with_me_version",
         "label": "with-me Version",
         "type": "query",
         "includeAll": true,
-        "multi": true
+        "allValue": ".*",
+        "multi": true,
+        "sort": 1
       }
     ]
   },
