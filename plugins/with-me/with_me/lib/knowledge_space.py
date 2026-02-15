@@ -72,6 +72,10 @@ class KnowledgeSpace:
     ) -> frozenset[frozenset[str]]:
         """Enumerate all feasible knowledge states.
 
+        O(2^n) brute-force over all subsets. Acceptable for n<=15;
+        if dimensions grow beyond that, replace with prerequisite-closure
+        or backtracking enumeration. See #192 comment for context.
+
         A state is feasible iff every item in the state has all its
         prerequisites also in the state. Iterates over all 2^n subsets.
 
