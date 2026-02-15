@@ -34,7 +34,20 @@ EOF
 
 # Ensure data directories exist with correct permissions for container users
 mkdir -p "$SCRIPT_DIR/data/prometheus" "$SCRIPT_DIR/data/grafana" "$SCRIPT_DIR/data/loki"
-chmod 777 "$SCRIPT_DIR/data/prometheus" "$SCRIPT_DIR/data/grafana" "$SCRIPT_DIR/data/loki"
+for dir in "$SCRIPT_DIR/data/prometheus" "$SCRIPT_DIR/data/grafana" "$SCRIPT_DIR/data/loki"; do
+  # Skip chmod if already world-writable (container-owned dirs can't be chmod'd)
+  perm=""
+  if command -v stat >/dev/null 2>&1; then
+    case "$(uname -s)" in
+      Linux*) perm="$(stat -c '%a' "$dir")" ;;
+      Darwin*) perm="$(stat -f '%Lp' "$dir")" ;;
+      *) perm="" ;;
+    esac
+  fi
+  if [ "$perm" != "777" ]; then
+    chmod 777 "$dir"
+  fi
+done
 
 # Start containers
 docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d

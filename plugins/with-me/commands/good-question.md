@@ -124,6 +124,8 @@ If `"converged": true`, skip to step 3. Otherwise, the output contains:
 - `importance`: Dimension weight (used in evaluation, step 2.2b)
 - `posterior`: Current probability distribution over hypotheses (used in evaluation)
 - `supports_multi_select`: Whether multiple selections are allowed
+- `epistemic_entropy`, `aleatoric_entropy`, `epistemic_ratio`: BALD decomposition (internal use — epistemic = reducible uncertainty)
+- `suggested_secondary_dimensions`: Dimensions that would benefit from cross-dimension updates based on presheaf restriction maps. Each entry has `dimension`, `score`, and `hypotheses`.
 
 Get current session state:
 
@@ -133,6 +135,8 @@ python3 -m with_me.cli.session status --session-id <SESSION_ID>
 ```
 
 The status provides `question_count`, per-dimension `entropy`/`confidence`, and convergence state.
+
+**Context management:** After question 3, add `--compact` flag to `status` to output only `confidence`, `converged`, `blocked` per dimension, reducing context accumulation.
 
 **IMPORTANT:** Do NOT mention dimension names or technical terms to the user.
 
@@ -243,7 +247,10 @@ Consider:
 - Semantic meaning and context, not just keyword matching
 - **Consistency with previous answers** (avoid contradicting established facts)
 
-**Secondary dimension identification:** After estimating likelihoods for the primary dimension, check if the answer also provides information about other dimensions. If so:
+**Secondary dimension identification (strongly recommended):** After estimating likelihoods for the primary dimension, use `suggested_secondary_dimensions` from Step 2.1 output to identify cross-dimension updates. For each suggested dimension with score > 0.5, estimate likelihoods based on the user's answer.
+
+Heuristic: Answers about purpose almost always inform stakeholders and context. Answers about constraints almost always inform quality.
+
 - Estimate likelihoods for each secondary dimension
 - Store as `SECONDARY_DIMS` (comma-separated) and `SECONDARY_LIKELIHOODS` (JSON object mapping dim_id to likelihood dict)
 
@@ -276,6 +283,7 @@ Notes:
 - `--likelihoods`: For multi-select, pass a JSON array of likelihood dicts (one per selected answer)
 - For the first 2 questions (where evaluation was skipped), omit `--reward`, `--eig`, `--clarity`, `--importance`
 - Secondary dimension updates apply with reduced weight (default 0.3). Only include when the answer clearly provides information about other dimensions.
+- **Context management:** After question 3, add `--compact` flag to `update-with-computation` to reduce output size and context accumulation.
 
 Do NOT show output to the user.
 

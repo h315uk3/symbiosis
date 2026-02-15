@@ -14,6 +14,7 @@ Related: #37 (Phase 2)
 """
 
 import doctest
+import math
 import sys
 from dataclasses import dataclass
 from typing import Any
@@ -376,6 +377,124 @@ class PresheafChecker:
             0
         """
         return [r for r in self.check_consistency(beliefs) if not r.is_consistent]
+
+    def suggest_secondary_dimensions(
+        self,
+        primary_dimension: str,
+        beliefs: dict[str, HypothesisSet],
+        top_k: int = 3,
+    ) -> list[dict[str, str | float | list[str]]]:
+        """Suggest secondary dimensions that would benefit from cross-dimension updates.
+
+        For each restriction map where source_dim == primary_dimension,
+        computes a score based on the target dimension's normalized entropy.
+        Higher entropy targets benefit more from secondary updates.
+
+        Args:
+            primary_dimension: The dimension currently being queried
+            beliefs: Current belief state {dim_id: HypothesisSet}
+            top_k: Maximum number of suggestions to return
+
+        Returns:
+            Sorted list of suggestions, each containing:
+            - dimension: target dimension ID
+            - score: normalized entropy of target (proxy for update value)
+            - hypotheses: list of hypothesis IDs for the target
+
+        Examples:
+            >>> from with_me.lib.dimension_belief import HypothesisSet
+            >>> maps = [
+            ...     RestrictionMap(
+            ...         source_dim="purpose",
+            ...         target_dim="data",
+            ...         conditional={
+            ...             "web_app": {
+            ...                 "structured": 0.5,
+            ...                 "unstructured": 0.2,
+            ...                 "streaming": 0.3,
+            ...             },
+            ...             "cli_tool": {
+            ...                 "structured": 0.6,
+            ...                 "unstructured": 0.3,
+            ...                 "streaming": 0.1,
+            ...             },
+            ...         },
+            ...     ),
+            ...     RestrictionMap(
+            ...         source_dim="purpose",
+            ...         target_dim="behavior",
+            ...         conditional={
+            ...             "web_app": {
+            ...                 "synchronous": 0.3,
+            ...                 "asynchronous": 0.4,
+            ...                 "interactive": 0.2,
+            ...                 "batch": 0.1,
+            ...             },
+            ...             "cli_tool": {
+            ...                 "synchronous": 0.5,
+            ...                 "asynchronous": 0.1,
+            ...                 "interactive": 0.3,
+            ...                 "batch": 0.1,
+            ...             },
+            ...         },
+            ...     ),
+            ... ]
+            >>> checker = PresheafChecker(maps, consistency_threshold=0.3)
+            >>> beliefs = {
+            ...     "purpose": HypothesisSet(
+            ...         "purpose",
+            ...         ["web_app", "cli_tool"],
+            ...         alpha={"web_app": 5.0, "cli_tool": 1.0},
+            ...     ),
+            ...     "data": HypothesisSet(
+            ...         "data",
+            ...         ["structured", "unstructured", "streaming"],
+            ...     ),
+            ...     "behavior": HypothesisSet(
+            ...         "behavior",
+            ...         ["synchronous", "asynchronous", "interactive", "batch"],
+            ...     ),
+            ... }
+            >>> suggestions = checker.suggest_secondary_dimensions("purpose", beliefs)
+            >>> len(suggestions) == 2
+            True
+            >>> suggestions[0]["dimension"] in ("data", "behavior")
+            True
+
+            >>> # Non-existent primary → empty
+            >>> checker.suggest_secondary_dimensions("nonexistent", beliefs)
+            []
+        """
+        candidates: list[dict[str, str | float | list[str]]] = []
+
+        for rm in self.restriction_maps:
+            if rm.source_dim != primary_dimension:
+                continue
+            if rm.target_dim not in beliefs:
+                continue
+
+            target_hs = beliefs[rm.target_dim]
+            h_max = math.log2(len(target_hs.hypotheses))
+            if h_max <= 0:
+                continue
+
+            raw_entropy = target_hs.entropy()
+            normalized_entropy = raw_entropy / h_max
+
+            candidates.append(
+                {
+                    "dimension": rm.target_dim,
+                    "score": round(normalized_entropy, 4),
+                    "hypotheses": list(target_hs.hypotheses),
+                }
+            )
+
+        # Sort by score descending
+        candidates.sort(
+            key=lambda c: c["score"] if isinstance(c["score"], float) else 0.0,
+            reverse=True,
+        )
+        return candidates[:top_k]
 
     def get_coupling_strength(
         self,
