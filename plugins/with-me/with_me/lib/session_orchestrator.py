@@ -25,6 +25,7 @@ from with_me.lib.dimension_belief import (
     HypothesisSet,
     create_default_dimension_beliefs,
 )
+from with_me.lib.knowledge_space import KnowledgeSpace
 from with_me.lib.presheaf import PresheafChecker, load_restriction_maps
 from with_me.lib.question_feedback_manager import QuestionFeedbackManager
 
@@ -93,6 +94,17 @@ class SessionOrchestrator:
             "consistency_threshold", 0.3
         )
         self.presheaf_checker = PresheafChecker(restriction_maps, consistency_threshold)
+
+        # Initialize KST knowledge space
+        items = list(self.config["dimensions"].keys())
+        prerequisites = {
+            dim_id: dim_data.get("prerequisites", [])
+            for dim_id, dim_data in self.config["dimensions"].items()
+        }
+        self.knowledge_space = KnowledgeSpace(items, prerequisites)
+        self._dag_edges: list[tuple[str, str]] = [
+            (e["from"], e["to"]) for e in self.config.get("dag", {}).get("edges", [])
+        ]
 
         # Session state (initialized in initialize_session)
         self.session_id: str | None = None
@@ -255,10 +267,42 @@ class SessionOrchestrator:
 
         return True
 
+    def _get_current_kst_state(self) -> frozenset[str]:
+        """Get current feasible knowledge state from beliefs via KST.
+
+        Uses entropy threshold to determine which dimensions are "resolved",
+        then clamps to the nearest feasible state in the knowledge space.
+
+        Returns:
+            Feasible knowledge state (frozenset of resolved dimension IDs)
+
+        Examples:
+            >>> from pathlib import Path
+            >>> orch = SessionOrchestrator(
+            ...     feedback_file_path=Path("/tmp/test_feedback.json")
+            ... )
+            >>> _ = orch.initialize_session()
+            >>> orch._get_current_kst_state()  # All uniform → empty state
+            frozenset()
+
+            >>> orch.beliefs["purpose"]._cached_entropy = 0.5
+            >>> sorted(orch._get_current_kst_state())
+            ['purpose']
+        """
+        threshold = self.config["session_config"].get(
+            "prerequisite_threshold_default", 1.5
+        )
+        return self.knowledge_space.current_state_from_beliefs(
+            self.beliefs, threshold
+        )
+
     def _get_accessible_dimensions(
         self,
     ) -> list[tuple[str, float, float, float]]:
         """Get accessible dimensions with normalized entropy, importance, and epistemic score.
+
+        Uses KST outer fringe to determine which dimensions are accessible
+        based on the current feasible knowledge state.
 
         Returns:
             List of (dim_id, normalized_entropy, importance, epistemic_score) tuples.
@@ -276,40 +320,33 @@ class SessionOrchestrator:
             >>> all(len(d) == 4 for d in accessible)
             True
         """
+        current_state = self._get_current_kst_state()
+        fringe = self.knowledge_space.outer_fringe(current_state)
+
         accessible = []
-
-        for dim_id, hs in self.beliefs.items():
+        for dim_id in fringe:
+            hs = self.beliefs[dim_id]
             dim_config = self.config["dimensions"][dim_id]
-            prereqs = dim_config["prerequisites"]
-            prereq_threshold = dim_config.get("prerequisite_threshold", 1.5)
 
-            prereq_satisfied = True
-            for prereq in prereqs:
-                prereq_entropy = self.beliefs[prereq]._cached_entropy
-                if prereq_entropy is None or prereq_entropy >= prereq_threshold:
-                    prereq_satisfied = False
-                    break
+            raw_entropy = (
+                hs._cached_entropy
+                if hs._cached_entropy is not None
+                else math.log2(len(hs.hypotheses))
+            )
+            h_max = math.log2(len(hs.hypotheses))
+            normalized_entropy = raw_entropy / h_max
 
-            if prereq_satisfied:
-                raw_entropy = (
-                    hs._cached_entropy
-                    if hs._cached_entropy is not None
-                    else math.log2(len(hs.hypotheses))
+            # Compute epistemic score from Dirichlet alpha
+            epistemic_score = hs.epistemic_entropy() / h_max if h_max > 0 else 0.0
+
+            accessible.append(
+                (
+                    dim_id,
+                    normalized_entropy,
+                    dim_config["importance"],
+                    epistemic_score,
                 )
-                h_max = math.log2(len(hs.hypotheses))
-                normalized_entropy = raw_entropy / h_max
-
-                # Compute epistemic score from Dirichlet alpha
-                epistemic_score = hs.epistemic_entropy() / h_max if h_max > 0 else 0.0
-
-                accessible.append(
-                    (
-                        dim_id,
-                        normalized_entropy,
-                        dim_config["importance"],
-                        epistemic_score,
-                    )
-                )
+            )
 
         return accessible
 
@@ -374,19 +411,33 @@ class SessionOrchestrator:
         if not accessible:
             return None
 
+        # Compute context bonus from inner fringe adjacency
+        current_state = self._get_current_kst_state()
+        adjacency = self.knowledge_space.adjacent_dimensions(
+            current_state, self._dag_edges
+        )
+        context_bonus_weight = self.config["session_config"].get(
+            "context_bonus_weight", 0.1
+        )
+
         if deterministic:
-            # Greedy: sort by epistemic score (desc), then importance (desc)
-            # epistemic_score = epistemic_entropy / H_max (4th element)
-            accessible.sort(key=lambda x: (x[3], x[2]), reverse=True)
+            # Greedy: sort by epistemic score + context bonus (desc),
+            # then importance (desc)
+            def _score(x: tuple[str, float, float, float]) -> tuple[float, float]:
+                bonus = context_bonus_weight * len(adjacency.get(x[0], set()))
+                return (x[3] + bonus, x[2])
+
+            accessible.sort(key=_score, reverse=True)
             return accessible[0][0]
 
-        # Thompson Sampling: sample Beta(alpha, beta) per accessible dimension
+        # Thompson Sampling: sample Beta(alpha, beta) + context bonus
         best_dim = None
         best_sample = -1.0
 
         for dim_id, _norm_ent, _importance, _epi_score in accessible:
             ts = self.thompson_states.get(dim_id, {"alpha": 1.0, "beta": 1.0})
-            sample = random.betavariate(ts["alpha"], ts["beta"])
+            bonus = context_bonus_weight * len(adjacency.get(dim_id, set()))
+            sample = random.betavariate(ts["alpha"], ts["beta"]) + bonus
             if sample > best_sample:
                 best_sample = sample
                 best_dim = dim_id
@@ -573,16 +624,11 @@ class SessionOrchestrator:
             )
             converged = entropy < conv_threshold
 
-            # Check if blocked by prerequisites
+            # Check if blocked by prerequisites (KST-based)
             dim_config = self.config["dimensions"][dim_id]
             prereqs = dim_config["prerequisites"]
-            prereq_threshold = dim_config.get("prerequisite_threshold", 1.5)
-
-            blocked_by = []
-            for prereq in prereqs:
-                prereq_entropy = self.beliefs[prereq]._cached_entropy
-                if prereq_entropy is None or prereq_entropy >= prereq_threshold:
-                    blocked_by.append(prereq)
+            current_state = self._get_current_kst_state()
+            blocked_by = [p for p in prereqs if p not in current_state]
 
             # BALD decomposition
             decomp = hs.uncertainty_decomposition()

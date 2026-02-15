@@ -675,6 +675,7 @@
     "max_questions": 50,
     "min_questions": 5,
     "max_consecutive_same_dimension": 3,
+    "context_bonus_weight": 0.1,
     "priority_order": [
       "purpose",
       "context",
