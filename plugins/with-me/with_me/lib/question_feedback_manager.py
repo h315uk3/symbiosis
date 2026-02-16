@@ -359,7 +359,10 @@ class QuestionFeedbackManager:
         # Calculate summary
         questions = session["questions"]
         total_questions = len(questions)
-        total_reward = sum(q["reward_scores"].get("total_reward", 0) for q in questions)
+        total_reward = sum(
+            q["reward_scores"].get("total_reward", q["reward_scores"].get("reward", 0))
+            for q in questions
+        )
         total_info_gain = sum(
             q["information_gain"]
             if "information_gain" in q
@@ -451,7 +454,9 @@ class QuestionFeedbackManager:
         for session in completed_sessions:
             for q in session["questions"]:
                 question_text = q["question"]
-                reward = q["reward_scores"].get("total_reward", 0)
+                reward = q["reward_scores"].get(
+                    "total_reward", q["reward_scores"].get("reward", 0)
+                )
 
                 if question_text not in question_rewards:
                     question_rewards[question_text] = {

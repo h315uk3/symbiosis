@@ -523,7 +523,7 @@ def cmd_evaluate_question(args: argparse.Namespace) -> None:
                     "Calculate CLARITY (0.0-1.0), IMPORTANCE (0.0-1.0), and EIG (bits) "
                     "based on the formulas and data above. "
                     "Then compute: REWARD = EIG + 0.1 * CLARITY + 0.05 * IMPORTANCE. "
-                    "If REWARD < 0.5, regenerate question. If REWARD >= 0.5, proceed to ask user."
+                    "If REWARD < 0.6, regenerate question. If REWARD >= 0.6, proceed to ask user."
                 ),
             },
             ensure_ascii=False,

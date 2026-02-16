@@ -290,7 +290,7 @@ class SessionOrchestrator:
             ['purpose']
         """
         threshold = self.config["session_config"].get(
-            "prerequisite_threshold_default", 1.5
+            "prerequisite_threshold_default", 1.8
         )
         return self.knowledge_space.current_state_from_beliefs(self.beliefs, threshold)
 

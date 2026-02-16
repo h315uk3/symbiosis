@@ -190,7 +190,7 @@ Practical reference: Strong discriminating questions yield 0.5-1.0 bits. Moderat
 REWARD = EIG + 0.1 × CLARITY + 0.05 × IMPORTANCE
 ```
 
-If REWARD < 0.5, regenerate question and re-evaluate. If REWARD >= 0.5, proceed to step 2.2c.
+If REWARD < 0.6, regenerate question and re-evaluate. If REWARD >= 0.6, proceed to step 2.2c.
 
 Do NOT show evaluation scores to the user.
 

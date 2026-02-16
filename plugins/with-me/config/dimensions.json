@@ -93,7 +93,7 @@
       "prerequisites": [
         "purpose"
       ],
-      "prerequisite_threshold": 1.5,
+      "prerequisite_threshold": 1.8,
       "convergence_threshold": 0.3,
       "focus_areas": [
         "data sources and inputs",
@@ -166,7 +166,7 @@
       "prerequisites": [
         "purpose"
       ],
-      "prerequisite_threshold": 1.5,
+      "prerequisite_threshold": 1.8,
       "convergence_threshold": 0.3,
       "focus_areas": [
         "operational flow and sequence",
@@ -253,7 +253,7 @@
         "behavior",
         "data"
       ],
-      "prerequisite_threshold": 1.5,
+      "prerequisite_threshold": 1.8,
       "convergence_threshold": 0.3,
       "focus_areas": [
         "technical limitations",
@@ -340,7 +340,7 @@
       "prerequisites": [
         "behavior"
       ],
-      "prerequisite_threshold": 1.5,
+      "prerequisite_threshold": 1.8,
       "convergence_threshold": 0.3,
       "focus_areas": [
         "success criteria and metrics",
@@ -413,7 +413,7 @@
       "prerequisites": [
         "purpose"
       ],
-      "prerequisite_threshold": 1.5,
+      "prerequisite_threshold": 1.8,
       "convergence_threshold": 0.3,
       "focus_areas": [
         "primary user roles and personas",
