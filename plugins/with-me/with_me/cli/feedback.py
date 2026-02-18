@@ -105,7 +105,9 @@ def cmd_complete(
     )
 
     manager = QuestionFeedbackManager()
-    summary = manager.complete_session(session_id, final_uncertainties, final_dimension_beliefs)
+    summary = manager.complete_session(
+        session_id, final_uncertainties, final_dimension_beliefs
+    )
 
     print(json.dumps({"summary": summary}))
 

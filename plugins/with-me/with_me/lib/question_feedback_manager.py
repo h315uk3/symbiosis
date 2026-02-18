@@ -353,9 +353,13 @@ class QuestionFeedbackManager:
 
             >>> # final_dimension_beliefs is persisted in the session record
             >>> import tempfile
-            >>> manager2 = QuestionFeedbackManager(Path(tempfile.mktemp(suffix=".json")))
+            >>> manager2 = QuestionFeedbackManager(
+            ...     Path(tempfile.mktemp(suffix=".json"))
+            ... )
             >>> sid2 = manager2.start_session()
-            >>> beliefs = {"purpose": {"dimension": "purpose", "hypotheses": ["a", "b"]}}
+            >>> beliefs = {
+            ...     "purpose": {"dimension": "purpose", "hypotheses": ["a", "b"]}
+            ... }
             >>> _ = manager2.complete_session(sid2, {"purpose": 0.2}, beliefs)
             >>> session_record = manager2._find_session(sid2)
             >>> session_record["final_dimension_beliefs"] is not None
@@ -441,7 +445,9 @@ class QuestionFeedbackManager:
             >>> # After a completed session, statistics are populated
             >>> session_id = manager.start_session()
             >>> manager.record_question(
-            ...     session_id, "What type?", "purpose",
+            ...     session_id,
+            ...     "What type?",
+            ...     "purpose",
             ...     {"dimension": "purpose", "information_gain": 0.5},
             ...     {"text": "web app"},
             ...     {"total_reward": 0.8},
