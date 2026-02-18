@@ -317,12 +317,27 @@ class SessionOrchestrator:
             True
             >>> all(len(d) == 4 for d in accessible)
             True
+
+            >>> # With purpose resolved, dependent dimensions become accessible
+            >>> orch_p = SessionOrchestrator(
+            ...     feedback_file_path=Path("/tmp/test_feedback_p.json")
+            ... )
+            >>> _ = orch_p.initialize_session()
+            >>> orch_p.beliefs["purpose"]._cached_entropy = 0.5
+            >>> accessible_p = orch_p._get_accessible_dimensions()
+            >>> ids_p = {d[0] for d in accessible_p}
+            >>> "data" in ids_p  # data requires purpose ✓
+            True
+            >>> "behavior" in ids_p  # behavior requires purpose ✓
+            True
+            >>> "constraints" not in ids_p  # constraints requires behavior AND data
+            True
         """
         current_state = self._get_current_kst_state()
         fringe = self.knowledge_space.outer_fringe(current_state)
 
         # Include dimensions in current_state that haven't converged yet.
-        # A dimension enters current_state when entropy < prerequisite_threshold (1.5),
+        # A dimension enters current_state when entropy < prerequisite_threshold (1.8),
         # but still needs questions until entropy < convergence_threshold (0.3).
         conv_threshold = self.config["session_config"]["convergence_threshold"]
         unconverged_in_state = frozenset(
@@ -417,6 +432,28 @@ class SessionOrchestrator:
             ...     "constraints",
             ...     "quality",
             ... ]
+            True
+
+            >>> # Context bonus: with purpose in KST state, adjacent outer fringe dims
+            >>> # (data, behavior, stakeholders) receive +0.1 per connected inner fringe dim
+            >>> orch_cb = SessionOrchestrator(
+            ...     feedback_file_path=Path("/tmp/test_feedback_cb.json")
+            ... )
+            >>> _ = orch_cb.initialize_session()
+            >>> orch_cb.beliefs["purpose"]._cached_entropy = 0.5  # purpose resolved
+            >>> state_cb = orch_cb._get_current_kst_state()
+            >>> sorted(state_cb)
+            ['purpose']
+            >>> adj = orch_cb.knowledge_space.adjacent_dimensions(
+            ...     state_cb, orch_cb._dag_edges
+            ... )
+            >>> "purpose" in adj["data"]  # data connected to purpose via DAG edge
+            True
+            >>> "purpose" in adj["behavior"]  # behavior connected to purpose
+            True
+            >>> "purpose" in adj["stakeholders"]  # stakeholders connected to purpose
+            True
+            >>> len(adj["context"]) == 0  # context has no DAG edge to inner fringe
             True
         """
         accessible = self._get_accessible_dimensions()

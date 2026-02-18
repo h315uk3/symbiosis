@@ -335,13 +335,20 @@ export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
 python3 -m with_me.cli.session complete --session-id <SESSION_ID>
 ```
 
-Complete feedback session with final entropy values from session status:
+Read the final session beliefs using the Read tool:
+- Path: `.claude/with_me/sessions/<SESSION_ID>.json`
+- Extract the `beliefs` field and store as `FINAL_BELIEFS` (the full JSON object)
+
+Complete feedback session with all 7 dimension entropy values and final beliefs:
 
 ```bash
 export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
 python3 -m with_me.cli.feedback complete <FEEDBACK_SESSION_ID> \
-  '{"purpose": <ENTROPY>, "data": <ENTROPY>, "behavior": <ENTROPY>, "constraints": <ENTROPY>, "quality": <ENTROPY>}'
+  '{"purpose": <E>, "context": <E>, "data": <E>, "behavior": <E>, "stakeholders": <E>, "constraints": <E>, "quality": <E>}' \
+  "$FINAL_BELIEFS"
 ```
+
+Entropy values are available from the session status output. `FINAL_BELIEFS` is the `beliefs` object read from the session file.
 
 Do NOT show raw output. Provide a simple completion message.
 
@@ -362,7 +369,7 @@ Provide the session data to the skill. The skill will analyze all collected answ
 Adjust thresholds in `config/dimensions.json`:
 
 - **convergence_threshold**: Entropy threshold for clarity (default: 0.3)
-- **prerequisite_threshold**: Threshold for prerequisite satisfaction (default: 1.5)
+- **prerequisite_threshold**: Threshold for prerequisite satisfaction (default: 1.8)
 - **max_questions**: Safety limit (default: 50)
 - **min_questions**: Minimum before early termination (default: 5)
 

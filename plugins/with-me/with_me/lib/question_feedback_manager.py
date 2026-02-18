@@ -350,6 +350,18 @@ class QuestionFeedbackManager:
             1
             >>> summary["total_info_gain"]
             0.7
+
+            >>> # final_dimension_beliefs is persisted in the session record
+            >>> import tempfile
+            >>> manager2 = QuestionFeedbackManager(Path(tempfile.mktemp(suffix=".json")))
+            >>> sid2 = manager2.start_session()
+            >>> beliefs = {"purpose": {"dimension": "purpose", "hypotheses": ["a", "b"]}}
+            >>> _ = manager2.complete_session(sid2, {"purpose": 0.2}, beliefs)
+            >>> session_record = manager2._find_session(sid2)
+            >>> session_record["final_dimension_beliefs"] is not None
+            True
+            >>> session_record["final_dimension_beliefs"]["purpose"]["dimension"]
+            'purpose'
         """
         session = self._find_session(session_id)
         if session is None:
@@ -415,6 +427,34 @@ class QuestionFeedbackManager:
 
         Returns:
             Statistics dictionary
+
+        Examples:
+            >>> import tempfile
+            >>> from pathlib import Path
+            >>> manager = QuestionFeedbackManager(Path(tempfile.mktemp(suffix=".json")))
+            >>> stats = manager.get_statistics()
+            >>> stats["total_sessions"]
+            0
+            >>> stats["total_questions"]
+            0
+
+            >>> # After a completed session, statistics are populated
+            >>> session_id = manager.start_session()
+            >>> manager.record_question(
+            ...     session_id, "What type?", "purpose",
+            ...     {"dimension": "purpose", "information_gain": 0.5},
+            ...     {"text": "web app"},
+            ...     {"total_reward": 0.8},
+            ...     information_gain=0.5,
+            ... )
+            >>> _ = manager.complete_session(session_id, {"purpose": 0.2})
+            >>> stats = manager.get_statistics()
+            >>> stats["total_sessions"]
+            1
+            >>> stats["total_questions"]
+            1
+            >>> "purpose" in stats["dimension_stats"]
+            True
         """
         return self.data.get("statistics", {})
 
@@ -426,7 +466,26 @@ class QuestionFeedbackManager:
             limit: Maximum number of sessions to return
 
         Returns:
-            List of recent sessions
+            List of recent sessions (most recent last), up to limit entries
+
+        Examples:
+            >>> import tempfile
+            >>> from pathlib import Path
+            >>> manager = QuestionFeedbackManager(Path(tempfile.mktemp(suffix=".json")))
+            >>> manager.get_recent_sessions()
+            []
+
+            >>> _ = manager.start_session()
+            >>> len(manager.get_recent_sessions())
+            1
+
+            >>> # limit is respected
+            >>> _ = manager.start_session()
+            >>> _ = manager.start_session()
+            >>> len(manager.get_recent_sessions(limit=2))
+            2
+            >>> len(manager.get_recent_sessions(limit=1))
+            1
         """
         sessions = self.data.get("sessions", [])
         return sessions[-limit:]

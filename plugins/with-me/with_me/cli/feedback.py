@@ -91,12 +91,21 @@ def cmd_record_batch(session_id: str, questions_json: str) -> None:
     print(json.dumps({"recorded": recorded}))
 
 
-def cmd_complete(session_id: str, final_uncertainties_json: str) -> None:
+def cmd_complete(
+    session_id: str,
+    final_uncertainties_json: str,
+    final_dimension_beliefs_json: str | None = None,
+) -> None:
     """Complete a session"""
     final_uncertainties = json.loads(final_uncertainties_json)
+    final_dimension_beliefs = (
+        json.loads(final_dimension_beliefs_json)
+        if final_dimension_beliefs_json
+        else None
+    )
 
     manager = QuestionFeedbackManager()
-    summary = manager.complete_session(session_id, final_uncertainties)
+    summary = manager.complete_session(session_id, final_uncertainties, final_dimension_beliefs)
 
     print(json.dumps({"summary": summary}))
 
@@ -134,8 +143,11 @@ def _validate_args(command: str, args: list[str]) -> None:
     elif command == "record-batch" and len(args) != expected_batch_argc:
         msg = "record-batch requires 2 arguments"
         raise ValueError(msg)
-    elif command == "complete" and len(args) != expected_complete_argc:
-        msg = "complete requires 2 arguments"
+    elif command == "complete" and len(args) not in (
+        expected_complete_argc,
+        expected_complete_argc + 1,
+    ):
+        msg = "complete requires 2 or 3 arguments"
         raise ValueError(msg)
 
 
@@ -175,7 +187,9 @@ def main() -> None:
         elif command == "record-batch":
             cmd_record_batch(args[1], args[2])
         elif command == "complete":
-            cmd_complete(args[1], args[2])
+            complete_with_beliefs = 4  # command + session_id + uncertainties + beliefs
+            beliefs_json = args[3] if len(args) == complete_with_beliefs else None
+            cmd_complete(args[1], args[2], beliefs_json)
         elif command == "stats":
             cmd_stats()
         else:
