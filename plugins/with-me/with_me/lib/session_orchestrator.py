@@ -18,6 +18,7 @@ import json
 import math
 import random
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -120,8 +121,10 @@ class SessionOrchestrator:
 
         Creates:
         - Uniform prior distributions for all dimensions
-        - Session record in feedback manager
         - Empty question history
+
+        Feedback tracking is handled externally via the CLI's ``feedback start``
+        command, not by the orchestrator.
 
         Returns:
             Session ID for tracking
@@ -138,10 +141,8 @@ class SessionOrchestrator:
         # Create default dimension beliefs (uniform priors)
         self.beliefs = create_default_dimension_beliefs()
 
-        # Start session in feedback manager
-        self.session_id = self.manager.start_session(
-            initial_dimension_beliefs={k: v.to_dict() for k, v in self.beliefs.items()}
-        )
+        # Generate session ID (feedback tracking via CLI's `feedback start` command)
+        self.session_id = datetime.now().isoformat()
 
         # Initialize tracking
         self.question_history = []
@@ -471,11 +472,21 @@ class SessionOrchestrator:
         )
 
         if deterministic:
-            # Greedy: sort by epistemic score + context bonus (desc),
+            # Fatigue penalty: reduce score for dimensions asked many times so
+            # the system naturally diversifies to under-explored dimensions.
+            fatigue_weight = self.config["session_config"].get("fatigue_weight", 0.05)
+            questions_per_dim: dict[str, int] = {}
+            for q in self.question_history:
+                d = q.get("dimension", "")
+                questions_per_dim[d] = questions_per_dim.get(d, 0) + 1
+
+            # Greedy: sort by epistemic score + context bonus - fatigue (desc),
             # then importance (desc)
             def _score(x: tuple[str, float, float, float]) -> tuple[float, float]:
-                bonus = context_bonus_weight * len(adjacency.get(x[0], set()))
-                return (x[3] + bonus, x[2])
+                dim_id = x[0]
+                bonus = context_bonus_weight * len(adjacency.get(dim_id, set()))
+                fatigue = fatigue_weight * questions_per_dim.get(dim_id, 0)
+                return (x[3] + bonus - fatigue, x[2])
 
             accessible.sort(key=_score, reverse=True)
             return accessible[0][0]
@@ -721,7 +732,9 @@ class SessionOrchestrator:
         """
         Complete session and return summary.
 
-        Calls feedback manager to finalize session with statistics.
+        Computes summary from current beliefs and question history without
+        touching the feedback manager (feedback finalization is done via
+        the CLI's ``feedback complete`` command).
 
         Returns:
             Dictionary with session summary
@@ -736,20 +749,44 @@ class SessionOrchestrator:
             >>> summary["total_questions"] == 0
             True
         """
-        # Calculate final uncertainties using cached entropy values
-        final_uncertainties = {
-            dim: hs._cached_entropy if hs._cached_entropy is not None else 0.0
-            for dim, hs in self.beliefs.items()
-        }
+        total_questions = self.question_count
+        total_info_gain = sum(
+            q.get("information_gain", 0) for q in self.question_history
+        )
+        rewards = [
+            q["evaluation_scores"]["total_reward"]
+            for q in self.question_history
+            if "evaluation_scores" in q
+        ]
+        avg_reward = sum(rewards) / len(rewards) if rewards else 0.0
 
-        # Complete session in feedback manager
-        summary = self.manager.complete_session(
-            session_id=self.session_id or "unknown",
-            final_uncertainties=final_uncertainties,
-            final_dimension_beliefs={k: v.to_dict() for k, v in self.beliefs.items()},
+        conv_threshold = self.config["session_config"]["convergence_threshold"]
+        normalized_ratios = []
+        for hs in self.beliefs.values():
+            entropy = hs._cached_entropy or 0
+            n_hyp = len(hs.hypotheses)
+            h_max = math.log2(n_hyp) if n_hyp > 1 else 2.0
+            normalized_ratios.append(entropy / h_max)
+        final_clarity = 1.0 - (
+            sum(normalized_ratios) / len(normalized_ratios) if normalized_ratios else 0
         )
 
-        return dict(summary)
+        dimensions_resolved = [
+            dim
+            for dim, hs in self.beliefs.items()
+            if (hs._cached_entropy or 0) < conv_threshold
+        ]
+
+        return {
+            "total_questions": total_questions,
+            "avg_reward_per_question": avg_reward,
+            "total_info_gain": total_info_gain,
+            "final_clarity_score": final_clarity,
+            "dimensions_resolved": dimensions_resolved,
+            "session_efficiency": total_info_gain / total_questions
+            if total_questions > 0
+            else 0,
+        }
 
 
 # CLI interface for testing
