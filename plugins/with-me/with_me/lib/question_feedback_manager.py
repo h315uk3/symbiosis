@@ -7,6 +7,7 @@ Follows as-you plugin patterns for consistency.
 """
 
 import json
+import math
 import os
 from dataclasses import dataclass
 from datetime import datetime
@@ -350,8 +351,12 @@ class QuestionFeedbackManager:
             1
             >>> summary["total_info_gain"]
             0.7
+            >>> # No beliefs passed: falls back to 4-hypothesis H_max (2.0)
+            >>> # clarity = 1.0 - (0.3 / 2.0) = 0.85
+            >>> summary["final_clarity_score"]
+            0.85
 
-            >>> # final_dimension_beliefs is persisted in the session record
+            >>> # final_dimension_beliefs provides hypothesis count for normalization
             >>> import tempfile
             >>> manager2 = QuestionFeedbackManager(
             ...     Path(tempfile.mktemp(suffix=".json"))
@@ -360,12 +365,15 @@ class QuestionFeedbackManager:
             >>> beliefs = {
             ...     "purpose": {"dimension": "purpose", "hypotheses": ["a", "b"]}
             ... }
-            >>> _ = manager2.complete_session(sid2, {"purpose": 0.2}, beliefs)
+            >>> summary2 = manager2.complete_session(sid2, {"purpose": 0.2}, beliefs)
             >>> session_record = manager2._find_session(sid2)
             >>> session_record["final_dimension_beliefs"] is not None
             True
             >>> session_record["final_dimension_beliefs"]["purpose"]["dimension"]
             'purpose'
+            >>> # 2 hypotheses: H_max = log2(2) = 1.0 → clarity = 1.0 - (0.2/1.0) = 0.8
+            >>> summary2["final_clarity_score"]
+            0.8
         """
         session = self._find_session(session_id)
         if session is None:
@@ -385,10 +393,20 @@ class QuestionFeedbackManager:
             else q["reward_scores"].get("components", {}).get("info_gain", 0)
             for q in questions
         )
+        # Normalize each dimension's entropy by its max possible entropy (log2 of
+        # hypothesis count) so the score stays in [0, 1].  Without normalization,
+        # average entropy ~1.8 (4-hypothesis near-uniform) would yield -0.8.
+        normalized_ratios = []
+        for dim, entropy in final_uncertainties.items():
+            n_hyp = 0
+            if final_dimension_beliefs and dim in final_dimension_beliefs:
+                d = final_dimension_beliefs[dim]
+                hyp = d.get("hypotheses") or list(d.get("posterior", {}).keys())
+                n_hyp = len(hyp)
+            h_max = math.log2(n_hyp) if n_hyp > 1 else 2.0  # default: 4-hyp H_max
+            normalized_ratios.append(entropy / h_max)
         final_clarity = 1.0 - (
-            sum(final_uncertainties.values()) / len(final_uncertainties)
-            if final_uncertainties
-            else 0
+            sum(normalized_ratios) / len(normalized_ratios) if normalized_ratios else 0
         )
 
         dimensions_resolved = [

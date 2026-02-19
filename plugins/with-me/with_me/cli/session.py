@@ -405,12 +405,21 @@ def cmd_complete(args: argparse.Namespace) -> None:
     ]
     avg_reward = sum(rewards) / len(rewards) if rewards else 0.0
 
-    # Calculate final clarity score (1 - normalized average entropy)
+    # Per-dimension entropy lookup (used for dimensions_resolved threshold)
     final_entropies = {
         dim: belief.get("_cached_entropy") or 0 for dim, belief in beliefs.items()
     }
+    # Normalize each dimension's entropy by its max possible entropy (log2 of
+    # hypothesis count) so final_clarity stays in [0, 1].  Without normalization,
+    # average entropy ~1.8 (4-hypothesis near-uniform prior) yields -0.8.
+    normalized_ratios = []
+    for belief in beliefs.values():
+        entropy = belief.get("_cached_entropy") or 0
+        n_hyp = len(belief.get("hypotheses") or [])
+        h_max = math.log2(n_hyp) if n_hyp > 1 else 2.0  # default: 4-hyp H_max
+        normalized_ratios.append(entropy / h_max)
     final_clarity = 1.0 - (
-        sum(final_entropies.values()) / len(final_entropies) if final_entropies else 0
+        sum(normalized_ratios) / len(normalized_ratios) if normalized_ratios else 0
     )
 
     # Dimensions resolved (entropy < threshold)
