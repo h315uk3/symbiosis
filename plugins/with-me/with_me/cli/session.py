@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from with_me.lib.dimension_belief import HypothesisSet, compute_jsd
+from with_me.lib.question_feedback_manager import QuestionFeedbackManager
 from with_me.lib.session_orchestrator import SessionOrchestrator
 
 # Convergence thresholds
@@ -30,6 +31,9 @@ DIMENSION_RESOLVED_THRESHOLD = (
 
 # Likelihood validation constants
 LIKELIHOOD_EPSILON = 1e-9  # Minimum non-zero likelihood value
+
+# Minimum meaningful information gain per question
+LOW_IG_THRESHOLD = 0.02
 
 
 def validate_and_normalize_likelihoods(
@@ -105,62 +109,6 @@ def validate_and_normalize_likelihoods(
 
     # Normalize to sum=1.0
     return {h: v / s for h, v in vals.items()}
-
-
-def compute_joint_likelihoods(
-    hs: HypothesisSet, likelihoods_list: list[dict[str, Any]]
-) -> dict[str, float]:
-    """Compute joint likelihood from multiple answer likelihoods.
-
-    For multi-select answers, computes the pointwise product of
-    individually validated likelihoods, then normalizes. This produces
-    a single combined observation for a single Bayesian update, avoiding
-    the negative information gain that occurs with sequential updates.
-
-    Args:
-        hs: HypothesisSet containing the hypotheses
-        likelihoods_list: List of likelihood dicts, one per selected answer
-
-    Returns:
-        Normalized joint likelihood dict (sum=1.0)
-
-    Examples:
-        >>> hs = HypothesisSet("test", ["a", "b", "c"])
-        >>> # Two answers: first favors a, second favors b
-        >>> L1 = {"a": 0.7, "b": 0.2, "c": 0.1}
-        >>> L2 = {"a": 0.2, "b": 0.6, "c": 0.2}
-        >>> result = compute_joint_likelihoods(hs, [L1, L2])
-        >>> # Joint: a=0.14, b=0.12, c=0.02 → normalized
-        >>> round(result["a"], 2)
-        0.5
-        >>> round(result["b"], 2)
-        0.43
-        >>> round(result["c"], 2)
-        0.07
-
-        >>> # Single answer → same as validate_and_normalize
-        >>> result = compute_joint_likelihoods(hs, [{"a": 0.5, "b": 0.3, "c": 0.2}])
-        >>> result
-        {'a': 0.5, 'b': 0.3, 'c': 0.2}
-
-        >>> # Empty list → uniform fallback
-        >>> result = compute_joint_likelihoods(hs, [])
-        >>> round(result["a"], 2)
-        0.33
-    """
-    if not likelihoods_list:
-        u = 1.0 / len(hs.hypotheses) if hs.hypotheses else 1.0
-        return {h: u for h in hs.hypotheses}
-
-    # Compute pointwise product of validated likelihoods
-    joint = {h: 1.0 for h in hs.hypotheses}
-    for likelihoods in likelihoods_list:
-        validated = validate_and_normalize_likelihoods(hs, likelihoods)
-        for h in hs.hypotheses:
-            joint[h] *= validated[h]
-
-    # Normalize the product
-    return validate_and_normalize_likelihoods(hs, joint)
 
 
 def get_session_dir() -> Path:
@@ -310,6 +258,16 @@ def cmd_next_question(args: argparse.Namespace) -> None:
         dimension, orch.beliefs
     )
 
+    # Theoretical maximum IG for a single question given current alpha state
+    update_weight = orch.config["session_config"].get("update_weight", 1.0)
+    alpha_sum = sum(hs.alpha.values())
+    max_single_ig = round(math.log2((alpha_sum + update_weight) / alpha_sum), 4)
+
+    # Recent questions for this dimension (last 2) to aid duplicate avoidance
+    recent_questions = [
+        q["question"] for q in orch.question_history if q.get("dimension") == dimension
+    ][-2:]
+
     print(
         json.dumps(
             {
@@ -326,6 +284,9 @@ def cmd_next_question(args: argparse.Namespace) -> None:
                 "epistemic_entropy": round(decomp["epistemic"], 4),
                 "aleatoric_entropy": round(decomp["aleatoric"], 4),
                 "epistemic_ratio": round(decomp["epistemic_ratio"], 4),
+                "max_single_ig": max_single_ig,
+                "question_count": orch.question_count,
+                "recent_questions_this_dimension": recent_questions,
                 "suggested_secondary_dimensions": suggested_secondary,
             },
             ensure_ascii=False,
@@ -545,37 +506,41 @@ def _apply_secondary_updates(
     args: argparse.Namespace,
     orch: SessionOrchestrator,
 ) -> list[dict[str, Any]]:
-    """Apply cross-dimension secondary updates with reduced weight.
+    """Apply cross-dimension secondary updates with reduced confidence.
 
     Returns:
         List of secondary update result dicts
     """
     secondary_updates: list[dict[str, Any]] = []
-    secondary_weight = orch.config["session_config"].get("secondary_update_weight", 0.3)
+    update_weight = orch.config["session_config"].get("update_weight", 1.0)
+    # Secondary confidence is proportional to secondary_update_weight (default 0.3)
+    secondary_confidence = orch.config["session_config"].get(
+        "secondary_update_weight", 0.3
+    )
 
     if not getattr(args, "secondary_dimensions", None) or not getattr(
-        args, "secondary_likelihoods", None
+        args, "secondary_posteriors", None
     ):
         return secondary_updates
 
     try:
-        sec_likelihoods = json.loads(args.secondary_likelihoods)
+        sec_posteriors = json.loads(args.secondary_posteriors)
     except json.JSONDecodeError:
         return secondary_updates
 
     sec_dims = [d.strip() for d in args.secondary_dimensions.split(",")]
     for sec_dim in sec_dims:
-        if sec_dim not in orch.beliefs or sec_dim not in sec_likelihoods:
+        if sec_dim not in orch.beliefs or sec_dim not in sec_posteriors:
             continue
 
         sec_hs = orch.beliefs[sec_dim]
         sec_validated = validate_and_normalize_likelihoods(
-            sec_hs, sec_likelihoods[sec_dim]
+            sec_hs, sec_posteriors[sec_dim]
         )
 
         sec_posterior_before = dict(sec_hs.posterior)
         sec_h_before = sec_hs.entropy()
-        sec_hs.update(sec_validated, weight=secondary_weight)
+        sec_hs.set_posterior_belief(sec_validated, secondary_confidence, update_weight)
         sec_h_after = sec_hs.entropy()
         sec_jsd = compute_jsd(sec_posterior_before, sec_hs.posterior)
         sec_ig = sec_h_before - sec_h_after
@@ -590,7 +555,7 @@ def _apply_secondary_updates(
         secondary_updates.append(
             {
                 "dimension": sec_dim,
-                "weight": secondary_weight,
+                "confidence": secondary_confidence,
                 "entropy_before": round(sec_h_before, 4),
                 "entropy_after": round(sec_h_after, 4),
                 "information_gain": round(sec_ig, 4),
@@ -601,74 +566,86 @@ def _apply_secondary_updates(
     return secondary_updates
 
 
+def _record_to_feedback(
+    args: argparse.Namespace,
+    info_gain: float,
+) -> None:
+    """Record question result to feedback file if --feedback-session-id is set.
+
+    Silently skips on failure so the main update operation is not interrupted.
+    """
+    if not getattr(args, "feedback_session_id", None):
+        return
+    try:
+        feedback_manager = QuestionFeedbackManager()
+        context: dict[str, Any] = {
+            "dimension": args.dimension,
+            "information_gain": round(info_gain, 4),
+            "confidence": getattr(args, "confidence", 0.0),
+        }
+        reward: dict[str, Any] = {
+            "total_reward": info_gain,
+            "components": {"info_gain": info_gain},
+            "confidence": getattr(args, "confidence", 0.0),
+        }
+        feedback_manager.record_question(
+            args.feedback_session_id,
+            args.question,
+            args.dimension,
+            context,
+            {"text": args.answer},
+            reward,
+            information_gain=info_gain,
+        )
+    except (ValueError, OSError):
+        pass  # Feedback failure does not block the main operation
+
+
 def cmd_update_with_computation(args: argparse.Namespace) -> None:
-    """Update beliefs with complete computation chain (Phase B + C).
+    """Update beliefs from direct posterior estimate (Plan C).
 
-    Supports both single-select and multi-select answers:
-    - Single: --likelihoods '{"h1": 0.5, "h2": 0.3}'
-    - Multi:  --likelihoods '[{"h1": 0.8, ...}, {"h1": 0.3, ...}]'
-
-    For multi-select, computes the joint likelihood (pointwise product)
-    and performs a single Bayesian update, avoiding the negative
-    information gain that sequential independent updates can produce.
+    Claude states its posterior P(h | all evidence) directly with a
+    confidence score, enabling larger single-step entropy reductions
+    than likelihood-based Dirichlet updates.
     """
     orch = load_session_state(args.session_id)
 
-    # Parse likelihoods from LLM
+    # Parse posterior from Claude
     try:
-        likelihoods_raw = json.loads(args.likelihoods)
+        posterior_raw = json.loads(args.posterior)
     except json.JSONDecodeError as e:
         print(
             json.dumps(
-                {"error": f"Invalid JSON in --likelihoods: {e}"}, ensure_ascii=False
+                {"error": f"Invalid JSON in --posterior: {e}"}, ensure_ascii=False
             ),
             file=sys.stderr,
         )
         sys.exit(1)
 
-    # Phase B: Computation chain (Python)
     hs = orch.beliefs[args.dimension]
+    update_weight = orch.config["session_config"].get("update_weight", 1.0)
 
-    # Detect multi-select batch (JSON array) vs single-select (JSON object)
-    if isinstance(likelihoods_raw, list):
-        validated_likelihoods = compute_joint_likelihoods(hs, likelihoods_raw)
-    else:
-        validated_likelihoods = validate_and_normalize_likelihoods(hs, likelihoods_raw)
+    # Validate and normalize the stated posterior
+    validated_posterior = validate_and_normalize_likelihoods(hs, posterior_raw)
 
-    # B1: Entropy before + capture pre-update posterior for JSD
+    # Capture pre-update state
     h_before = hs.entropy()
     posterior_before = dict(hs.posterior)
 
-    # B2: Dirichlet update with validated likelihoods
-    hs.update(validated_likelihoods)
+    # Apply direct posterior belief update
+    hs.set_posterior_belief(validated_posterior, args.confidence, update_weight)
 
-    # B3: Entropy after + JSD between pre/post distributions
+    # Compute metrics
     h_after = hs.entropy()
     jsd = compute_jsd(posterior_before, hs.posterior)
-
-    # B4: Information gain
     info_gain = h_before - h_after
 
-    # Cache results for session_orchestrator methods
+    # Cache results
     h_max = math.log2(len(hs.hypotheses))
     hs._cached_entropy = h_after
     hs._cached_confidence = 1.0 - (h_after / h_max) if h_max > 0 else 1.0
 
-    # Build evaluation scores if provided
-    evaluation_scores: dict[str, Any] | None = None
-    if args.reward is not None:
-        eig = max(0.0, args.eig) if args.eig is not None else 0.0
-        evaluation_scores = {
-            "total_reward": args.reward,
-            "components": {
-                "info_gain": eig,
-                "clarity": args.clarity if args.clarity is not None else 0.0,
-                "importance": args.importance if args.importance is not None else 0.0,
-            },
-            "confidence": hs._cached_confidence,
-        }
-
-    # Phase C: Persist to session history
+    # Persist to session history
     history_entry: dict[str, Any] = {
         "dimension": args.dimension,
         "question": args.question,
@@ -677,11 +654,10 @@ def cmd_update_with_computation(args: argparse.Namespace) -> None:
         "entropy_after": h_after,
         "information_gain": info_gain,
         "jsd": jsd,
+        "confidence": args.confidence,
     }
-    if evaluation_scores is not None:
-        history_entry["evaluation_scores"] = evaluation_scores
 
-    # Cross-dimension secondary updates (P2.5)
+    # Cross-dimension secondary updates
     secondary_updates = _apply_secondary_updates(args, orch)
     if secondary_updates:
         history_entry["secondary_updates"] = secondary_updates
@@ -696,16 +672,21 @@ def cmd_update_with_computation(args: argparse.Namespace) -> None:
     # Save updated state
     save_session_state(args.session_id, orch)
 
+    # Auto-record to feedback file
+    _record_to_feedback(args, info_gain)
+
     # BALD decomposition for updated dimension
     decomp = hs.uncertainty_decomposition()
 
-    # Output results
-    compact = getattr(args, "compact", False)
+    # low_ig: actual IG below meaningful threshold
+    low_ig = info_gain < LOW_IG_THRESHOLD
 
-    if compact:
+    # Output results
+    if getattr(args, "compact", False):
         output: dict[str, Any] = {
             "status": "updated",
             "information_gain": round(info_gain, 4),
+            "low_ig": low_ig,
             "question_count": orch.question_count,
             "converged": orch.check_convergence(),
         }
@@ -716,13 +697,12 @@ def cmd_update_with_computation(args: argparse.Namespace) -> None:
             "entropy_before": round(h_before, 4),
             "entropy_after": round(h_after, 4),
             "information_gain": round(info_gain, 4),
+            "low_ig": low_ig,
             "jsd": round(jsd, 4),
             "question_count": orch.question_count,
             "epistemic_entropy": round(decomp["epistemic"], 4),
             "aleatoric_entropy": round(decomp["aleatoric"], 4),
         }
-        if evaluation_scores is not None:
-            output["evaluation_scores"] = evaluation_scores
         if secondary_updates:
             total_cross_dim_ig = sum(u["information_gain"] for u in secondary_updates)
             output["secondary_updates"] = secondary_updates
@@ -775,38 +755,16 @@ def main() -> None:
     update_comp_parser.add_argument("--question", required=True, help="Question asked")
     update_comp_parser.add_argument("--answer", required=True, help="User's answer")
     update_comp_parser.add_argument(
-        "--likelihoods",
+        "--posterior",
         type=str,
         required=True,
-        help=(
-            "Likelihoods as JSON object or array. "
-            "Single: '{\"h1\": 0.5, ...}'. "
-            'Multi-select: \'[{"h1": 0.8, ...}, {"h1": 0.3, ...}]\''
-        ),
+        help='Direct posterior estimate as JSON: \'{"h1": 0.7, "h2": 0.2, ...}\'',
     )
     update_comp_parser.add_argument(
-        "--reward",
+        "--confidence",
         type=float,
-        default=None,
-        help="Total reward score from evaluation (optional)",
-    )
-    update_comp_parser.add_argument(
-        "--eig",
-        type=float,
-        default=None,
-        help="Expected information gain from evaluation (optional)",
-    )
-    update_comp_parser.add_argument(
-        "--clarity",
-        type=float,
-        default=None,
-        help="Clarity score from evaluation (optional)",
-    )
-    update_comp_parser.add_argument(
-        "--importance",
-        type=float,
-        default=None,
-        help="Importance score from evaluation (optional)",
+        required=True,
+        help="Confidence in the posterior estimate (0.0-1.0)",
     )
     update_comp_parser.add_argument(
         "--secondary-dimensions",
@@ -815,16 +773,22 @@ def main() -> None:
         help="Comma-separated secondary dimension IDs for cross-dim update",
     )
     update_comp_parser.add_argument(
-        "--secondary-likelihoods",
+        "--secondary-posteriors",
         type=str,
         default=None,
-        help='Secondary likelihoods as JSON: {"dim_id": {"hyp": prob}}',
+        help='Secondary posteriors as JSON: {"dim_id": {"hyp": prob}}',
+    )
+    update_comp_parser.add_argument(
+        "--feedback-session-id",
+        type=str,
+        default=None,
+        help="Feedback session ID for auto-recording to feedback file",
     )
     update_comp_parser.add_argument(
         "--compact",
         action="store_true",
         default=False,
-        help="Output only status, information_gain, question_count, converged",
+        help="Output only status, information_gain, low_ig, question_count, converged",
     )
 
     args = parser.parse_args()

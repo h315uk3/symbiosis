@@ -338,7 +338,7 @@ class SessionOrchestrator:
         fringe = self.knowledge_space.outer_fringe(current_state)
 
         # Include dimensions in current_state that haven't converged yet.
-        # A dimension enters current_state when entropy < prerequisite_threshold (1.8),
+        # A dimension enters current_state when entropy < prerequisite_threshold_default,
         # but still needs questions until entropy < convergence_threshold (0.3).
         conv_threshold = self.config["session_config"]["convergence_threshold"]
         unconverged_in_state = frozenset(
@@ -416,8 +416,9 @@ class SessionOrchestrator:
             >>> orch.beliefs["behavior"]._cached_entropy = 1.8
             >>> # data (3 hyps): raw=1.5, normalized=1.5/log₂(3)≈0.946
             >>> orch.beliefs["data"]._cached_entropy = 1.5
-            >>> # With uniform priors (alpha=1), epistemic score ≈ normalized entropy
-            >>> # data still wins because its epistemic/H_max ratio is highest
+            >>> # With uniform priors (alpha=1), epistemic score depends on hypothesis count.
+            >>> # 3-hyp data has higher normalized epistemic score than 4-hyp dims.
+            >>> # behavior (1.8) is NOT < prerequisite_threshold_default (1.8), stays blocked.
             >>> orch.select_next_dimension()
             'data'
 
