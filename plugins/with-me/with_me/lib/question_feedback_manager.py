@@ -7,6 +7,7 @@ Follows as-you plugin patterns for consistency.
 """
 
 import json
+import math
 import os
 from dataclasses import dataclass
 from datetime import datetime
@@ -350,6 +351,29 @@ class QuestionFeedbackManager:
             1
             >>> summary["total_info_gain"]
             0.7
+            >>> # No beliefs passed: falls back to 4-hypothesis H_max (2.0)
+            >>> # clarity = 1.0 - (0.3 / 2.0) = 0.85
+            >>> summary["final_clarity_score"]
+            0.85
+
+            >>> # final_dimension_beliefs provides hypothesis count for normalization
+            >>> import tempfile
+            >>> manager2 = QuestionFeedbackManager(
+            ...     Path(tempfile.mktemp(suffix=".json"))
+            ... )
+            >>> sid2 = manager2.start_session()
+            >>> beliefs = {
+            ...     "purpose": {"dimension": "purpose", "hypotheses": ["a", "b"]}
+            ... }
+            >>> summary2 = manager2.complete_session(sid2, {"purpose": 0.2}, beliefs)
+            >>> session_record = manager2._find_session(sid2)
+            >>> session_record["final_dimension_beliefs"] is not None
+            True
+            >>> session_record["final_dimension_beliefs"]["purpose"]["dimension"]
+            'purpose'
+            >>> # 2 hypotheses: H_max = log2(2) = 1.0 → clarity = 1.0 - (0.2/1.0) = 0.8
+            >>> summary2["final_clarity_score"]
+            0.8
         """
         session = self._find_session(session_id)
         if session is None:
@@ -359,17 +383,30 @@ class QuestionFeedbackManager:
         # Calculate summary
         questions = session["questions"]
         total_questions = len(questions)
-        total_reward = sum(q["reward_scores"].get("total_reward", 0) for q in questions)
+        total_reward = sum(
+            q["reward_scores"].get("total_reward", q["reward_scores"].get("reward", 0))
+            for q in questions
+        )
         total_info_gain = sum(
             q["information_gain"]
             if "information_gain" in q
             else q["reward_scores"].get("components", {}).get("info_gain", 0)
             for q in questions
         )
+        # Normalize each dimension's entropy by its max possible entropy (log2 of
+        # hypothesis count) so the score stays in [0, 1].  Without normalization,
+        # average entropy ~1.8 (4-hypothesis near-uniform) would yield -0.8.
+        normalized_ratios = []
+        for dim, entropy in final_uncertainties.items():
+            n_hyp = 0
+            if final_dimension_beliefs and dim in final_dimension_beliefs:
+                d = final_dimension_beliefs[dim]
+                hyp = d.get("hypotheses") or list(d.get("posterior", {}).keys())
+                n_hyp = len(hyp)
+            h_max = math.log2(n_hyp) if n_hyp > 1 else 2.0  # default: 4-hyp H_max
+            normalized_ratios.append(entropy / h_max)
         final_clarity = 1.0 - (
-            sum(final_uncertainties.values()) / len(final_uncertainties)
-            if final_uncertainties
-            else 0
+            sum(normalized_ratios) / len(normalized_ratios) if normalized_ratios else 0
         )
 
         dimensions_resolved = [
@@ -412,6 +449,36 @@ class QuestionFeedbackManager:
 
         Returns:
             Statistics dictionary
+
+        Examples:
+            >>> import tempfile
+            >>> from pathlib import Path
+            >>> manager = QuestionFeedbackManager(Path(tempfile.mktemp(suffix=".json")))
+            >>> stats = manager.get_statistics()
+            >>> stats["total_sessions"]
+            0
+            >>> stats["total_questions"]
+            0
+
+            >>> # After a completed session, statistics are populated
+            >>> session_id = manager.start_session()
+            >>> manager.record_question(
+            ...     session_id,
+            ...     "What type?",
+            ...     "purpose",
+            ...     {"dimension": "purpose", "information_gain": 0.5},
+            ...     {"text": "web app"},
+            ...     {"total_reward": 0.8},
+            ...     information_gain=0.5,
+            ... )
+            >>> _ = manager.complete_session(session_id, {"purpose": 0.2})
+            >>> stats = manager.get_statistics()
+            >>> stats["total_sessions"]
+            1
+            >>> stats["total_questions"]
+            1
+            >>> "purpose" in stats["dimension_stats"]
+            True
         """
         return self.data.get("statistics", {})
 
@@ -423,7 +490,26 @@ class QuestionFeedbackManager:
             limit: Maximum number of sessions to return
 
         Returns:
-            List of recent sessions
+            List of recent sessions (most recent last), up to limit entries
+
+        Examples:
+            >>> import tempfile
+            >>> from pathlib import Path
+            >>> manager = QuestionFeedbackManager(Path(tempfile.mktemp(suffix=".json")))
+            >>> manager.get_recent_sessions()
+            []
+
+            >>> _ = manager.start_session()
+            >>> len(manager.get_recent_sessions())
+            1
+
+            >>> # limit is respected
+            >>> _ = manager.start_session()
+            >>> _ = manager.start_session()
+            >>> len(manager.get_recent_sessions(limit=2))
+            2
+            >>> len(manager.get_recent_sessions(limit=1))
+            1
         """
         sessions = self.data.get("sessions", [])
         return sessions[-limit:]
@@ -451,7 +537,9 @@ class QuestionFeedbackManager:
         for session in completed_sessions:
             for q in session["questions"]:
                 question_text = q["question"]
-                reward = q["reward_scores"].get("total_reward", 0)
+                reward = q["reward_scores"].get(
+                    "total_reward", q["reward_scores"].get("reward", 0)
+                )
 
                 if question_text not in question_rewards:
                     question_rewards[question_text] = {

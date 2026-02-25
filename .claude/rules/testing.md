@@ -132,10 +132,11 @@ mise run coverage:html   # Generate detailed HTML report
 ## CI/CD
 
 All checks must pass before merging:
-1. `mise run lint`
-2. `mise run typecheck`
-3. `mise run test`
-4. `mise run validate`
+1. `mise run format --check`
+2. `mise run lint`
+3. `mise run typecheck`
+4. `mise run test`
+5. `mise run validate`
 
 ## Test-First Workflow
 
