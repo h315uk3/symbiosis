@@ -184,12 +184,17 @@ def load_session_state(session_id: str) -> SessionOrchestrator:
 
 
 def cmd_init(args: argparse.Namespace) -> None:
-    """Initialize new session."""
+    """Initialize new session and register it in feedback tracking."""
     orch = SessionOrchestrator()
     session_id = orch.initialize_session()
 
     # Save initial state
     save_session_state(session_id, orch)
+
+    # Register the same session_id in the feedback file so that
+    # record_question calls can look it up without a separate feedback start.
+    feedback_manager = QuestionFeedbackManager()
+    feedback_manager.start_session(session_id=session_id)
 
     # Output JSON
     print(
@@ -358,24 +363,27 @@ def cmd_complete(args: argparse.Namespace) -> None:
     total_questions = len(question_history)
     total_info_gain = sum(q.get("information_gain", 0) for q in question_history)
 
-    # Calculate avg_reward from evaluation_scores in question_history
-    rewards = [
-        q["evaluation_scores"]["total_reward"]
-        for q in question_history
-        if "evaluation_scores" in q
-    ]
-    avg_reward = sum(rewards) / len(rewards) if rewards else 0.0
+    # avg_reward is session efficiency (total_info_gain / total_questions).
+    # EIG/REWARD evaluation was removed in KST refactor; history_entry no longer
+    # contains evaluation_scores. Use information gain as the reward proxy.
+    avg_reward = total_info_gain / total_questions if total_questions > 0 else 0.0
 
-    # Per-dimension entropy lookup (used for dimensions_resolved threshold)
+    # Per-dimension entropy lookup (used for dimensions_resolved threshold).
+    # Exclude dimensions with null entropy (never observed) to avoid falsely
+    # marking unvisited dimensions as resolved.
     final_entropies = {
-        dim: belief.get("_cached_entropy") or 0 for dim, belief in beliefs.items()
+        dim: belief["_cached_entropy"]
+        for dim, belief in beliefs.items()
+        if belief.get("_cached_entropy") is not None
     }
     # Normalize each dimension's entropy by its max possible entropy (log2 of
     # hypothesis count) so final_clarity stays in [0, 1].  Without normalization,
     # average entropy ~1.8 (4-hypothesis near-uniform prior) yields -0.8.
     normalized_ratios = []
     for belief in beliefs.values():
-        entropy = belief.get("_cached_entropy") or 0
+        entropy = belief.get("_cached_entropy")
+        if entropy is None:
+            continue
         n_hyp = len(belief.get("hypotheses") or [])
         h_max = math.log2(n_hyp) if n_hyp > 1 else 2.0  # default: 4-hyp H_max
         normalized_ratios.append(entropy / h_max)
@@ -383,7 +391,7 @@ def cmd_complete(args: argparse.Namespace) -> None:
         sum(normalized_ratios) / len(normalized_ratios) if normalized_ratios else 0
     )
 
-    # Dimensions resolved (entropy < threshold)
+    # Dimensions resolved (entropy < threshold, observed only)
     dimensions_resolved = [
         dim
         for dim, entropy in final_entropies.items()
@@ -570,11 +578,16 @@ def _record_to_feedback(
     args: argparse.Namespace,
     info_gain: float,
 ) -> None:
-    """Record question result to feedback file if --feedback-session-id is set.
+    """Record question result to feedback file.
 
+    Uses --feedback-session-id when provided; falls back to --session-id so
+    records are written even when the caller omits the explicit flag.
     Silently skips on failure so the main update operation is not interrupted.
     """
-    if not getattr(args, "feedback_session_id", None):
+    feedback_session_id = getattr(args, "feedback_session_id", None) or getattr(
+        args, "session_id", None
+    )
+    if not feedback_session_id:
         return
     try:
         feedback_manager = QuestionFeedbackManager()
@@ -589,7 +602,7 @@ def _record_to_feedback(
             "confidence": getattr(args, "confidence", 0.0),
         }
         feedback_manager.record_question(
-            args.feedback_session_id,
+            feedback_session_id,
             args.question,
             args.dimension,
             context,

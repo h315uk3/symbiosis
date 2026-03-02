@@ -239,24 +239,31 @@ class QuestionFeedbackManager:
         self.data = load_feedback(feedback_file)
 
     def start_session(
-        self, initial_dimension_beliefs: dict[str, dict] | None = None
+        self,
+        session_id: str | None = None,
+        initial_dimension_beliefs: dict[str, dict] | None = None,
     ) -> str:
         """
         Start a new session
 
         Args:
+            session_id: Session ID to use. Defaults to current ISO timestamp.
             initial_dimension_beliefs: Optional initial Bayesian beliefs
 
         Returns:
-            Session ID (ISO timestamp)
+            Session ID
 
         Examples:
             >>> manager = QuestionFeedbackManager(Path("/tmp/test_feedback.json"))
             >>> session_id = manager.start_session()
             >>> len(session_id) > 0
             True
+            >>> explicit_id = "2026-01-01T00:00:00"
+            >>> returned = manager.start_session(session_id=explicit_id)
+            >>> returned == explicit_id
+            True
         """
-        session_id = datetime.now().isoformat()
+        session_id = session_id or datetime.now().isoformat()
         session: SessionData = {
             "session_id": session_id,
             "started_at": session_id,

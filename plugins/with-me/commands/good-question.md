@@ -93,16 +93,7 @@ export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
 python3 -m with_me.cli.session init
 ```
 
-Store the returned `session_id`. Do NOT show output to user.
-
-Initialize feedback tracking:
-
-```bash
-export PYTHONPATH="${CLAUDE_PLUGIN_ROOT}"
-python3 -m with_me.cli.feedback start --plain-output
-```
-
-Store the returned value as `FEEDBACK_SESSION_ID`.
+Store the returned `session_id`. Use it as both `SESSION_ID` and `FEEDBACK_SESSION_ID` — feedback tracking is initialized automatically. Do NOT show output to user.
 
 **User-facing message:** "Let's clarify your requirements. I'll ask a series of questions to understand what you need."
 
@@ -126,8 +117,6 @@ If `"converged": true`, skip to step 3. Otherwise, the output contains:
 - `supports_multi_select`: Whether multiple selections are allowed
 - `epistemic_entropy`, `aleatoric_entropy`, `epistemic_ratio`: BALD decomposition (internal use — epistemic = reducible uncertainty)
 - `suggested_secondary_dimensions`: Dimensions that would benefit from cross-dimension updates based on presheaf restriction maps. Each entry has `dimension`, `score`, and `hypotheses`.
-
-**Context management:** When `question_count >= 3` (from next-question output), add `--compact` flag to `update-with-computation` to reduce output size.
 
 **IMPORTANT:** Do NOT mention dimension names or technical terms to the user.
 
@@ -227,7 +216,7 @@ Notes:
 - `--answer`: For multi-select, combine all selected answers into a single string (e.g., "Answer1; Answer2; Answer3")
 - `--confidence`: 0.8+ for clear answers, 0.5-0.7 for moderate, 0.3-0.5 for ambiguous
 - If `low_ig: true` in response: next question should more directly distinguish the top-2 posterior hypotheses by name
-- **Context management:** When `question_count >= 3`, add `--compact` flag to reduce output size.
+- **Context management:** When `question_count >= 3`, add `--compact` flag to THIS `update-with-computation` command to reduce output size.
 - Feedback is recorded automatically by this command. Do NOT call `feedback record` separately.
 
 Do NOT show output to the user.
