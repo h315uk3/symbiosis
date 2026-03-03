@@ -188,12 +188,18 @@ def cmd_init(args: argparse.Namespace) -> None:
     orch = SessionOrchestrator()
     session_id = orch.initialize_session()
 
-    # Save initial state
+    # Save initial state; get_session_dir() finds the workspace by searching
+    # upward for an existing .claude/ directory.
     save_session_state(session_id, orch)
 
-    # Register the same session_id in the feedback file so that
-    # record_question calls can look it up without a separate feedback start.
-    feedback_manager = QuestionFeedbackManager()
+    # Register the same session_id in the feedback file.
+    # Derive feedback_file from get_session_dir() to guarantee both session
+    # and feedback land in the same workspace/.claude/with_me/ directory.
+    # Using QuestionFeedbackManager() without args would call
+    # WithMeConfig.from_environment() which uses $PWD directly and can create
+    # a stray .claude/ in an unrelated directory, breaking future lookups.
+    feedback_file = get_session_dir().parent / "question_feedback.json"
+    feedback_manager = QuestionFeedbackManager(feedback_file)
     feedback_manager.start_session(session_id=session_id)
 
     # Output JSON
@@ -590,7 +596,10 @@ def _record_to_feedback(
     if not feedback_session_id:
         return
     try:
-        feedback_manager = QuestionFeedbackManager()
+        # Derive feedback_file from get_session_dir() for workspace consistency.
+        # Same reason as cmd_init: avoid creating a stray .claude/ via $PWD.
+        feedback_file = get_session_dir().parent / "question_feedback.json"
+        feedback_manager = QuestionFeedbackManager(feedback_file)
         context: dict[str, Any] = {
             "dimension": args.dimension,
             "information_gain": round(info_gain, 4),
