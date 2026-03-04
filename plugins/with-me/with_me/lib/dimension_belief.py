@@ -437,6 +437,53 @@ class HypothesisSet:
         for h in self.hypotheses:
             self.alpha[h] += weight * likelihoods.get(h, 0.0)
 
+    def set_posterior_belief(
+        self,
+        posterior: dict[str, float],
+        confidence: float,
+        update_weight: float = 1.0,
+    ) -> None:
+        """Update beliefs from direct posterior estimate.
+
+        Unlike update() which takes per-answer likelihoods P(answer|h),
+        this takes Claude's direct estimate of P(h | all evidence so far),
+        enabling larger single-step entropy reductions when confidence is high.
+
+        Args:
+            posterior: Estimated probability distribution over hypotheses
+            confidence: Confidence in this estimate (0.0-1.0)
+            update_weight: Base observation weight from session config
+
+        Examples:
+            >>> import math
+            >>> hs = HypothesisSet("test", ["web_app", "cli_tool", "library"])
+            >>> # High confidence: library is likely → large entropy reduction
+            >>> h_before = hs.entropy()
+            >>> hs.set_posterior_belief(
+            ...     {"web_app": 0.1, "cli_tool": 0.1, "library": 0.8},
+            ...     confidence=0.9,
+            ...     update_weight=3.0,
+            ... )
+            >>> hs.posterior["library"] > 0.5
+            True
+            >>> h_before > hs.entropy()  # entropy decreased
+            True
+
+            >>> # Low confidence: small update from uniform
+            >>> hs2 = HypothesisSet("test", ["web_app", "cli_tool", "library"])
+            >>> hs2.set_posterior_belief(
+            ...     {"web_app": 0.1, "cli_tool": 0.1, "library": 0.8},
+            ...     confidence=0.1,
+            ...     update_weight=3.0,
+            ... )
+            >>> hs2.posterior["library"] < 0.5  # still near-uniform
+            True
+        """
+        n = len(self.hypotheses)
+        eff_weight = update_weight * confidence
+        for h in self.hypotheses:
+            self.alpha[h] += eff_weight * posterior.get(h, 1.0 / n)
+
     def get_most_likely(self) -> str:
         """
         Get hypothesis with highest posterior probability.
