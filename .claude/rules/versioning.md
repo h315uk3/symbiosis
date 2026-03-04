@@ -74,6 +74,17 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 - [ ] Semantic versioning applied correctly
 - [ ] Separate commit for version bump
 
+### Version Bump Timing
+
+**CRITICAL**: Version bump happens **once per PR at merge time**, not during development.
+
+- Do NOT bump the version mid-PR while making iterative fixes
+- Do NOT bump the version multiple times within the same PR
+- Add a single version bump commit as the **last commit before merge**
+- If a version was bumped mid-PR, revert it and re-apply at the end
+
+**Rationale**: Multiple version bumps within a single PR create noisy history and make it unclear what the shipped version actually is. The version should reflect the PR as a whole, not individual commits.
+
 ## Examples
 
 ### Example 1: Bug Fix in as-you
