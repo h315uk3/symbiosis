@@ -26,7 +26,7 @@ from with_me.lib.session_orchestrator import SessionOrchestrator
 
 # Convergence thresholds
 DIMENSION_RESOLVED_THRESHOLD = (
-    0.3  # Entropy threshold for considering a dimension resolved
+    1.5  # Entropy threshold for considering a dimension resolved
 )
 
 # Likelihood validation constants

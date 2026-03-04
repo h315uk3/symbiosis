@@ -9,7 +9,7 @@
       "max_options": 4,
       "disclosure_layer": "overview",
       "prerequisites": [],
-      "convergence_threshold": 0.3,
+
       "focus_areas": [
         "problem identification",
         "target users and stakeholders",
@@ -94,7 +94,7 @@
         "purpose"
       ],
       "prerequisite_threshold": 1.8,
-      "convergence_threshold": 0.3,
+
       "focus_areas": [
         "data sources and inputs",
         "data structure and format",
@@ -167,7 +167,7 @@
         "purpose"
       ],
       "prerequisite_threshold": 1.8,
-      "convergence_threshold": 0.3,
+
       "focus_areas": [
         "operational flow and sequence",
         "triggers and events",
@@ -254,7 +254,7 @@
         "data"
       ],
       "prerequisite_threshold": 1.8,
-      "convergence_threshold": 0.3,
+
       "focus_areas": [
         "technical limitations",
         "performance requirements",
@@ -341,7 +341,7 @@
         "behavior"
       ],
       "prerequisite_threshold": 1.8,
-      "convergence_threshold": 0.3,
+
       "focus_areas": [
         "success criteria and metrics",
         "edge cases and failure modes",
@@ -414,7 +414,7 @@
         "purpose"
       ],
       "prerequisite_threshold": 1.8,
-      "convergence_threshold": 0.3,
+
       "focus_areas": [
         "primary user roles and personas",
         "organizational structure and hierarchy",
@@ -496,7 +496,7 @@
       "max_options": 4,
       "disclosure_layer": "overview",
       "prerequisites": [],
-      "convergence_threshold": 0.3,
+
       "focus_areas": [
         "existing codebase and technical debt",
         "integration with existing systems",
@@ -666,18 +666,18 @@
   },
   "session_config": {
     "initial_entropy": 2.0,
-    "convergence_threshold": 0.3,
+    "convergence_threshold": 1.5,
     "consistency_threshold": 0.3,
     "secondary_update_weight": 0.3,
-    "target_confidence": 0.85,
+    "target_confidence": 0.30,
     "diminishing_returns_epsilon": 0.05,
-    "diminishing_returns_window": 3,
-    "max_questions": 50,
+    "diminishing_returns_window": 4,
+    "max_questions": 25,
     "min_questions": 5,
     "max_consecutive_same_dimension": 3,
     "context_bonus_weight": 0.1,
-    "fatigue_weight": 0.05,
-    "update_weight": 3.0,
+    "fatigue_weight": 0.10,
+    "update_weight": 5.0,
     "priority_order": [
       "purpose",
       "context",

@@ -211,7 +211,7 @@ class SessionOrchestrator:
 
             >>> # Diminishing returns: all recent IG below epsilon
             >>> orch.question_count = 6  # past min_questions
-            >>> orch.recent_information_gains = [0.8, 0.5, 0.3, 0.02, 0.01, 0.03]
+            >>> orch.recent_information_gains = [0.8, 0.5, 0.3, 0.04, 0.02, 0.01, 0.03]
             >>> orch.check_convergence()
             True
 
@@ -220,21 +220,21 @@ class SessionOrchestrator:
             ...     feedback_file_path=Path("/tmp/test_feedback2.json")
             ... )
             >>> _ = orch2.initialize_session()
-            >>> # Set high confidence on all 7 dimensions
-            >>> # purpose (4 hyps): H_max=2.0, H=0.2 → confidence=0.9
-            >>> orch2.beliefs["purpose"]._cached_entropy = 0.2
-            >>> # context (4 hyps): H=0.2 → confidence=0.9
-            >>> orch2.beliefs["context"]._cached_entropy = 0.2
-            >>> # data (3 hyps): H_max≈1.585, H=0.15 → confidence≈0.905
-            >>> orch2.beliefs["data"]._cached_entropy = 0.15
-            >>> # behavior (4 hyps): H=0.1 → confidence=0.95
-            >>> orch2.beliefs["behavior"]._cached_entropy = 0.1
-            >>> # stakeholders (4 hyps): H=0.2 → confidence=0.9
-            >>> orch2.beliefs["stakeholders"]._cached_entropy = 0.2
-            >>> # constraints (4 hyps): H=0.25 → confidence=0.875
-            >>> orch2.beliefs["constraints"]._cached_entropy = 0.25
-            >>> # quality (3 hyps): H=0.1 → confidence≈0.937
-            >>> orch2.beliefs["quality"]._cached_entropy = 0.1
+            >>> # Set moderate confidence after ~3 questions each (target_confidence=0.30)
+            >>> # purpose (4 hyps): H_max=2.0, H=1.4 → confidence = 1 - 1.4/2.0 = 0.30 ✓
+            >>> orch2.beliefs["purpose"]._cached_entropy = 1.4
+            >>> # context (4 hyps): H=1.4 → confidence=0.30 ✓
+            >>> orch2.beliefs["context"]._cached_entropy = 1.4
+            >>> # data (3 hyps): H_max≈1.585, H=1.1 → confidence = 1 - 1.1/1.585 ≈ 0.306 ✓
+            >>> orch2.beliefs["data"]._cached_entropy = 1.1
+            >>> # behavior (4 hyps): H=1.4 → confidence=0.30 ✓
+            >>> orch2.beliefs["behavior"]._cached_entropy = 1.4
+            >>> # stakeholders (4 hyps): H=1.4 → confidence=0.30 ✓
+            >>> orch2.beliefs["stakeholders"]._cached_entropy = 1.4
+            >>> # constraints (4 hyps): H=1.4 → confidence=0.30 ✓
+            >>> orch2.beliefs["constraints"]._cached_entropy = 1.4
+            >>> # quality (3 hyps): H=1.1 → confidence≈0.306 ✓
+            >>> orch2.beliefs["quality"]._cached_entropy = 1.1
             >>> orch2.check_convergence()
             True
         """
@@ -339,7 +339,7 @@ class SessionOrchestrator:
 
         # Include dimensions in current_state that haven't converged yet.
         # A dimension enters current_state when entropy < prerequisite_threshold_default,
-        # but still needs questions until entropy < convergence_threshold (0.3).
+        # but still needs questions until entropy < convergence_threshold (from session_config).
         conv_threshold = self.config["session_config"]["convergence_threshold"]
         unconverged_in_state = frozenset(
             d

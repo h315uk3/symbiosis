@@ -156,6 +156,12 @@ Translate all text to the language specified in your system prompt.
 
 **CRITICAL:** You MUST invoke the AskUserQuestion tool now. Do NOT skip this step. Do NOT use evaluation templates as answers.
 
+**⚠ MANDATORY TOOL CALL — NO EXCEPTIONS:**
+Step 2.2 is ONLY complete when AskUserQuestion has been called and the user has responded.
+- You may NOT proceed to step 2.3 without calling AskUserQuestion first.
+- You may NOT answer on behalf of the user.
+- If you have already written your question text, call AskUserQuestion NOW.
+
 **Multi-select support:** Check `supports_multi_select` from CLI output (Step 2.1):
 - If `true`: Use "Select all that apply" phrasing with `multiSelect: true`
 - If `false`: Use single-selection phrasing with `multiSelect: false`
@@ -216,7 +222,6 @@ Notes:
 - `--answer`: For multi-select, combine all selected answers into a single string (e.g., "Answer1; Answer2; Answer3")
 - `--confidence`: 0.8+ for clear answers, 0.5-0.7 for moderate, 0.3-0.5 for ambiguous
 - If `low_ig: true` in response: next question should more directly distinguish the top-2 posterior hypotheses by name
-- **Context management:** When `question_count >= 3`, add `--compact` flag to THIS `update-with-computation` command to reduce output size.
 - Feedback is recorded automatically by this command. Do NOT call `feedback record` separately.
 
 Do NOT show output to the user.
