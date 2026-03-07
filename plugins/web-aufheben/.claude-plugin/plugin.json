@@ -1,0 +1,11 @@
+{
+  "name": "web-aufheben",
+  "version": "1.0.0",
+  "description": "Detect and fix invisible code anomalies — Ghost (dead code), Fragile (reliability gaps), Blind Spot (hidden risks) — across 11 detection layers with quantitative scoring",
+  "author": {
+    "name": "ohyesiamy"
+  },
+  "homepage": "https://github.com/h315uk3/symbiosis",
+  "repository": "https://github.com/h315uk3/symbiosis",
+  "license": "SACL-1.0"
+}

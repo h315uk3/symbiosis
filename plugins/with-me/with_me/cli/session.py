@@ -289,17 +289,11 @@ def cmd_next_question(args: argparse.Namespace) -> None:
     # Get dimension metadata with detailed information for question generation
     dim_config = orch.config["dimensions"][dimension]
 
-    # Extract hypothesis information for context
-    hypotheses_info = []
-    for hyp_id, hyp_data in dim_config.get("hypotheses", {}).items():
-        hypotheses_info.append(
-            {
-                "id": hyp_id,
-                "name": hyp_data["name"],
-                "description": hyp_data["description"],
-                "focus_areas": hyp_data["focus_areas"],
-            }
-        )
+    # Extract hypothesis IDs only (NOT names/descriptions).
+    # Hypothesis names like "Web Application" look like answer options and
+    # cause the LLM to skip AskUserQuestion. Only expose internal IDs and
+    # focus_areas needed for question generation context.
+    hypothesis_ids = list(dim_config.get("hypotheses", {}).keys())
 
     # BALD decomposition for selected dimension
     hs = orch.beliefs[dimension]
@@ -318,7 +312,7 @@ def cmd_next_question(args: argparse.Namespace) -> None:
                 "dimension_name": dim_config["name"],
                 "dimension_description": dim_config.get("description", ""),
                 "focus_areas": dim_config.get("focus_areas", []),
-                "hypotheses": hypotheses_info,
+                "hypothesis_ids": hypothesis_ids,
                 "question": question,
                 "supports_multi_select": dim_config.get("supports_multi_select", False),
                 "importance": dim_config.get("importance", 0.5),
