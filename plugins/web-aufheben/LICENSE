@@ -1,0 +1,91 @@
+Source Available Commercial License (SACL) v1.0
+
+Copyright (c) 2026 ohyesiamy. All rights reserved.
+
+================================================================================
+
+1. DEFINITIONS
+
+"Software" means the Web Anomaly Detector source code, documentation,
+configuration files, and all associated materials in this repository.
+
+"Personal Use" means use by an individual for personal learning, education,
+research, or evaluation, not directly or indirectly generating revenue.
+
+"Commercial Use" means any use of the Software that directly or indirectly
+generates revenue, supports revenue-generating activities, or is used within
+a for-profit organization, including but not limited to:
+  (a) Using the Software to provide services to clients or customers
+  (b) Incorporating the Software into a commercial product or service
+  (c) Using the Software within a business or organization of any size
+  (d) Using the Software to audit, analyze, or improve commercial codebases
+
+"Commercial License" means a separate license agreement obtained from the
+copyright holder that grants Commercial Use rights.
+
+================================================================================
+
+2. GRANT OF RIGHTS — PERSONAL USE
+
+Subject to the terms of this License, you are granted a non-exclusive,
+non-transferable, revocable license to:
+  (a) View, read, and study the source code
+  (b) Use the Software for Personal Use
+  (c) Fork and modify the Software for Personal Use
+  (d) Share links to this repository
+
+================================================================================
+
+3. RESTRICTIONS
+
+Without a Commercial License, you may NOT:
+  (a) Use the Software for any Commercial Use
+  (b) Redistribute, sublicense, or sell copies of the Software
+  (c) Incorporate the Software into any product or service offered to others
+  (d) Remove or alter this license notice or copyright attribution
+  (e) Use the Software to create a competing product or service
+  (f) Offer the Software as a hosted or managed service
+
+================================================================================
+
+4. COMMERCIAL LICENSING
+
+To obtain a Commercial License, contact:
+
+  Email:   y@nada.tokyo
+  GitHub:  https://github.com/ohyesiamy
+
+Commercial Licenses are available as:
+  - Per-seat license (individual or team)
+  - Enterprise license (organization-wide)
+  - OEM license (for embedding in your product)
+
+================================================================================
+
+5. CONTRIBUTIONS
+
+By submitting a pull request or other contribution to this repository, you
+agree to license your contribution under the same terms as this License and
+assign copyright to the copyright holder.
+
+================================================================================
+
+6. NO WARRANTY
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+================================================================================
+
+7. TERMINATION
+
+This License is effective until terminated. Your rights under this License
+will terminate automatically if you fail to comply with any of its terms.
+Upon termination, you must destroy all copies of the Software in your
+possession.
+
+================================================================================
