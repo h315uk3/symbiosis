@@ -22,7 +22,10 @@ from typing import Any
 
 from with_me.lib.dimension_belief import HypothesisSet, compute_jsd
 from with_me.lib.question_feedback_manager import QuestionFeedbackManager
-from with_me.lib.session_orchestrator import SessionOrchestrator
+from with_me.lib.session_orchestrator import (
+    SessionOrchestrator,
+    classify_question_phase,
+)
 
 # Convergence thresholds
 DIMENSION_RESOLVED_THRESHOLD = (
@@ -149,6 +152,8 @@ def save_session_state(session_id: str, orchestrator: SessionOrchestrator) -> No
         "question_count": orchestrator.question_count,
         "recent_information_gains": orchestrator.recent_information_gains,
         "thompson_states": orchestrator.thompson_states,
+        "covered_focus_areas": orchestrator.covered_focus_areas,
+        "clarification_needed": orchestrator.clarification_needed,
     }
 
     with open(session_file, "w", encoding="utf-8") as f:
@@ -179,6 +184,8 @@ def load_session_state(session_id: str) -> SessionOrchestrator:
     orch.question_count = state["question_count"]
     orch.recent_information_gains = state.get("recent_information_gains", [])
     orch.thompson_states = state.get("thompson_states", {})
+    orch.covered_focus_areas = state.get("covered_focus_areas", {})
+    orch.clarification_needed = state.get("clarification_needed", {})
 
     return orch
 
@@ -264,6 +271,37 @@ def cmd_next_question(args: argparse.Namespace) -> None:
     hs = orch.beliefs[dimension]
     decomp = hs.uncertainty_decomposition()
 
+    # Classify question phase
+    phase_config = orch.config["session_config"]
+    question_phase = classify_question_phase(
+        hs,
+        phase_explore_threshold=phase_config.get("phase_explore_threshold", 0.85),
+        dominant_threshold=phase_config.get("dominant_threshold", 0.50),
+        validation_threshold=phase_config.get("validation_threshold", 0.80),
+    )
+    dominant_hyp = max(hs.posterior, key=lambda k: hs.posterior[k])
+    dominant_prob = round(hs.posterior[dominant_hyp], 4)
+
+    # M3: Override phase to clarify if dimension has a contradiction
+    if orch.clarification_needed.get(dimension, False):
+        question_phase = "clarify"
+
+    # M2: Focus area coverage (specify/validate phases only)
+    if question_phase in ("specify", "validate"):
+        dom_focus_areas = (
+            dim_config.get("hypotheses", {})
+            .get(dominant_hyp, {})
+            .get("focus_areas", [])
+        )
+        covered = orch.covered_focus_areas.get(dimension, [])
+        uncovered_focus_areas = [fa for fa in dom_focus_areas if fa not in covered]
+        suggested_focus_area = (
+            uncovered_focus_areas[0] if uncovered_focus_areas else None
+        )
+    else:
+        uncovered_focus_areas = []
+        suggested_focus_area = None
+
     # Secondary dimension suggestions via presheaf
     suggested_secondary = orch.presheaf_checker.suggest_secondary_dimensions(
         dimension, orch.beliefs
@@ -299,6 +337,13 @@ def cmd_next_question(args: argparse.Namespace) -> None:
                 "question_count": orch.question_count,
                 "recent_questions_this_dimension": recent_questions,
                 "suggested_secondary_dimensions": suggested_secondary,
+                "question_phase": question_phase,
+                "dominant_hypothesis": dominant_hyp,
+                "dominant_probability": dominant_prob,
+                "question_guidelines": dim_config.get("question_guidelines", {}),
+                "uncovered_focus_areas": uncovered_focus_areas,
+                "suggested_focus_area": suggested_focus_area,
+                "clarification_needed": orch.clarification_needed.get(dimension, False),
             },
             ensure_ascii=False,
         )
@@ -691,6 +736,21 @@ def cmd_update_with_computation(args: argparse.Namespace) -> None:
     orch.update_thompson_state(args.dimension, info_gain)
     orch.record_information_gain(info_gain)
 
+    # M2: Track focus area coverage
+    if getattr(args, "targeted_focus_area", None):
+        covered = orch.covered_focus_areas.setdefault(args.dimension, [])
+        if args.targeted_focus_area not in covered:
+            covered.append(args.targeted_focus_area)
+
+    # M3: Negative IG clarification protocol
+    session_cfg = orch.config["session_config"]
+    hard_threshold = session_cfg.get("negative_ig_hard_threshold", 0.05)
+    if info_gain < -hard_threshold:
+        orch.clarification_needed[args.dimension] = True
+    elif info_gain >= 0:
+        orch.clarification_needed[args.dimension] = False
+    # -hard_threshold ≤ info_gain < 0 (noise): no change
+
     # Save updated state
     save_session_state(args.session_id, orch)
 
@@ -811,6 +871,12 @@ def main() -> None:
         action="store_true",
         default=False,
         help="Output only status, information_gain, low_ig, question_count, converged",
+    )
+    update_comp_parser.add_argument(
+        "--targeted-focus-area",
+        type=str,
+        default=None,
+        help="Focus area addressed by this question (for coverage tracking in specify phase)",
     )
 
     args = parser.parse_args()

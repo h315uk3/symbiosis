@@ -22,14 +22,11 @@
         "from_other": "Now that I have a clearer picture, let me revisit what you're trying to achieve."
       },
       "question_guidelines": {
-        "when_high_entropy": "Ask broad, exploratory questions about the core problem or goal. Help identify what they're trying to achieve.",
-        "when_converging": "Ask specific validation questions to confirm understanding of the problem scope and target users.",
-        "follow_up_triggers": [
-          "mentioned problem",
-          "mentioned users",
-          "mentioned goal",
-          "mentioned need"
-        ]
+        "explore":      "Ask what kind of software they are building. Map high-level categories without assuming.",
+        "discriminate": "Ask to distinguish between the two most likely types (e.g., CLI tool vs service).",
+        "specify":      "Ask about implementation-critical details of the dominant type: distribution, runtime, target environment, MVP scope.",
+        "validate":     "Confirm edge cases: deployment model, user-facing vs internal, version strategy.",
+        "clarify":      "Ask which is correct: the stated problem/type, or the technical choices. Surface the conflict explicitly."
       },
       "hypotheses": {
         "web_app": {
@@ -107,14 +104,11 @@
         "from_other": "Let me circle back to the data aspects of your project."
       },
       "question_guidelines": {
-        "when_high_entropy": "Ask about what information the system works with. Explore inputs, outputs, and data flow at a high level.",
-        "when_converging": "Ask specific questions about data formats, structures, validation, or transformation details.",
-        "follow_up_triggers": [
-          "mentioned format",
-          "mentioned database",
-          "mentioned file",
-          "mentioned API"
-        ]
+        "explore":      "Ask broadly about what information the system works with: inputs, outputs, and data flow.",
+        "discriminate": "Ask to distinguish between the two most likely data types (e.g., structured records vs continuous stream).",
+        "specify":      "Ask about data-specific implementation details: format, schema, volume, transformation pipeline, storage.",
+        "validate":     "Confirm edge cases: data validation rules, error handling for malformed input, retention policy.",
+        "clarify":      "Ask whether the data is primarily structured, unstructured, or streaming — the prior answers suggested different things."
       },
       "hypotheses": {
         "structured": {
@@ -180,14 +174,11 @@
         "from_other": "Let me explore a bit more about the operational behavior."
       },
       "question_guidelines": {
-        "when_high_entropy": "Ask about the overall operational flow. Explore what triggers functionality and what happens step by step.",
-        "when_converging": "Ask specific questions about edge cases, error handling, timing, or interaction details between components.",
-        "follow_up_triggers": [
-          "mentioned trigger",
-          "mentioned step",
-          "mentioned interaction",
-          "mentioned timing"
-        ]
+        "explore":      "Ask about how the system operates: what triggers it, what it does step by step.",
+        "discriminate": "Ask to distinguish between the two most likely operation modes (e.g., synchronous vs async).",
+        "specify":      "Ask about operational details of the dominant mode: concurrency model, error handling, timeout behavior, retry logic.",
+        "validate":     "Confirm edge cases: what happens on failure, how concurrent requests are handled, graceful shutdown.",
+        "clarify":      "Ask whether the core execution model is synchronous, asynchronous, interactive, or batch — recent answers conflict."
       },
       "hypotheses": {
         "synchronous": {
@@ -268,14 +259,11 @@
         "from_other": "Let me revisit the constraints and technical boundaries."
       },
       "question_guidelines": {
-        "when_high_entropy": "Ask about any technical limitations, performance needs, or compatibility requirements. Explore what constraints exist.",
-        "when_converging": "Ask specific questions about performance metrics, security requirements, or compatibility with specific systems.",
-        "follow_up_triggers": [
-          "mentioned performance",
-          "mentioned scale",
-          "mentioned security",
-          "mentioned compatibility"
-        ]
+        "explore":      "Ask about what technical limitations or requirements exist: performance, scale, security, compatibility.",
+        "discriminate": "Ask to distinguish between the two most critical constraint types for this system.",
+        "specify":      "Ask about measurable targets for the dominant constraint: specific latency/throughput numbers, compliance standards, target platforms.",
+        "validate":     "Confirm boundary conditions: what happens when constraints are violated, acceptable degradation, monitoring.",
+        "clarify":      "Ask which constraint is most critical: the answers so far suggest conflicting priorities."
       },
       "hypotheses": {
         "performance": {
@@ -354,14 +342,11 @@
         "from_other": "Let me dig deeper into the quality and success criteria."
       },
       "question_guidelines": {
-        "when_high_entropy": "Ask about how success will be measured and what could go wrong. Explore testing and validation approaches.",
-        "when_converging": "Ask specific questions about edge cases, error scenarios, acceptance criteria, or testing details.",
-        "follow_up_triggers": [
-          "mentioned testing",
-          "mentioned failure",
-          "mentioned validation",
-          "mentioned edge case"
-        ]
+        "explore":      "Ask how success will be measured and what could go wrong.",
+        "discriminate": "Ask to distinguish whether functional correctness, user experience, or code maintainability matters most.",
+        "specify":      "Ask about concrete quality criteria for the dominant aspect: acceptance test format, UX heuristics, coverage targets.",
+        "validate":     "Confirm edge cases and failure modes: what constitutes unacceptable behavior, rollback triggers.",
+        "clarify":      "Ask which quality attribute matters most: the recent answers suggest different emphasis than earlier ones."
       },
       "hypotheses": {
         "functional": {
@@ -427,14 +412,11 @@
         "from_other": "Let me understand more about the people involved with this project."
       },
       "question_guidelines": {
-        "when_high_entropy": "Ask about who the primary users are and what roles they play. Explore the organizational context.",
-        "when_converging": "Ask specific questions about user workflows, permission levels, or stakeholder priorities.",
-        "follow_up_triggers": [
-          "mentioned user",
-          "mentioned team",
-          "mentioned role",
-          "mentioned customer"
-        ]
+        "explore":      "Ask who will use this system and what roles they play.",
+        "discriminate": "Ask to distinguish between the two most likely user groups (e.g., individual developer vs external customers).",
+        "specify":      "Ask about the dominant group's workflow details: onboarding, permissions, support model, usage frequency.",
+        "validate":     "Confirm edge cases: admin vs regular user separation, multi-tenancy, user data isolation.",
+        "clarify":      "Ask who the primary user actually is and whether earlier answers about audience were accurate."
       },
       "hypotheses": {
         "individual_user": {
@@ -509,14 +491,11 @@
         "from_other": "Let me revisit the broader context of your project."
       },
       "question_guidelines": {
-        "when_high_entropy": "Ask about whether this is a new project or integrating with existing systems. Explore the development context.",
-        "when_converging": "Ask specific questions about existing codebases, migration plans, or technical constraints from the environment.",
-        "follow_up_triggers": [
-          "mentioned existing",
-          "mentioned legacy",
-          "mentioned migration",
-          "mentioned prototype"
-        ]
+        "explore":      "Ask whether this is a new project or integrating with something existing.",
+        "discriminate": "Ask to distinguish between the two most likely contexts (e.g., greenfield vs brownfield integration).",
+        "specify":      "Ask about the dominant context's specifics: existing tech stack, team size, timeline, migration scope.",
+        "validate":     "Confirm compatibility constraints: legacy system dependencies, rollback plan, deployment environment.",
+        "clarify":      "Ask whether this is truly greenfield or if existing systems/constraints were overlooked initially."
       },
       "hypotheses": {
         "greenfield": {
@@ -667,6 +646,9 @@
   "session_config": {
     "initial_entropy": 2.0,
     "convergence_threshold": 1.5,
+    "phase_explore_threshold": 0.85,
+    "dominant_threshold": 0.50,
+    "validation_threshold": 0.80,
     "consistency_threshold": 0.3,
     "secondary_update_weight": 0.3,
     "target_confidence": 0.30,
@@ -686,6 +668,8 @@
       "stakeholders",
       "constraints",
       "quality"
-    ]
+    ],
+    "negative_ig_noise_threshold": 0.01,
+    "negative_ig_hard_threshold": 0.05
   }
 }

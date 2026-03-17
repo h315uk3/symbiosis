@@ -38,6 +38,12 @@ When executing this command, maintain a clean separation between internal operat
    - Provide answer options in natural language
    - Avoid meta-commentary about question quality scores or information gain predictions
 
+5. **Never Insert Mid-Session Check-ins**
+   - Do NOT pause to ask "shall we continue or proceed to requirements analysis?"
+   - Continue the loop automatically until `next-question` returns `"converged": true`
+   - The only early-exit path is the user selecting "End session (clarity achieved)" from a question's options
+   - Violating this rule causes unsolicited interruptions and breaks the convergence contract with the CLI
+
 ### What Users Should See
 
 **Good Example:**
@@ -117,6 +123,12 @@ If `"converged": true`, skip to step 3. Otherwise, the output contains:
 - `supports_multi_select`: Whether multiple selections are allowed
 - `epistemic_entropy`, `aleatoric_entropy`, `epistemic_ratio`: BALD decomposition (internal use — epistemic = reducible uncertainty)
 - `suggested_secondary_dimensions`: Dimensions that would benefit from cross-dimension updates based on presheaf restriction maps. Each entry has `dimension`, `score`, and `hypotheses`.
+- `question_phase`: Current phase for this dimension: `"explore"`, `"discriminate"`, `"specify"`, `"validate"`, or `"clarify"`.
+- `dominant_hypothesis`, `dominant_probability`: Highest-posterior hypothesis and its probability.
+- `question_guidelines`: Phase-keyed guidance strings from dimension config.
+- `uncovered_focus_areas`: Focus areas of the dominant hypothesis not yet addressed.
+- `suggested_focus_area`: First uncovered focus area (null if all covered); use as primary target in specify phase.
+- `clarification_needed`: Whether this dimension has a detected contradiction requiring resolution.
 
 **IMPORTANT:** Do NOT mention dimension names or technical terms to the user.
 
@@ -131,11 +143,32 @@ If the dimension has NOT changed, still acknowledge the previous answer briefly 
 
 **Generate question:**
 
-Generate a contextual question based on:
-- `posterior` from Step 2.1: target the top-2 hypotheses by current probability
-- `hypotheses` descriptions: generate a question where different plausible answers map to different leading hypotheses
-- `recent_questions_this_dimension` from Step 2.1: avoid semantic duplicates
-- `low_ig=true` from previous update: generate a more direct, discriminating question for the same dimension
+**Question strategy by phase** (use `question_phase` from Step 2.1):
+
+- **`"explore"`**: Use dimension-level `focus_areas` to ask a broad categorical question.
+  Map the landscape without assuming a direction. Answer options should cover all hypotheses.
+
+- **`"discriminate"`**: Target the top-2 hypotheses by `posterior`. Generate a question
+  where different plausible answers map cleanly to different hypotheses.
+
+- **`"specify"`**: The dominant hypothesis (`dominant_hypothesis` at `dominant_probability`)
+  is established. Switch to implementation details:
+  1. Use `question_guidelines.specify` for dimension-specific guidance.
+  2. Use `uncovered_focus_areas` from CLI output (already filtered against prior questions).
+     If `suggested_focus_area` is non-null, use it as the primary target.
+     If null (all covered), ask about cross-dimension consistency or deployment edge cases.
+  3. Ask about the most important uncovered detail not yet addressed.
+
+- **`"validate"`**: The dominant hypothesis is highly confident. Ask about edge cases,
+  failure modes, or cross-dimension consistency using `question_guidelines.validate`.
+
+- **`"clarify"`**: A significant contradiction was detected (negative IG on previous update).
+  1. Review the conversation history for the two most recent conflicting answers on this dimension.
+  2. Use `question_guidelines.clarify` for dimension-specific guidance.
+  3. Generate a question that explicitly names the contradiction and asks the user to confirm
+     which answer is correct. Do NOT introduce new topics.
+
+Use `question_guidelines[question_phase]` from Step 2.1 output as the primary guideline.
 
 **CRITICAL: Avoid duplicate questions.** Do NOT ask questions that have already been answered or cover the same semantic intent as `recent_questions_this_dimension`.
 
@@ -148,11 +181,20 @@ Generate a contextual question based on:
 - `"detail"`: 3-4 choices
 - `"edge_case"`: up to `max_options`
 
-Generate answer options plus standard options:
-- "Skip this question" / "Move to the next question without answering"
-- "End session (clarity achieved)" / "I have sufficient clarity now"
+Generate exactly the number of content options allowed by the cognitive load constraint.
+**Do NOT add "Skip" or "End session" as explicit options.** These are handled via the built-in free-text input ("Type something").
+When the user submits free text, first determine intent before proceeding:
+- **Skip intent**: the response does not answer the question but instead expresses intent to skip, defer, or pass (e.g., "skip", "undecided", "N/A", or any equivalent in any language)
+  - Honored when `question_count` ≥ 5 AND `recent_questions_this_dimension` is non-empty
+  - If honored: **do NOT call `update-with-computation`**, return directly to step 2.1
+  - If not honored (conditions unmet): acknowledge and ask them to choose a content option
+- **End session intent**: the response expresses that the user has sufficient clarity and wants to stop (e.g., "done", "enough", "end", or equivalent)
+  - Honored when `question_count` ≥ 20
+  - If honored: skip to step 3
+  - If not honored: acknowledge and ask them to choose a content option
+- **Substantive answer**: anything else — proceed to step 2.3
 
-Translate all text to the language specified in your system prompt.
+Translate all content options to the language specified in your system prompt.
 
 **CRITICAL:** You MUST invoke the AskUserQuestion tool now. Do NOT skip this step. Do NOT use evaluation templates as answers.
 
@@ -169,15 +211,15 @@ Step 2.2 is ONLY complete when AskUserQuestion has been called and the user has 
 Ask user using `AskUserQuestion`:
 - Question: Your evaluated question (adjusted for multi-select if applicable)
 - Header: Use `dimension_name` from CLI
-- Options: Your options (translated)
+- Options: Content options only (translated), no Skip/End session
 - multiSelect: Based on `supports_multi_select`
 
 Wait for the user's actual response. Do NOT proceed until the user answers.
 
 Handle user response:
-- Quick answer(s) or "Other": Proceed to step 2.3 with the answer (may be multiple items if multi-select)
-- "Skip": Return to step 2.1
-- "End session": Skip to step 3
+- Selected option or substantive free-text answer: Proceed to step 2.3
+- Free-text with skip/end intent: Apply intent detection rules above
+- "Chat about this": Treat as substantive answer, proceed to step 2.3
 
 #### 2.3. Update Beliefs
 
@@ -218,6 +260,11 @@ Additional flags when secondary dimensions identified:
 - `--secondary-dimensions "dim1,dim2"`
 - `--secondary-posteriors '{"dim1": {"h1": 0.x, ...}, "dim2": {"h1": 0.y, ...}}'`
 
+If `question_phase` was `"specify"` or `"validate"` and you targeted a specific focus area
+from `uncovered_focus_areas`, add:
+- `--targeted-focus-area "<focus_area_string>"`
+  (Use the exact string from `uncovered_focus_areas`, not a paraphrase)
+
 Notes:
 - `--answer`: For multi-select, combine all selected answers into a single string (e.g., "Answer1; Answer2; Answer3")
 - `--confidence`: 0.8+ for clear answers, 0.5-0.7 for moderate, 0.3-0.5 for ambiguous
@@ -233,7 +280,13 @@ If `information_gain` is negative, uncertainty increased rather than decreased. 
 1. **Estimation error**: Your P(answer | hypothesis) estimates contradicted previous answers. Review likelihood values for logical consistency with the full answer history.
 2. **Genuine conflict**: User's answer genuinely contradicts prior responses. This is valid — the system correctly reflects the conflict.
 
-Continue normally. The system handles negative IG gracefully. Pay extra attention to consistency with ALL previous answers in future estimates.
+If `information_gain` is significantly negative (< -0.05):
+- The CLI has set `clarification_needed` for this dimension.
+- The next iteration will automatically use `question_phase: "clarify"`.
+- No special action needed here — continue to step 2.4.
+
+If `information_gain` is slightly negative (≥ -0.05 and < 0):
+- Treat as noise. Continue normally.
 
 #### 2.4. Display Progress (Optional)
 

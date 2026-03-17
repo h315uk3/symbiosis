@@ -36,6 +36,64 @@ CONFIDENCE_THRESHOLD_FOR_DISPLAY = (
 )
 
 
+def classify_question_phase(
+    hs: HypothesisSet,
+    phase_explore_threshold: float = 0.85,
+    dominant_threshold: float = 0.50,
+    validation_threshold: float = 0.80,
+) -> str:
+    """
+    Classify the question phase for a dimension based on current belief state.
+
+    Returns one of "explore", "discriminate", "specify", or "validate".
+
+    Phase is determined primarily by max_posterior (hypothesis-count independent)
+    and secondarily by normalized entropy (H / H_max).
+
+    Examples:
+        >>> from with_me.lib.dimension_belief import HypothesisSet
+        >>> # Uniform prior (session start) → explore
+        >>> hs = HypothesisSet("d", ["a", "b", "c", "d"])
+        >>> classify_question_phase(hs)
+        'explore'
+
+        >>> # Moderate uncertainty, no dominant hypothesis → discriminate
+        >>> hs2 = HypothesisSet("d", ["a", "b", "c", "d"])
+        >>> hs2.alpha = {"a": 2.0, "b": 3.0, "c": 1.5, "d": 1.5}
+        >>> hs2._cached_entropy = 1.6
+        >>> classify_question_phase(hs2)
+        'discriminate'
+
+        >>> # One hypothesis dominant at ~64% → specify
+        >>> hs3 = HypothesisSet("d", ["a", "b", "c", "d"])
+        >>> hs3.alpha = {"a": 1.5, "b": 8.0, "c": 1.5, "d": 1.5}
+        >>> classify_question_phase(hs3)
+        'specify'
+
+        >>> # Very dominant hypothesis at ~87% → validate
+        >>> hs4 = HypothesisSet("d", ["a", "b", "c", "d"])
+        >>> hs4.alpha = {"a": 1.0, "b": 20.0, "c": 1.0, "d": 1.0}
+        >>> classify_question_phase(hs4)
+        'validate'
+    """
+    h = (
+        hs._cached_entropy
+        if hs._cached_entropy is not None
+        else math.log2(len(hs.hypotheses))
+    )
+    h_max = math.log2(len(hs.hypotheses)) if len(hs.hypotheses) > 1 else 1.0
+    normalized = h / h_max if h_max > 0 else 1.0
+    max_p = max(hs.posterior.values(), default=0.0)
+
+    if max_p >= validation_threshold:
+        return "validate"
+    if max_p >= dominant_threshold:
+        return "specify"
+    if normalized > phase_explore_threshold:
+        return "explore"
+    return "discriminate"
+
+
 class SessionOrchestrator:
     """
     Orchestrates adaptive requirement elicitation sessions.
@@ -114,6 +172,8 @@ class SessionOrchestrator:
         self.question_count = 0
         self.recent_information_gains: list[float] = []
         self.thompson_states: dict[str, dict[str, float]] = {}
+        self.covered_focus_areas: dict[str, list[str]] = {}
+        self.clarification_needed: dict[str, bool] = {}
 
     def initialize_session(self) -> str:
         """
@@ -147,6 +207,8 @@ class SessionOrchestrator:
         # Initialize tracking
         self.question_history = []
         self.question_count = 0
+        self.covered_focus_areas = {}
+        self.clarification_needed = {}
         self.recent_information_gains = []
 
         # Initialize Thompson Sampling states per dimension
@@ -209,7 +271,7 @@ class SessionOrchestrator:
             >>> orch.check_convergence()
             False
 
-            >>> # Diminishing returns: all recent IG below epsilon
+            >>> # Diminishing returns: all recent IG below epsilon (window=4)
             >>> orch.question_count = 6  # past min_questions
             >>> orch.recent_information_gains = [0.8, 0.5, 0.3, 0.04, 0.02, 0.01, 0.03]
             >>> orch.check_convergence()
