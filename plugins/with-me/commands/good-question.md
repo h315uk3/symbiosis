@@ -127,7 +127,8 @@ If `"converged": true`, skip to step 3. Otherwise, the output contains:
 - `dominant_hypothesis`, `dominant_probability`: Highest-posterior hypothesis and its probability.
 - `question_guidelines`: Phase-keyed guidance strings from dimension config.
 - `uncovered_focus_areas`: Focus areas of the dominant hypothesis not yet addressed.
-- `suggested_focus_area`: First uncovered focus area (null if all covered); use as primary target in specify phase.
+- `suggested_focus_area`: First uncovered focus area (null if all covered); fallback target in specify phase.
+- `presheaf_free_focus_areas`: Uncovered focus areas of the dominant hypothesis that are NOT already constrained by resolved dimensions' restriction maps. Non-empty = safe to probe details; empty = presheaf conflict detected, hypothesis-level discrimination may be needed.
 - `clarification_needed`: Whether this dimension has a detected contradiction requiring resolution.
 
 **IMPORTANT:** Do NOT mention dimension names or technical terms to the user.
@@ -154,9 +155,13 @@ If the dimension has NOT changed, still acknowledge the previous answer briefly 
 - **`"specify"`**: The dominant hypothesis (`dominant_hypothesis` at `dominant_probability`)
   is established. Switch to implementation details:
   1. Use `question_guidelines.specify` for dimension-specific guidance.
-  2. Use `uncovered_focus_areas` from CLI output (already filtered against prior questions).
-     If `suggested_focus_area` is non-null, use it as the primary target.
-     If null (all covered), ask about cross-dimension consistency or deployment edge cases.
+  2. Select the target focus area:
+     - If `presheaf_free_focus_areas` is **non-empty**: use it as the primary list.
+       These are focus areas not already constrained by resolved dimensions' restriction maps.
+       Pick the first uncovered area as the question target.
+     - If `presheaf_free_focus_areas` is **empty** (conflict with restriction map detected):
+       fall back to `uncovered_focus_areas` / `suggested_focus_area` as before.
+       Consider asking a clarifying cross-dimension question to resolve the conflict.
   3. Ask about the most important uncovered detail not yet addressed.
 
 - **`"validate"`**: The dominant hypothesis is highly confident. Ask about edge cases,
@@ -346,11 +351,17 @@ Provide the session data to the skill. The skill will analyze all collected answ
 
 Adjust thresholds in `config/dimensions.json`:
 
-- **convergence_threshold**: Entropy threshold for clarity (default: 0.3)
-- **prerequisite_threshold_default**: KST gate threshold (default: 1.8)
-- **update_weight**: Base weight for posterior updates (default: 3.0)
-- **max_questions**: Safety limit (default: 50)
-- **min_questions**: Minimum before early termination (default: 5)
+- **prerequisite_threshold_default**: Entropy threshold for KST gate — dimension enters current state when H falls below this (default: 1.8)
+- **convergence_threshold**: Entropy threshold used for per-dimension accessibility gate (default: 1.5)
+- **dominant_threshold**: Posterior probability required to enter specify phase (default: 0.50)
+- **validation_threshold**: Posterior probability required to enter validate phase and count toward convergence (default: 0.80)
+- **update_weight**: Base weight for posterior updates (default: 5.0)
+- **max_questions**: Safety limit — session always terminates at this count (default: 25)
+
+**Convergence** is phase-driven: the session ends when every accessible dimension
+(current KST state ∪ outer fringe) has reached `"validate"` phase AND no dimension
+has an unresolved contradiction (`clarification_needed = true`).
+Diminishing returns is tracked for diagnostics but no longer triggers termination.
 
 ---
 

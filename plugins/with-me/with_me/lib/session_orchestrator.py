@@ -247,16 +247,15 @@ class SessionOrchestrator:
 
     def check_convergence(self) -> bool:
         """
-        Check if session has converged using multiple criteria.
+        Check if session has converged using phase-driven criteria.
 
-        Convergence criteria (any triggers stop):
+        Convergence criteria:
         1. Max question limit reached (safety fallback)
-        2. Diminishing returns: max IG of last N questions < epsilon
-        3. Normalized confidence: all dimensions above target_confidence
+        2. Block: any accessible dimension has clarification_needed = True
+        3. Primary: all accessible dimensions are in "validate" phase
 
-        Normalized confidence uses 1 - H/H_max instead of a fixed entropy
-        threshold, ensuring consistent convergence across dimensions with
-        different hypothesis counts.
+        Accessible dimensions = current KST state | outer fringe (prerequisites met).
+        Diminishing returns is tracked but no longer triggers convergence.
 
         Returns:
             True if converged, False otherwise
@@ -267,65 +266,74 @@ class SessionOrchestrator:
             ...     feedback_file_path=Path("/tmp/test_feedback.json")
             ... )
             >>> _ = orch.initialize_session()
-            >>> # Initially not converged (uniform priors → confidence = 0)
+            >>> # Initially not converged (uniform priors → explore phase)
             >>> orch.check_convergence()
             False
 
-            >>> # Diminishing returns: all recent IG below epsilon (window=4)
-            >>> orch.question_count = 6  # past min_questions
-            >>> orch.recent_information_gains = [0.8, 0.5, 0.3, 0.04, 0.02, 0.01, 0.03]
+            >>> # Max questions triggers convergence (safety fallback)
+            >>> orch.question_count = orch.config["session_config"]["max_questions"]
             >>> orch.check_convergence()
             True
 
-            >>> # Normalized convergence: all dimensions above target_confidence
+            >>> # All accessible dims in validate phase → converged
             >>> orch2 = SessionOrchestrator(
             ...     feedback_file_path=Path("/tmp/test_feedback2.json")
             ... )
             >>> _ = orch2.initialize_session()
-            >>> # Set moderate confidence after ~3 questions each (target_confidence=0.30)
-            >>> # purpose (4 hyps): H_max=2.0, H=1.4 → confidence = 1 - 1.4/2.0 = 0.30 ✓
-            >>> orch2.beliefs["purpose"]._cached_entropy = 1.4
-            >>> # context (4 hyps): H=1.4 → confidence=0.30 ✓
-            >>> orch2.beliefs["context"]._cached_entropy = 1.4
-            >>> # data (3 hyps): H_max≈1.585, H=1.1 → confidence = 1 - 1.1/1.585 ≈ 0.306 ✓
-            >>> orch2.beliefs["data"]._cached_entropy = 1.1
-            >>> # behavior (4 hyps): H=1.4 → confidence=0.30 ✓
-            >>> orch2.beliefs["behavior"]._cached_entropy = 1.4
-            >>> # stakeholders (4 hyps): H=1.4 → confidence=0.30 ✓
-            >>> orch2.beliefs["stakeholders"]._cached_entropy = 1.4
-            >>> # constraints (4 hyps): H=1.4 → confidence=0.30 ✓
-            >>> orch2.beliefs["constraints"]._cached_entropy = 1.4
-            >>> # quality (3 hyps): H=1.1 → confidence≈0.306 ✓
-            >>> orch2.beliefs["quality"]._cached_entropy = 1.1
+            >>> for hs in orch2.beliefs.values():
+            ...     hyps = list(hs.alpha.keys())
+            ...     for h in hyps:
+            ...         hs.alpha[h] = 1.0
+            ...     hs.alpha[hyps[0]] = 20.0  # max_p ≈ 0.87 → validate phase
+            ...     hs._cached_entropy = 0.5   # < prerequisite_threshold_default → in KST state
             >>> orch2.check_convergence()
             True
+
+            >>> # clarification_needed blocks convergence even if validate phase
+            >>> orch3 = SessionOrchestrator(
+            ...     feedback_file_path=Path("/tmp/test_feedback3.json")
+            ... )
+            >>> _ = orch3.initialize_session()
+            >>> for hs in orch3.beliefs.values():
+            ...     hyps = list(hs.alpha.keys())
+            ...     for h in hyps:
+            ...         hs.alpha[h] = 1.0
+            ...     hs.alpha[hyps[0]] = 20.0
+            ...     hs._cached_entropy = 0.5
+            >>> orch3.clarification_needed["purpose"] = True
+            >>> orch3.check_convergence()
+            False
         """
         # 1. Max question limit (safety fallback)
         max_questions = self.config["session_config"]["max_questions"]
         if self.question_count >= max_questions:
             return True
 
-        # 2. Diminishing returns: recent IG all below epsilon
-        window = self.config["session_config"].get("diminishing_returns_window", 3)
-        epsilon = self.config["session_config"].get("diminishing_returns_epsilon", 0.05)
-        min_questions = self.config["session_config"].get("min_questions", 5)
-        if (
-            self.question_count >= min_questions
-            and len(self.recent_information_gains) >= window
-        ):
-            recent = self.recent_information_gains[-window:]
-            if max(recent) < epsilon:
-                return True
+        # Compute accessible dimensions: current KST state | outer fringe
+        phase_config = self.config["session_config"]
+        current_state = self._get_current_kst_state()
+        fringe = self.knowledge_space.outer_fringe(current_state)
+        all_reachable = current_state | fringe
 
-        # 3. Normalized convergence: all dimensions above target_confidence
-        target_confidence = self.config["session_config"].get("target_confidence", 0.85)
-        for hs in self.beliefs.values():
-            if hs._cached_entropy is None:
-                # No cached entropy - session just started, not converged
+        if not all_reachable:
+            return False
+
+        for dim_id in all_reachable:
+            # 2. Block: clarification_needed prevents convergence
+            if self.clarification_needed.get(dim_id, False):
                 return False
-            h_max = math.log2(len(hs.hypotheses))
-            confidence = 1.0 - (hs._cached_entropy / h_max)
-            if confidence < target_confidence:
+
+            # 3. Primary: all reachable dims must be in validate phase
+            hs = self.beliefs.get(dim_id)
+            if hs is None:
+                return False
+            phase = classify_question_phase(
+                hs,
+                phase_explore_threshold=phase_config.get("phase_explore_threshold", 0.85),
+                dominant_threshold=phase_config.get("dominant_threshold", 0.50),
+                validation_threshold=phase_config.get("validation_threshold", 0.80),
+            )
+            if phase != "validate":
                 return False
 
         return True

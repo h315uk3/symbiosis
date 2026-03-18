@@ -670,6 +670,7 @@
       "quality"
     ],
     "negative_ig_noise_threshold": 0.01,
-    "negative_ig_hard_threshold": 0.05
+    "negative_ig_hard_threshold": 0.05,
+    "prerequisite_threshold_default": 1.8
   }
 }

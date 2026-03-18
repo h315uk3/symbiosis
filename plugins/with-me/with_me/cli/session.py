@@ -227,11 +227,42 @@ def cmd_next_question(args: argparse.Namespace) -> None:
 
     # Check convergence first
     if orch.check_convergence():
+        # Determine reason
+        max_questions = orch.config["session_config"]["max_questions"]
+        if orch.question_count >= max_questions:
+            reason = "Max questions reached"
+        else:
+            reason = "All accessible dimensions reached validate phase"
+
+        # Compute coverage diagnostic across all dimensions
+        phase_config = orch.config["session_config"]
+        dims_resolved: list[str] = []
+        dims_partial: list[str] = []
+        low_confidence_dims: list[str] = []
+        for dim_id, hs in orch.beliefs.items():
+            phase = classify_question_phase(
+                hs,
+                phase_explore_threshold=phase_config.get("phase_explore_threshold", 0.85),
+                dominant_threshold=phase_config.get("dominant_threshold", 0.50),
+                validation_threshold=phase_config.get("validation_threshold", 0.80),
+            )
+            if phase == "validate":
+                dims_resolved.append(dim_id)
+            elif phase == "specify":
+                dims_partial.append(dim_id)
+            else:
+                low_confidence_dims.append(dim_id)
+
         print(
             json.dumps(
                 {
                     "converged": True,
-                    "reason": "All dimensions converged or max questions reached",
+                    "reason": reason,
+                    "coverage_diagnostic": {
+                        "dimensions_resolved": dims_resolved,
+                        "dimensions_partial": dims_partial,
+                        "low_confidence_dims": low_confidence_dims,
+                    },
                 },
                 ensure_ascii=False,
             )
@@ -298,9 +329,18 @@ def cmd_next_question(args: argparse.Namespace) -> None:
         suggested_focus_area = (
             uncovered_focus_areas[0] if uncovered_focus_areas else None
         )
+        # M5: Presheaf-informed focus selection
+        presheaf_free_focus_areas = orch.presheaf_checker.get_unconstrained_focus_areas(
+            dim_id=dimension,
+            kst_state=orch._get_current_kst_state(),
+            beliefs=orch.beliefs,
+            dim_config=dim_config,
+            covered_focus_areas=covered,
+        )
     else:
         uncovered_focus_areas = []
         suggested_focus_area = None
+        presheaf_free_focus_areas = []
 
     # Secondary dimension suggestions via presheaf
     suggested_secondary = orch.presheaf_checker.suggest_secondary_dimensions(
@@ -343,6 +383,7 @@ def cmd_next_question(args: argparse.Namespace) -> None:
                 "question_guidelines": dim_config.get("question_guidelines", {}),
                 "uncovered_focus_areas": uncovered_focus_areas,
                 "suggested_focus_area": suggested_focus_area,
+                "presheaf_free_focus_areas": presheaf_free_focus_areas,
                 "clarification_needed": orch.clarification_needed.get(dimension, False),
             },
             ensure_ascii=False,
