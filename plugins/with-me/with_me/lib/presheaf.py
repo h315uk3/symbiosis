@@ -496,6 +496,173 @@ class PresheafChecker:
         )
         return candidates[:top_k]
 
+    def get_unconstrained_focus_areas(
+        self,
+        dim_id: str,
+        kst_state: frozenset[str],
+        beliefs: dict[str, HypothesisSet],
+        dim_config: dict[str, Any],
+        covered_focus_areas: list[str],
+        coupling_threshold: float = 0.5,
+    ) -> list[str]:
+        """Get focus areas not already constrained by resolved restriction maps.
+
+        For a dimension in specify/validate phase, returns focus areas of the
+        dominant hypothesis that remain genuinely open — i.e., not implied by
+        restriction maps from resolved source dimensions.
+
+        A focus area is "presheaf-free" when:
+        - It belongs to the current dominant hypothesis
+        - It has not been covered yet
+        - No resolved restriction map strongly predicts a *different* hypothesis
+          than the actual dominant one (which would indicate a conflict)
+
+        If any resolved restriction map with probability > coupling_threshold
+        implies a hypothesis different from the actual dominant, returns []
+        to signal that hypothesis-level discrimination is needed before Phase C.
+
+        Args:
+            dim_id: Target dimension being queried (e.g., "data")
+            kst_state: Set of currently resolved dimension IDs
+            beliefs: Current belief state
+            dim_config: Config for this dimension from dimensions.json
+            covered_focus_areas: Already addressed focus areas for this dimension
+            coupling_threshold: Minimum implied probability to treat a restriction
+                               map prediction as "strong" (default 0.5)
+
+        Returns:
+            List of presheaf-free focus area strings, empty on conflict
+
+        Examples:
+            >>> from with_me.lib.dimension_belief import HypothesisSet
+            >>> maps = [
+            ...     RestrictionMap(
+            ...         source_dim="purpose",
+            ...         target_dim="data",
+            ...         conditional={
+            ...             "cli_tool": {
+            ...                 "structured": 0.7,
+            ...                 "unstructured": 0.2,
+            ...                 "streaming": 0.1,
+            ...             },
+            ...             "web_app": {
+            ...                 "structured": 0.5,
+            ...                 "unstructured": 0.2,
+            ...                 "streaming": 0.3,
+            ...             },
+            ...         },
+            ...     )
+            ... ]
+            >>> checker = PresheafChecker(maps, consistency_threshold=0.3)
+            >>> dim_config = {
+            ...     "hypotheses": {
+            ...         "structured": {
+            ...             "focus_areas": [
+            ...                 "schema definition",
+            ...                 "query patterns",
+            ...                 "data integrity",
+            ...             ]
+            ...         },
+            ...         "unstructured": {"focus_areas": ["content parsing"]},
+            ...         "streaming": {"focus_areas": ["real-time ingestion"]},
+            ...     }
+            ... }
+            >>> beliefs = {
+            ...     "purpose": HypothesisSet(
+            ...         "purpose",
+            ...         ["cli_tool", "web_app"],
+            ...         alpha={"cli_tool": 10.0, "web_app": 1.0},
+            ...     ),
+            ...     "data": HypothesisSet(
+            ...         "data",
+            ...         ["structured", "unstructured", "streaming"],
+            ...         alpha={"structured": 8.0, "unstructured": 1.0, "streaming": 1.0},
+            ...     ),
+            ... }
+            >>> kst_state = frozenset({"purpose"})
+
+            >>> # purpose=cli_tool (dominant) supports data=structured → all FAs free
+            >>> checker.get_unconstrained_focus_areas(
+            ...     "data", kst_state, beliefs, dim_config, []
+            ... )
+            ['schema definition', 'query patterns', 'data integrity']
+
+            >>> # Already covered: filtered out
+            >>> checker.get_unconstrained_focus_areas(
+            ...     "data", kst_state, beliefs, dim_config, ["schema definition"]
+            ... )
+            ['query patterns', 'data integrity']
+
+            >>> # No resolved sources → all focus areas are free
+            >>> checker.get_unconstrained_focus_areas(
+            ...     "data", frozenset(), beliefs, dim_config, []
+            ... )
+            ['schema definition', 'query patterns', 'data integrity']
+
+            >>> # Conflict: restriction map strongly implies streaming, actual is structured
+            >>> maps2 = [
+            ...     RestrictionMap(
+            ...         source_dim="purpose",
+            ...         target_dim="data",
+            ...         conditional={
+            ...             "service": {
+            ...                 "structured": 0.1,
+            ...                 "unstructured": 0.1,
+            ...                 "streaming": 0.8,
+            ...             },
+            ...         },
+            ...     )
+            ... ]
+            >>> checker2 = PresheafChecker(maps2, consistency_threshold=0.3)
+            >>> beliefs_conflict = {
+            ...     "purpose": HypothesisSet(
+            ...         "purpose",
+            ...         ["service"],
+            ...         alpha={"service": 10.0},
+            ...     ),
+            ...     "data": HypothesisSet(
+            ...         "data",
+            ...         ["structured", "unstructured", "streaming"],
+            ...         alpha={"structured": 8.0, "unstructured": 1.0, "streaming": 1.0},
+            ...     ),
+            ... }
+            >>> checker2.get_unconstrained_focus_areas(
+            ...     "data", frozenset({"purpose"}), beliefs_conflict, dim_config, []
+            ... )
+            []
+        """
+        hs = beliefs.get(dim_id)
+        if hs is None:
+            return []
+
+        dominant_hyp = max(hs.posterior, key=lambda h: hs.posterior[h])
+        hyp_config = dim_config.get("hypotheses", {}).get(dominant_hyp, {})
+        all_focus_areas: list[str] = hyp_config.get("focus_areas", [])
+
+        # Find restriction maps from resolved sources targeting this dimension
+        resolved_maps = [
+            rm
+            for rm in self.restriction_maps
+            if rm.target_dim == dim_id and rm.source_dim in kst_state
+        ]
+
+        # Check each resolved map for conflicts with the dominant hypothesis
+        for rm in resolved_maps:
+            source_hs = beliefs.get(rm.source_dim)
+            if source_hs is None:
+                continue
+            expected = rm.expected_target(source_hs.posterior)
+            if not expected:
+                continue
+            implied_dominant = max(expected, key=lambda h: expected[h])
+            implied_prob = expected.get(implied_dominant, 0.0)
+
+            # Strong map predicting a DIFFERENT hypothesis → conflict, skip Phase C
+            if implied_prob > coupling_threshold and implied_dominant != dominant_hyp:
+                return []
+
+        return [fa for fa in all_focus_areas if fa not in covered_focus_areas]
+
     def get_coupling_strength(
         self,
         beliefs: dict[str, HypothesisSet],

@@ -58,9 +58,11 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 ## Pull Request
 
 **Before PR**:
-1. `mise run test`
+1. `mise run format --check`
 2. `mise run lint`
-3. `mise run validate`
+3. `mise run typecheck`
+4. `mise run test`
+5. `mise run validate`
 
 **Requirements**:
 - Clear title and description **in English**

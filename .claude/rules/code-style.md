@@ -16,7 +16,8 @@
 **Formatting**: Enforced by ruff
 - Line length: 88 characters
 - Double quotes for strings
-- Run `mise run lint` and `mise run format`
+- Run `mise run format` before committing (or verify with `mise run format --check`)
+- Run `mise run lint` to check for style and import issues
 
 ## Shell Scripts
 
